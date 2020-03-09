@@ -139,6 +139,9 @@ var commands = [
     { cmd: "ftpend", fn: ft_pend, help: "ftpend fileId" },
     { cmd: "ftresume", fn: ft_resume, help: "ftresume fileId" },
 
+    { cmd: "secnew", fn: secondary_new, help: "secnew" },
+    { cmd: "switch", fn: switch_carrier, help: "switch" },
+
     { cmd:"test",           fn:test,                   help:"test" },
 
     { cmd: "exit", fn: exit, help: "exit" }
@@ -197,6 +200,8 @@ function help(args) {
 
 function exit(args) {
     carrier.destroy();
+    if (carrier2)
+        carrier2.destroy();
 }
 
 function string_user_info(info) {
@@ -814,6 +819,30 @@ function ft_resume(argv){
     }
 }
 
+function secondary_new() {
+    var success = function (ret) {
+        carrier2 = ret;
+        carrier2.start(50, null, null);
+    };
+    var opts = {
+        udpEnabled: true,
+        persistentLocation: ".data2",
+        bootstraps: bootstraps
+    };
+    if (carrier2 === undefined) {
+        carrier2 = null;
+        carrierManager.createObject(callbacks, opts, success, null);
+    }
+}
+
+function switch_carrier() {
+    if (!carrier2)
+        return;
+
+    var tmp = carrier;
+    carrier = carrier2;
+    carrier2 = tmp;
+}
 
 //-----------------------------------------------------------------------------
 var session;
@@ -1808,6 +1837,7 @@ function onClose() {
 }
 
 var carrier = null;
+var carrier2 = undefined;
 
 var app = {
     // Application Constructor
