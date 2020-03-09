@@ -503,7 +503,7 @@ function group_create(argv) {
      var error = function (error) {
         display_others_msg("group_create failed: " + error + ".");
      };
-     carrier.newGroup(groupCallbacks, success, error);
+     carrier.newGroup(success, error);
 }
 
 function group_join(argv) {
@@ -516,7 +516,7 @@ function group_join(argv) {
     };
     var friendId = argv[1];
     var cookieStr = argv[2];
-    carrier.groupJoin(friendId, cookieStr, groupCallbacks, success, error);
+    carrier.groupJoin(friendId, cookieStr, success, error);
 }
 
 
@@ -603,9 +603,7 @@ function group_get_peers(argv) {
 
 function group_get_groups(argv) {
     var success = function(groups) {
-        var myGroups = [];
-        myGroups = groups;
-        display_others_msg("There are "+myGroups.length+" group object.");
+        display_others_msg("There are " + groups.length + " group objects.");
     };
     var error = function (error) {
        display_others_msg("group_get_groups failed: " + error + ".");
@@ -1803,9 +1801,6 @@ var callbacks = {
     onSessionRequest: session_request_callback,
     onGroupInvite:group_invite_callback,
     onConnectRequest:manager_connect_request_callback,
-}
-
-var groupCallbacks = {
     onGroupConnected:group_connected_callback,
     onGroupMessage:group_msg_callback,
     onGroupTitle:group_title_callback,
