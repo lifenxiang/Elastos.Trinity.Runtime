@@ -820,6 +820,10 @@ function ft_resume(argv){
 function secondary_new() {
     var success = function (ret) {
         carrier2 = ret;
+        carrier2.session_ctx = {
+            session: null,
+            remote_sdp: null
+        };
         carrier2.start(50, null, null);
     };
     var opts = {
@@ -843,15 +847,8 @@ function switch_carrier() {
 }
 
 //-----------------------------------------------------------------------------
-var session;
-var session_ctx = {
-    remote_sdp: "",
-    unchanged_streams: 0,
-    need_start: false,
-}
-
 function session_request_callback(event) {
-    session_ctx.remote_sdp = event.sdp;
+    event.carrier.session_ctx.remote_sdp = event.sdp;
     var msg = "Session request from[" + event.from + "] with SDP:" + event.sdp
         + "<br/>Reply use following commands:"
         + "<br/>  1. snew " + event.from
@@ -863,14 +860,14 @@ function session_request_callback(event) {
     display_others_msg(msg);
 }
 
-function session_start() {
+function session_start(session, sdp) {
     var success = function(info) {
         display_others_msg("Session start success.");
     };
     var error = function (error) {
-        display_others_msg("Session start inviter failed: " + error + ".");
+        display_others_msg("Session start failed: " + error + ".");
     };
-    session.start(session_ctx.remote_sdp, success, error);
+    session.start(sdp, success, error);
 }
 
 function session_request_complete_callback(event) {
@@ -878,8 +875,7 @@ function session_request_complete_callback(event) {
         display_others_msg("Session complete, status: " + event.status + ", reason:" + event.reason);
     }
     else {
-        session_ctx.remote_sdp = event.sdp;
-        session_start();
+        session_start(event.session, event.sdp);
     }
 }
 
@@ -898,15 +894,39 @@ function stream_on_state_changed(event) {
         "closed",
         "failed"
     ];
+    const streamState = {
+        /** Raw stream. */
+        RAW: 0,
+        /** Initialized stream. */
+        INITIALIZED: 1,
+        /** The underlying transport is ready for the stream to start. */
+        TRANSPORT_READY: 2,
+        /** The stream is trying to connect the remote. */
+        CONNECTING: 3,
+        /** The stream connected with remove peer. */
+        CONNECTED: 4,
+        /** The stream is deactived. */
+        DEACTIVATED: 5,
+        /** The stream closed gracefully. */
+        CLOSED: 6,
+        /** The stream is on error, cannot to continue. */
+        ERROR: 7,
+    };
 
     var msg = "Stream [" + event.stream.id + "] state changed to: " + state_name[event.state];
     display_others_msg(msg);
 
-    if (event.state == carrierManager.StreamState.TRANSPORT_READY) {
-        --session_ctx.unchanged_streams;
-        if ((session_ctx.unchanged_streams == 0) && (session_ctx.need_start)) {
-            session_start();
-            session_ctx.need_start = false;
+    if (event.state === streamState.TRANSPORT_READY) {
+        let session = event.stream._session;
+        event.stream.ready = true;
+        for (let id in session._streams) {
+            if (!session._streams[id].ready)
+                return;
+        }
+        display_others_msg("All streams are ready.");
+        if (session._carrier.session_ctx.remote_sdp) {
+            session_start(session, session._carrier.session_ctx.remote_sdp);
+            session._carrier.session_ctx.remote_sdp = null;
         }
     }
 }
@@ -964,24 +984,34 @@ function session_cleanup(argv) {
 }
 
 function session_new(argv) {
+    let _carrier = carrier;
+
     if (argv.length != 2) {
         display_others_msg("Invalid command syntax.");
         return;
     }
 
+    if (_carrier.session_ctx.session) {
+        display_others_msg("Session already exists.");
+        return;
+    }
+
     var success = function(_session) {
         display_others_msg("Create session successfully.");
-        session = _session;
-        session_ctx.need_start = false;
-        session_ctx.unchanged_streams = 0;
+        _carrier.session_ctx.session = _session;
+        _session._streams = {};
+        _session._carrier = _carrier;
     };
     var error = function (error) {
         display_others_msg("Create session failed. " + error);
     };
-    carrier.newSession(argv[1], success, error);
+    _carrier.newSession(argv[1], success, error);
 }
 
 function session_close(argv) {
+    let session = carrier.session_ctx.session;
+    let _carrier = carrier;
+
     if (argv.length != 1) {
         display_others_msg("Invalid command syntax.");
         return;
@@ -990,7 +1020,7 @@ function session_close(argv) {
     if (session) {
         var success = function(info) {
             display_others_msg("Session closed.");
-            session = null;
+            _carrier.session_ctx.session = null;
         };
         var error = function (error) {
             display_others_msg("Session closed failed. " + error);
@@ -1005,11 +1035,55 @@ function session_close(argv) {
 function stream_add(argv) {
     var callbacks = new Object;
     var options = 0;
+    let _session = carrier.session_ctx.session;
+    const streamType = {
+        /** Audio stream. */
+        AUDIO: 0,
+        /** Video stream. */
+        VIDEO: 1,
+        /** Text stream. */
+        TEXT: 2,
+        /** Application stream. */
+        APPLICATION: 3,
+        /** Message stream. */
+        MESSAGE: 4
+    };
+    const streamMode = {
+        /**
+         * Compress option, indicates data would be compressed before transmission.
+         * For now, just reserved this bit option for future implement.
+         */
+        COMPRESS: 1,
+        /**
+         * Encrypt option, indicates data would be transmitted with plain mode.
+         * which means that transmitting data would be encrypted in default.
+         */
+        PLAIN: 2,
+        /**
+         * Relaible option, indicates data transmission would be reliable, and be
+         * guranteed to received by remote peer, which acts as TCP transmission
+         * protocol. Without this option bitwised, the transmission would be
+         * unreliable as UDP transmission protocol.
+         */
+        RELIABLE: 4,
+        /**
+         * Multiplexing option, indicates multiplexing would be activated on
+         * enstablished stream, and need to use multipexing APIs related with channel
+         * instread of APIs related strema to send/receive data.
+         */
+        MULTIPLEXING: 8,
+        /**
+         * PortForwarding option, indicates port forwarding would be activated
+         * on established stream. This options should bitwise with 'Multiplexing'
+         * option.
+         */
+        PORT_FORWARDING: 16,
+    };
 
     callbacks.onStateChanged = stream_on_state_changed;
     callbacks.onStreamData = stream_on_data;
 
-    if (!session) {
+    if (!_session) {
         display_others_msg("No session available.");
         return;
     }
@@ -1021,16 +1095,16 @@ function stream_add(argv) {
     else if (argv.length > 1) {
         for (var i = 1; i < argv.length; i++) {
             if (argv[i] == "reliable") {
-                options |= carrierManager.StreamMode.RELIABLE;
+                options |= streamMode.RELIABLE;
             }
             else if (argv[i] == "plain") {
-                options |= carrierManager.StreamMode.PLAIN;
+                options |= streamMode.PLAIN;
             }
             else if (argv[i] == "multiplexing") {
-                options |= carrierManager.StreamMode.MULTIPLEXING;
+                options |= streamMode.MULTIPLEXING;
             }
             else if (argv[i] == "portforwarding") {
-                options |= carrierManager.StreamMode.PORT_FORWARDING;
+                options |= streamMode.PORT_FORWARDING;
             } else {
                 display_others_msg("Invalid command syntax.");
                 return;
@@ -1038,7 +1112,7 @@ function stream_add(argv) {
         }
     }
 
-    if ((options & carrierManager.StreamMode.MULTIPLEXING) || (options & carrierManager.StreamMode.PORT_FORWARDING)) {
+    if ((options & streamMode.MULTIPLEXING) || (options & streamMode.PORT_FORWARDING)) {
         callbacks.onChannelOpen = on_channel_open;
         callbacks.onChannelOpened = on_channel_opened;
         callbacks.onChannelData = on_channel_data;
@@ -1048,18 +1122,20 @@ function stream_add(argv) {
     }
 
     var success = function(_stream) {
-        stream = _stream;
-        session_ctx.unchanged_streams++;
-        stream.channel = [];
-        display_others_msg("Add stream successfully and stream id " + stream.id);
+        _session._streams[_stream.id] = _stream;
+        _stream._session = _session;
+        _stream.ready = false;
+        display_others_msg("Add stream successfully and stream id " + _stream.id);
     };
     var error = function (error) {
         display_others_msg("Add stream failed. " + error);
     };
-    session.addStream(carrierManager.StreamType.TEXT, options, callbacks, success, error);
+    _session.addStream(streamType.TEXT, options, callbacks, success, error);
 }
 
 function stream_remove(argv) {
+    let session = carrier.session_ctx.session;
+
     if (argv.length != 2) {
         display_others_msg("Invalid command syntax.");
         return;
@@ -1069,13 +1145,14 @@ function stream_remove(argv) {
         display_others_msg("session is invalid.");
         return;
     }
-    var stream = session.streams[parseInt(argv[1])];
+    var stream = session._streams[parseInt(argv[1])];
     if (!stream) {
         display_others_msg("stream " + argv[1] + " is invalid.");
         return;
     }
 
     var success = function(info) {
+        delete session._streams[stream.id];
         display_others_msg("Remove stream " + stream.id + " success.");
     };
     var error = function (error) {
@@ -1094,6 +1171,8 @@ function session_peer(argv) {
 }
 
 function session_request(argv) {
+    let session = carrier.session_ctx.session;
+
     if (argv.length != 1) {
         display_others_msg("Invalid command syntax.");
         return;
@@ -1115,6 +1194,10 @@ function session_request(argv) {
 
 function session_reply_request(argv) {
     var ret;
+    let session = carrier.session_ctx.session;
+    let sdp = carrier.session_ctx.remote_sdp;
+    let _carrier = carrier;
+
     if ((argv.length != 2) && (argv.length != 3)) {
         display_others_msg("Invalid command syntax.");
         return;
@@ -1125,17 +1208,14 @@ function session_reply_request(argv) {
         return;
     }
 
+    if (!sdp) {
+        display_others_msg("No request received.");
+        return;
+    }
+
     if ((argv[1] == "ok") && (argv.length == 2)) {
         var success = function(info) {
             display_others_msg("response invite successuflly.");
-
-            if (session_ctx.unchanged_streams > 0) {
-                session_ctx.need_start = true;
-            }
-            else {
-                ret = session.start(session_ctx.remote_sdp);
-                display_others_msg("Session start " + (ret ? "success." : "failed."));
-            }
         };
         var error = function (error) {
             display_others_msg("response invite failed. " + error);
@@ -1144,6 +1224,7 @@ function session_reply_request(argv) {
     }
     else if ((argv[1] == "refuse") && (argv.length == 3)) {
         var success = function(info) {
+            _carrier.session_ctx.remote_sdp = null;
             display_others_msg("response invite successuflly.");
         };
         var error = function (error) {
@@ -1163,11 +1244,11 @@ function stream_write(argv) {
         return;
     }
 
-    if (!session) {
+    if (!carrier.session_ctx.session) {
         display_others_msg("session is invalid.");
         return;
     }
-    var stream = session.streams[parseInt(argv[1])];
+    var stream = carrier.session_ctx.session._streams[parseInt(argv[1])];
     if (!stream) {
         display_others_msg("stream " + argv[1] + " is invalid.");
         return;
@@ -1184,6 +1265,7 @@ function stream_write(argv) {
 }
 
 function stream_get_info(argv) {
+    let session = carrier.session_ctx.session;
 
     var topology_name = [
         "LAN",
@@ -1207,7 +1289,7 @@ function stream_get_info(argv) {
         display_others_msg("session is invalid.");
         return;
     }
-    var stream = session.streams[parseInt(argv[1])];
+    var stream = session._streams[parseInt(argv[1])];
     if (!stream) {
         display_others_msg("stream " + argv[1] + " is invalid.");
         return;
@@ -1235,6 +1317,7 @@ function stream_get_info(argv) {
 
 function stream_get_type(argv) {
     var info;
+    let session = carrier.session_ctx.session;
 
     var type_name = [
         "audio",
@@ -1253,7 +1336,7 @@ function stream_get_type(argv) {
         display_others_msg("session is invalid.");
         return;
     }
-    var stream = session.streams[parseInt(argv[1])];
+    var stream = session._streams[parseInt(argv[1])];
     if (!stream) {
         display_others_msg("stream " + argv[1] + " is invalid.");
         return;
@@ -1267,6 +1350,8 @@ function stream_get_type(argv) {
 }
 
 function stream_get_state(argv) {
+    let session = carrier.session_ctx.session;
+
     var state_name = [
         "raw",
         "initialized",
@@ -1287,7 +1372,7 @@ function stream_get_state(argv) {
         display_others_msg("session is invalid.");
         return;
     }
-    var stream = session.streams[parseInt(argv[1])];
+    var stream = session._streams[parseInt(argv[1])];
     if (!stream) {
         display_others_msg("stream " + argv[1] + " is invalid.");
         return;
@@ -1565,12 +1650,19 @@ function self_info_callback(event) {
 }
 
 function connection_callback(event) {
+    const status = {
+        /** Carrier node connected to the carrier network. */
+        CONNECTED: 0,
+        /** There is no connection to the carrier network. */
+        DISCONNECTED: 1
+    };
+
     switch (event.status) {
-        case carrierManager.ConnectionStatus.CONNECTED:
+        case status.CONNECTED:
             display_others_msg("Connected to carrier network.");
             break;
 
-        case carrierManager.ConnectionStatus.DISCONNECTED:
+        case status.DISCONNECTED:
             display_others_msg("Disconnect from carrier network.");
             break;
 
@@ -1614,12 +1706,19 @@ function friends_list_callback(event) {
 }
 
 function friend_connection_callback(event) {
+    const status = {
+        /** Carrier node connected to the carrier network. */
+        CONNECTED: 0,
+        /** There is no connection to the carrier network. */
+        DISCONNECTED: 1
+    };
+
     switch (event.status) {
-        case carrierManager.ConnectionStatus.CONNECTED:
+        case status.CONNECTED:
             display_others_msg("Friend[" + event.friendId + "] connection changed to be online");
             break;
 
-        case carrierManager.ConnectionStatus.DISCONNECTED:
+        case status.DISCONNECTED:
             display_others_msg("Friend[" + event.friendId + "] connection changed to be offline.");
             break;
 
@@ -1806,7 +1905,7 @@ var callbacks = {
     onGroupTitle:group_title_callback,
     onPeerName:group_peer_name_callback,
     onPeerListChanged:group_peer_list_change_callback,
-}
+};
 
 var fileTransferCallbacks = {
     onStateChanged:ft_state_changed_callback,
@@ -1817,7 +1916,7 @@ var fileTransferCallbacks = {
     onPending:ft_on_pending_callback,
     onResume:ft_on_resume_callback,
     onCancel:ft_on_cancel_callback,
-}
+};
 
 function onLauncher() {
     appManager.launcher();
@@ -1843,6 +1942,10 @@ var app = {
     onDeviceReady: function () {
         var success = function (ret) {
             carrier = ret;
+            carrier.session_ctx = {
+                session: null,
+                remote_sdp: null
+            };
             carrier.start(50, null, null);
             do_command("help");
             $("input").focus();
@@ -1856,14 +1959,14 @@ var app = {
                     }
                 }
             });
-        }
+        };
         carrierManager.createObject(callbacks, opts, success, null);
     },
 };
 
 app.initialize();
 
-function test(argv) {;
+function test(argv) {
 //    do_command("snew userid");
     do_command("sadd reliable multiplexing portforwarding");
 //    do_command("swrite 1 datagt");
