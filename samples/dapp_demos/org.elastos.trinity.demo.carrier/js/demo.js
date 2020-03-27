@@ -494,21 +494,22 @@ function reply_invite(argv) {
     carrier.replyFriendInvite(argv[1], status, reason, msg, success, error);
 }
 
-var mGroup = null ;
 function group_create(argv) {
+    let _carrier = carrier;
      var success = function(group) {
-        mGroup = group;
+         _carrier.mGroup = group;
         display_others_msg("group_create success.");
      };
      var error = function (error) {
         display_others_msg("group_create failed: " + error + ".");
      };
-     carrier.newGroup(success, error);
+     _carrier.newGroup(success, error);
 }
 
 function group_join(argv) {
+    let _carrier = carrier;
     var success = function(group) {
-       mGroup = group;
+       _carrier.mGroup = group;
        display_others_msg("group_join success.<br/>");
     };
     var error = function (error) {
@@ -516,7 +517,7 @@ function group_join(argv) {
     };
     var friendId = argv[1];
     var cookieStr = argv[2];
-    carrier.groupJoin(friendId, cookieStr, success, error);
+    _carrier.groupJoin(friendId, cookieStr, success, error);
 }
 
 
@@ -528,24 +529,25 @@ function group_invite(argv) {
        display_others_msg("group_invite failed: " + error + ".");
     };
     var friendId = argv[1] ;
-    mGroup.invite(friendId, success, error);
+    carrier.mGroup.invite(friendId, success, error);
 }
 
 
 function group_leave(argv) {
+    let _carrier = carrier;
     var success = function(success) {
-       mGroup = null ;
+       _carrier.mGroup = null ;
        display_others_msg("group_leave success.");
     };
     var error = function (error) {
        display_others_msg("group_leave failed: " + error + ".");
     };
 
-    if (mGroup == null){
+    if (_carrier.mGroup == null){
         display_others_msg("group is null");
         return ;
     }
-    carrier.groupLeave(mGroup, success, error);
+    _carrier.groupLeave(_carrier.mGroup, success, error);
 }
 
 function group_msg(argv) {
@@ -556,7 +558,7 @@ function group_msg(argv) {
        display_others_msg("group_msg failed: " + error + ".");
     };
     var message = argv[1];
-    mGroup.sendMessage(message, success, error);
+    carrier.mGroup.sendMessage(message, success, error);
 }
 
 function group_title(argv) {
@@ -566,7 +568,7 @@ function group_title(argv) {
     var error = function (error) {
        display_others_msg("group_title failed: " + error + ".");
     };
-    mGroup.getTitle(success, error);
+    carrier.mGroup.getTitle(success, error);
 }
 
 function group_set_title(argv) {
@@ -577,7 +579,7 @@ function group_set_title(argv) {
        display_others_msg("group_set_title failed: " + error + ".");
     };
     var title = argv[1];
-    mGroup.setTitle(title, success, error);
+    carrier.mGroup.setTitle(title, success, error);
 }
 
 function group_get_peer(argv) {
@@ -588,7 +590,7 @@ function group_get_peer(argv) {
        display_others_msg("group_get_peer failed: " + error + ".");
     };
     var peerId = argv[1];
-    mGroup.getPeer(peerId, success, error);
+    carrier.mGroup.getPeer(peerId, success, error);
 }
 
 function group_get_peers(argv) {
@@ -598,7 +600,7 @@ function group_get_peers(argv) {
     var error = function (error) {
        display_others_msg("group_get_peers failed: " + error + ".");
     };
-    mGroup.getPeers(success, error);
+    carrier.mGroup.getPeers(success, error);
 }
 
 function group_get_groups(argv) {
@@ -820,6 +822,11 @@ function ft_resume(argv){
 function secondary_new() {
     var success = function (ret) {
         carrier2 = ret;
+        carrier2.getGroups(groups => {
+            carrier2.mGroup = groups[0];
+        }, error => {
+            display_others_msg("group_get_groups failed: " + error + ".");
+        });
         carrier2.session_ctx = {
             session: null,
             remote_sdp: null
@@ -1797,7 +1804,8 @@ function group_invite_callback(event){
     display_others_msg(msg);
 }
 
-function group_connected_callback(event) {
+function
+group_connected_callback(event) {
     var msg = "Got group connected callback response <br/>";
     display_others_msg(msg);
 }
@@ -1926,6 +1934,9 @@ function onClose() {
     if (carrier != null) {
         carrier.destroy();
     }
+    if (carrier2 != null) {
+        carrier2.destroy();
+    }
 
     appManager.close();
 }
@@ -1942,6 +1953,11 @@ var app = {
     onDeviceReady: function () {
         var success = function (ret) {
             carrier = ret;
+            carrier.getGroups(groups => {
+                carrier.mGroup = groups[0];
+            }, error => {
+                display_others_msg("group_get_groups failed: " + error + ".");
+            });
             carrier.session_ctx = {
                 session: null,
                 remote_sdp: null
