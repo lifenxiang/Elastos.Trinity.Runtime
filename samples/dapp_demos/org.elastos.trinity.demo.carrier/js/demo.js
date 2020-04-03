@@ -85,6 +85,7 @@ var commands = [
     { cmd: "friend", fn: show_friend, help: "friend userid" },
     { cmd: "label", fn: label_friend, help: "label userid name" },
     { cmd: "msg", fn: send_message, help: "msg userid message" },
+    { cmd: "lmsg", fn: send_large_message, help: "lmsg userid" },
     { cmd: "invite", fn: invite, help: "invite userid data" },
     { cmd: "ireply", fn: reply_invite, help: "ireply userid [confirm message | refuse reason]" },
 
@@ -447,6 +448,21 @@ function send_message(argv) {
         display_others_msg("Send message failed: " + error + ".");
     };
     carrier.sendFriendMessage(argv[1], argv[2], success, error);
+}
+
+function send_large_message(argv) {
+    if (argv.length != 2) {
+        display_others_msg("Invalid command syntax.");
+        return;
+    }
+
+    var success = function(info) {
+        display_others_msg("Send large message success.");
+    };
+    var error = function (error) {
+        display_others_msg("Send large message failed: " + error + ".");
+    };
+    carrier.sendFriendLargeMessage(argv[1], "l".repeat(2048), success, error);
 }
 
 function invite(argv) {
@@ -1769,6 +1785,11 @@ function message_callback(event) {
     display_others_msg("Message from friend[" + event.from + "]: " + event.message);
 }
 
+function large_message_callback(event) {
+    display_others_msg("Message from friend[" + event.from + "]: " +
+                       event.message.charAt(0) + "*" + event.message.length);
+}
+
 function invite_request_callback(event) {
     var msg = "Invite request from[" + event.from + "] with data: " + event.data
         + "<br/>Reply use following commands:"
@@ -1904,6 +1925,7 @@ var callbacks = {
     onFriendAdded: friend_added_callback,
     onFriendRemoved: friend_removed_callback,
     onFriendMessage: message_callback,
+    onFriendLargeMessage: large_message_callback,
     onFriendInviteRequest: invite_request_callback,
     onSessionRequest: session_request_callback,
     onGroupInvite:group_invite_callback,
