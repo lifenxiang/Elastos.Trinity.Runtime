@@ -49,6 +49,7 @@ class MainViewController: UIViewController {
     var appManager: AppManager? = nil
     var passwordManager: PasswordManager? = nil
     var didSessionManager: DIDSessionManager? = nil
+    var notificationManager: NotificationManager? = nil
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
@@ -62,8 +63,9 @@ class MainViewController: UIViewController {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
         didSessionManager = DIDSessionManager()
         passwordManager = PasswordManager(mainViewController: self)
+        notificationManager = NotificationManager(mainViewController: self)
         appManager = AppManager(self)
-        
+
         do {
             _ = try ContactNotifier.getSharedInstance(did: "didElastosFIXME") // TODO - FIXME! @dongxiao - should be first called when a DID session starts, with a real DID!
         }

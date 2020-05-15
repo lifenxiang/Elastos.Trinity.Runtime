@@ -20,8 +20,6 @@
  * SOFTWARE.
  */
 
-import UIKit
-
 class WalletMainViewController: NativeAppMainViewController, ElISubWalletDelegate {
     @IBOutlet weak var bgView: UIView!
     @IBOutlet weak var walletNameLabel: UILabel!
@@ -131,7 +129,7 @@ class WalletMainViewController: NativeAppMainViewController, ElISubWalletDelegat
         navi!.view.frame = CGRect(x: 0, y: 0, width: self.view.frame.size.width, height: self.view.frame.size.height)
     }
 
-    @objc func walletSyncStart(nofi : Notification){
+    @objc func walletSyncStart(nofi : UIKit.Notification){
         isHasWallet = true
         refreshUI()
         userDefault.set(masterWalletName, forKey: masterWalletID)

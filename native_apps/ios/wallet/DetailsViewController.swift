@@ -1,6 +1,4 @@
 
-import UIKit
-
 class DetailsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
     var mainTableView: UITableView!
     let cellID = "DetailsCell"
@@ -35,7 +33,7 @@ class DetailsViewController: UIViewController, UITableViewDelegate, UITableViewD
         self.view .addSubview(mainTableView)
     }
 
-    @objc func refreshTransactionAction(nofi : Notification){
+    @objc func refreshTransactionAction(nofi : UIKit.Notification){
         refresh([masterWalletID])
     }
 
