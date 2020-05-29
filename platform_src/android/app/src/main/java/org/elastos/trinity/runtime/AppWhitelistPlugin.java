@@ -65,6 +65,10 @@ public class AppWhitelistPlugin extends CordovaPlugin {
         allowedRequests.addWhiteListEntry("http://localhost/*", false);
         allowedRequests.addWhiteListEntry("https://localhost/*", false);
 
+        String customHostname = "http://" + Utility.getCustomHostname(appManager.getDID(), info.app_id) + "/*";
+        allowedRequests.addWhiteListEntry(customHostname, false);
+        allowedRequests.addWhiteListEntry(customHostname, false);
+
         String[] list = ConfigManager.getShareInstance().getStringArrayValue("whitelist.urls", new String[0]);
         for (int i = 0; i < list.length; i++) {
             allowedRequests.addWhiteListEntry(list[i], false);
@@ -91,10 +95,16 @@ public class AppWhitelistPlugin extends CordovaPlugin {
         }
     }
 
+    private Boolean isInUrlWhitelist() {
+        return ConfigManager.getShareInstance().stringArrayContains("url.authority.whitelist", appInfo.app_id);
+    }
 
     @Override
     public Boolean shouldAllowNavigation(String url) {
-        if (allowedNavigations.isUrlWhiteListed(url)) {
+        if (isInUrlWhitelist()) {
+            return true;
+        }
+        else if (allowedNavigations.isUrlWhiteListed(url)) {
             return true;
         }
         else if (allowedAppNavigations.isUrlAllowAuthority(url)) {
@@ -105,7 +115,10 @@ public class AppWhitelistPlugin extends CordovaPlugin {
 
     @Override
     public Boolean shouldAllowRequest(String url) {
-        if (Boolean.TRUE == shouldAllowNavigation(url)) {
+        if (isInUrlWhitelist()) {
+            return true;
+        }
+        else if (Boolean.TRUE == shouldAllowNavigation(url)) {
             return true;
         }
         if (allowedRequests.isUrlWhiteListed(url)) {

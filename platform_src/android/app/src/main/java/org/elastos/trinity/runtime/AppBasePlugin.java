@@ -742,19 +742,9 @@ public class AppBasePlugin extends TrinityPlugin {
         return IntentManager.checkTrinityScheme(url);// && (!isUrlApp() || url.contains("callbackurl="));
     }
 
-    private Boolean isInUrlWhitelist() {
-        return ConfigManager.getShareInstance().stringArrayContains("url.authority.whitelist", appId);
-    }
-
     @Override
     public Boolean shouldAllowNavigation(String url) {
-        if (url.startsWith("http://" + Utility.getCustomHostname(did, appId))) {
-            return true;
-        }
-        if (isInUrlWhitelist()) {
-            return true;
-        }
-        else if (appManager.isLauncher(this.appId)) {
+        if (appManager.isLauncher(this.appId)) {
             return true;
         }
         else if (checkIntentScheme(url)) {
@@ -771,10 +761,7 @@ public class AppBasePlugin extends TrinityPlugin {
 
     @Override
     public Boolean shouldAllowRequest(String url) {
-        if (isInUrlWhitelist()) {
-            return true;
-        }
-        else if (appManager.isLauncher(this.appId)) {
+        if (appManager.isLauncher(this.appId)) {
             return true;
         }
         else if (checkIntentScheme(url)) {

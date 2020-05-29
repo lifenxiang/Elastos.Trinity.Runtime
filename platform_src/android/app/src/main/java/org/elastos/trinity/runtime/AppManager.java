@@ -1146,7 +1146,7 @@ public class AppManager {
     }
 
     public synchronized int runAlertUrlAuth(AppInfo info, String url, int originAuthority) {
-        // TMP BPI try {
+        try {
             synchronized (urlLock) {
                 urlLock.authority = getUrlAuthority(info.app_id, url);
                 if (urlLock.authority != originAuthority) {
@@ -1161,14 +1161,15 @@ public class AppManager {
                 });
 
                 if (urlLock.authority == originAuthority) {
-                   // TMP BPI  urlLock.wait();
+                    //TODO::If use UiThread, maybe will deadlock
+                    urlLock.wait();
                 }
             }
 
-        /* TMP BPI  } catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             e.printStackTrace();
             return originAuthority;
-        }*/
+        }
         return urlLock.authority;
     }
 
