@@ -29,6 +29,7 @@ public class RemoteNotificationCommand implements CarrierCommand {
             request.put("source", "contact_notifier_plugin"); // purely informative
             request.put("key", notificationRequest.key);
             request.put("title", notificationRequest.title);
+            request.put("appId", notificationRequest.appId);
 
             if (notificationRequest.url != null)
                 request.put("url", notificationRequest.url);

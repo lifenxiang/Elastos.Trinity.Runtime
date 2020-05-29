@@ -232,12 +232,12 @@ public class CarrierHelper {
     }
 
     private void handleReceivedRemoteNotification(String friendId, JSONObject request) {
-        if (!request.has("key") || !request.has("title")) {
+        if (!request.has("title")) {
             Log.w(ContactNotifier.LOG_TAG, "Invalid remote notification command received: missing mandatory fields");
             return;
         }
 
-        RemoteNotificationRequest remoteNotification = RemoteNotificationRequest.fromJSONObject(request);
+        RemoteNotificationRequest remoteNotification = RemoteNotificationRequest.fromJSONObject(request, null);
         if (remoteNotification == null) {
             // Couldn't parse as a proper notification.
             Log.w(ContactNotifier.LOG_TAG, "Invalid remote notification command received: format not understood");

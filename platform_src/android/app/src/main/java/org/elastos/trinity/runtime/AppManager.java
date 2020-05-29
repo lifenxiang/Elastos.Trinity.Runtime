@@ -36,6 +36,8 @@ import android.util.Log;
 import android.view.View;
 
 import org.apache.cordova.PluginManager;
+import org.elastos.carrier.exceptions.CarrierException;
+import org.elastos.trinity.runtime.contactnotifier.ContactNotifier;
 import org.elastos.trinity.runtime.didsessions.DIDSessionManager;
 import org.elastos.trinity.runtime.didsessions.IdentityEntry;
 import org.elastos.trinity.runtime.titlebar.TitleBarActivityType;
@@ -196,6 +198,12 @@ public class AppManager {
 
         if (PreferenceManager.getShareInstance().getDeveloperMode()) {
 //            CLIService.getShareInstance().start();
+        }
+
+        try {
+            ContactNotifier.getSharedInstance(activity, did);
+        } catch (CarrierException e) {
+            e.printStackTrace();
         }
     }
 

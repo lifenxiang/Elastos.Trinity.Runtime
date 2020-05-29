@@ -366,7 +366,7 @@ public class ContactNotifierPlugin extends TrinityPlugin {
                 return;
             }
 
-            RemoteNotificationRequest remoteNotificationRequest = RemoteNotificationRequest.fromJSONObject(notificationAsJson);
+            RemoteNotificationRequest remoteNotificationRequest = RemoteNotificationRequest.fromJSONObject(notificationAsJson, appId);
 
             contact.sendRemoteNotification(remoteNotificationRequest);
 
