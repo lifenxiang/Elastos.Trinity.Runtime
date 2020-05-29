@@ -744,7 +744,7 @@ public class AppBasePlugin extends TrinityPlugin {
 
     @Override
     public Boolean shouldAllowNavigation(String url) {
-        if (appManager.isLauncher(this.appId)) {
+        if (appManager.isLauncher(this.appId) || appManager.isDIDSession(this.appId)) {
             return true;
         }
         else if (checkIntentScheme(url)) {
@@ -761,7 +761,7 @@ public class AppBasePlugin extends TrinityPlugin {
 
     @Override
     public Boolean shouldAllowRequest(String url) {
-        if (appManager.isLauncher(this.appId)) {
+        if (appManager.isLauncher(this.appId) || appManager.isDIDSession(this.appId)) {
             return true;
         }
         else if (checkIntentScheme(url)) {
