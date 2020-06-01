@@ -85,7 +85,7 @@ public class AppManager {
     private AppPathInfo pathInfo = null;
 
 //    private AppInfo didsessionAppInfo = null;
-    private Boolean isSignIning = true;
+    private Boolean signIning = true;
     private String did = null;
 
     private AppInstaller shareInstaller = new AppInstaller();
@@ -97,6 +97,7 @@ public class AppManager {
     protected LinkedHashMap<String, Boolean> visibles = new LinkedHashMap<String, Boolean>();
 
     private AppInfo launcherInfo;
+    private AppInfo diddessionInfo;
 
     private class InstallInfo {
         String uri;
@@ -161,7 +162,6 @@ public class AppManager {
     }
 
     AppManager(WebViewActivity activity) {
-
         AppManager.appManager = this;
         this.activity = activity;
 
@@ -171,8 +171,6 @@ public class AppManager {
         dbAdapter = new MergeDBAdapter(activity);
 
         shareInstaller.init(basePathInfo.appsPath, basePathInfo.tempPath);
-
-//        didsessionAppInfo = saveDIDSessionApp();
 
         refreashInfos();
         getLauncherInfo();
@@ -251,7 +249,6 @@ public class AppManager {
 
     private void clean() {
         did = null;
-        pathInfo = null;
         curFragment = null;
         appList = null;
         lastList = new ArrayList<String>();
@@ -266,10 +263,10 @@ public class AppManager {
      * Signs in to a new DID session.
      */
     public void signIn() throws Exception {
-        if (isSignIning) {
+        if (signIning) {
+            signIning = false;
             closeDIDSession();
             reInit();
-            isSignIning = false;
         }
     }
 
@@ -277,8 +274,8 @@ public class AppManager {
      * Signs out from a DID session. All apps and services are closed, and launcher goes back to the DID session app prompt.
      */
     public void signOut() throws Exception {
-        if (!isSignIning) {
-            isSignIning = true;
+        if (!signIning) {
+            signIning = true;
             closeAll();
             clean();
             startDIDSession();
@@ -286,7 +283,7 @@ public class AppManager {
     }
 
     public boolean isSignIning() {
-        return isSignIning;
+        return signIning;
     }
 
     public String getDIDSessionId() {
@@ -297,7 +294,10 @@ public class AppManager {
     }
 
     public AppInfo getDIDSessionAppInfo() {
-        return dbAdapter.getAppInfo(getDIDSessionId());
+        if (diddessionInfo == null) {
+            diddessionInfo = dbAdapter.getAppInfo(getDIDSessionId());
+        }
+        return diddessionInfo;
     }
 
     public void startDIDSession() {
@@ -317,8 +317,6 @@ public class AppManager {
 
         IdentityEntry entry = DIDSessionManager.getSharedInstance().getSignedInIdentity();
         did = entry.didString;
-
-        isSignIning = false;
     }
 
     public String getDID() {
@@ -396,7 +394,6 @@ public class AppManager {
 
     private void saveLauncher() {
         try {
-
             File launcher = new File(basePathInfo.appsPath, AppManager.LAUNCHER);
             if (launcher.exists()) {
                 AppInfo info = shareInstaller.getInfoByManifest(basePathInfo.appsPath + AppManager.LAUNCHER + "/", 1);
@@ -432,6 +429,7 @@ public class AppManager {
                 }
                 shareInstaller.renameFolder(didsession, basePathInfo.appsPath, getDIDSessionId());
                 dbAdapter.addAppInfo(info, true);
+                diddessionInfo = null;
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -511,10 +509,6 @@ public class AppManager {
     }
 
     public AppInfo getLauncherInfo() {
-        if (isSignIning) {
-            return getDIDSessionAppInfo();
-        }
-
         if (launcherInfo == null) {
             launcherInfo = dbAdapter.getLauncherInfo();
         }
@@ -966,7 +960,7 @@ public class AppManager {
     }
 
     public void sendMessage(String toId, int type, String msg, String fromId) throws Exception {
-        if (isSignIning) return;
+        if (signIning) return;
 
         WebViewFragment fragment = getFragmentById(toId);
         if (fragment != null) {
