@@ -4,8 +4,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class IdentityAvatar {
-    String contentType;
-    String base64ImageData;
+    public String contentType;
+    public String base64ImageData;
 
     public IdentityAvatar(String contentType, String base64ImageData) {
         this.contentType = contentType;

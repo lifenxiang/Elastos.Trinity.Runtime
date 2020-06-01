@@ -63,9 +63,17 @@
              String[] whereArgs = {entry.didStoreId, entry.didString};
 
              ContentValues contentValues = new ContentValues();
-             // For now only NAME can change, as STORE ID and DID STRING are use as unique IDs
+             // For now only NAME can change, as STORE ID and DID STRING are used as unique IDs
              contentValues.put(DatabaseHelper.DIDSESSION_NAME, entry.name);
-             return db.update(DatabaseHelper.DIDSESSIONS_TABLE, contentValues, where, whereArgs );
+             if (entry.avatar != null) {
+                 contentValues.put(DatabaseHelper.DIDSESSION_AVATAR_CONTENTTYPE, entry.avatar.contentType);
+                 contentValues.put(DatabaseHelper.DIDSESSION_AVATAR_DATA, entry.avatar.base64ImageData);
+             }
+             else {
+                 contentValues.put(DatabaseHelper.DIDSESSION_AVATAR_CONTENTTYPE, (String) null);
+                 contentValues.put(DatabaseHelper.DIDSESSION_AVATAR_DATA, (String) null);
+             }
+             return db.update(DatabaseHelper.DIDSESSIONS_TABLE, contentValues, where, whereArgs);
          }
          else {
              // Insert
@@ -74,6 +82,10 @@
              contentValues.put(DatabaseHelper.DIDSESSION_DIDSTRING, entry.didString);
              contentValues.put(DatabaseHelper.DIDSESSION_NAME, entry.name);
              contentValues.put(DatabaseHelper.DIDSESSION_SIGNEDIN, 0);
+             if (entry.avatar != null) {
+                 contentValues.put(DatabaseHelper.DIDSESSION_AVATAR_CONTENTTYPE, entry.avatar.contentType);
+                 contentValues.put(DatabaseHelper.DIDSESSION_AVATAR_DATA, entry.avatar.base64ImageData);
+             }
              return db.insert(DatabaseHelper.DIDSESSIONS_TABLE, null, contentValues);
          }
      }
@@ -87,8 +99,7 @@
 
      public ArrayList<IdentityEntry> getDIDSessionIdentityEntries() throws Exception {
          SQLiteDatabase db = helper.getWritableDatabase();
-         String[] columns = {DatabaseHelper.DIDSESSION_DIDSTOREID, DatabaseHelper.DIDSESSION_DIDSTRING, DatabaseHelper.DIDSESSION_NAME, DatabaseHelper.DIDSESSION_SIGNEDIN, DatabaseHelper.DIDSESSION_AVATAR_CONTENTTYPE, DatabaseHelper.DIDSESSION_AVATAR_DATA};
-         Cursor cursor = db.query(DatabaseHelper.DIDSESSIONS_TABLE, columns, null, null,null,null,null);
+         Cursor cursor = db.query(DatabaseHelper.DIDSESSIONS_TABLE, null, null, null,null,null,null);
 
          ArrayList<IdentityEntry> entries = new ArrayList();
          while (cursor.moveToNext()) {
