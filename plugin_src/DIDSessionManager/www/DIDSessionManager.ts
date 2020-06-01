@@ -89,9 +89,9 @@ class DIDSessionManagerImpl implements DIDSessionManagerPlugin.DIDSessionManager
         });
     }
 
-    authenticate(payload: Object, expiresIn?: Number): Promise<String> {
+    authenticate(nonce: string, realm: string, expiresIn?: Number): Promise<string> {
         return new Promise((resolve, reject) => {
-            exec((ret: { jwtToken: String } ) =>{
+            exec((ret: { jwtToken: string } ) =>{
                 if (ret.jwtToken)
                     resolve(ret.jwtToken);
                 else
@@ -99,7 +99,7 @@ class DIDSessionManagerImpl implements DIDSessionManagerPlugin.DIDSessionManager
             }, err =>{
                 console.error("Error while calling DIDSessionManagerPlugin.authenticate()", err);
                 reject(err);
-            }, 'DIDSessionManagerPlugin', 'authenticate', [payload, expiresIn]);
+            }, 'DIDSessionManagerPlugin', 'authenticate', [nonce, realm, expiresIn]);
         });
     }
 }

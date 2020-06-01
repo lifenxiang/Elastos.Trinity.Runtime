@@ -97,19 +97,21 @@ declare namespace DIDSessionManagerPlugin {
          * Using DIDs, users need to proove that they own a DID sting first, so that all further communications
          * with a backend service can be based on that DID. 
          * 
-         * For this, the backend service may provide a random nonce and other custom data it needs, and this method uses the signed in user's DID
-         * to sign this data into a standadized payload, then returns a JWT. This JWT should be sent to the backend
-         * service, who can check its validity and confirm the DID.
+         * For this, the backend service may provide a random nonce, and this method uses the signed in user's DID
+         * to sign this data into a standadized W3C verifiable presentation payload similarly to the credaccess intent, 
+         * then returns a JWT. This JWT should be sent to the backend service, who can check its validity 
+         * and confirm the DID.
          * 
          * After that phase, it's up to the backend sevrice to use its own way to secure communications. Usually,
          * emitting a short-lived JWT access token to the user and using this token in for all exchanges is a 
          * recommended way.
          * 
-         * @param payload Custom JSON-encodable object that contains backend service's information.
+         * @param nonce Random nonce that will be returned in the JWT to prevent replay attacks.
+         * @param realm Custom app information about the calling scope to better identify this request and response.
          * @param expiresIn Number of minutes after which the generated token will expire. Defaults to 5 minutes.
          * 
-         * @returns A DID-signed JWT token that contains the given payload encapsulated in an auth-specific format (to NOT let apps automatically sign all kind of documents)
+         * @returns A DID-signed JWT token that contains the a W3C DID Verifiable Presentation in a "presentation" field.
          */
-        authenticate(payload: Object, expiresIn?: Number): Promise<String>;
+        authenticate(nonce: string, realm: string, expiresIn?: Number): Promise<string>;
     }
 }

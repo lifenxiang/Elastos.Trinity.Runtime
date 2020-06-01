@@ -2,10 +2,13 @@ package org.elastos.trinity.runtime.didsessions;
 
 import android.util.Log;
 
+import org.elastos.did.DID;
 import org.elastos.did.DIDAdapter;
 import org.elastos.did.DIDBackend;
 import org.elastos.did.DIDDocument;
 import org.elastos.did.DIDStore;
+import org.elastos.did.VerifiableCredential;
+import org.elastos.did.VerifiablePresentation;
 import org.elastos.did.jwt.Claims;
 import org.elastos.did.jwt.Header;
 import org.elastos.did.jwt.JwsHeader;
@@ -91,7 +94,7 @@ public class DIDSessionManager {
         appManager.signOut();
     }
 
-    public void authenticate(JSONObject payload, int expiresIn, OnAuthenticationListener listener) throws Exception {
+    public void authenticate(String nonce, String realm, int expiresIn, OnAuthenticationListener listener) throws Exception {
         // Make sure there is a signed in user
         IdentityEntry signedInIdentity = DIDSessionManager.getSharedInstance().getSignedInIdentity();
         if (signedInIdentity == null)
@@ -127,13 +130,23 @@ public class DIDSessionManager {
                             listener.onJWTCreated(null);
                         }
                         else {
-                            // Create the JWT payload
+                            // Create an empty presentation just to pass the DID string but nothing else
+                            DID did = new DID(signedInIdentity.didString);
+
+                            // Empty list of credentials
+                            VerifiablePresentation.Builder builder = VerifiablePresentation.createFor(did, didStore);
+                            VerifiableCredential[] credsArray = new VerifiableCredential[0];
+                            VerifiablePresentation presentation = builder.credentials(credsArray)
+                                    .nonce(nonce)
+                                    .realm(realm)
+                                    .seal(genericPasswordInfo.password);
+
+                            // Generate a JWT payload that holds the same format as the "credaccess" scheme intent
+                            JSONObject presentationAsJsonObj = new JSONObject(presentation.toString());
                             JSONObject jwtPayloadJson = new JSONObject();
-                            // Add a - useless - clear marker of this auth service so nobody can confuse this signed payload
-                            // with another document signed by a user (to make sure attackers don't use this method to sign any data)
-                            jwtPayloadJson.put("purpose", "authenticate");
-                            jwtPayloadJson.put("origin", "trinity");
-                            jwtPayloadJson.put("payload", payload);
+                            jwtPayloadJson.put("presentation", presentationAsJsonObj);
+                            jwtPayloadJson.put("nonce", nonce);
+                            jwtPayloadJson.put("realm", realm);
 
                             // Sign as JWT
                             JwsHeader header = JwtBuilder.createJwsHeader();

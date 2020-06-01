@@ -145,15 +145,21 @@ public class DIDSessionManagerPlugin extends TrinityPlugin {
     }
 
     private void authenticate(JSONArray args, CallbackContext callbackContext) throws Exception {
-        JSONObject payload = args.isNull(0) ? null : args.getJSONObject(0);
-        if (payload == null) {
-            callbackContext.error("Payload can't be null");
+        String nonce = args.isNull(0) ? null : args.getString(0);
+        if (nonce == null) {
+            callbackContext.error("A nonce string must be provided");
             return;
         }
 
-        int expiresIn = args.isNull(1) ? 5 : args.getInt(1);
+        String realm = args.isNull(1) ? null : args.getString(1);
+        if (realm == null) {
+            callbackContext.error("A realm string must be provided");
+            return;
+        }
 
-        DIDSessionManager.getSharedInstance().authenticate(payload, expiresIn, jwtToken -> {
+        int expiresIn = args.isNull(2) ? 5 : args.getInt(2);
+
+        DIDSessionManager.getSharedInstance().authenticate(nonce, realm, expiresIn, jwtToken -> {
             try {
                 JSONObject jsonObj = new JSONObject();
                 jsonObj.put("jwtToken", jwtToken);
