@@ -92,7 +92,7 @@ import java.util.Date;
          String[] whereArgs = {key, appId};
          String[] columns = {DatabaseHelper.NOTIFICATION_ID, DatabaseHelper.KEY,
                  DatabaseHelper.TITLE, DatabaseHelper.APP_ID, DatabaseHelper.URL,
-                 DatabaseHelper.SENT_DATE};
+                 DatabaseHelper.EMITTER, DatabaseHelper.SENT_DATE};
 
          Cursor cursor = db.query(DatabaseHelper.NOTIFICATION_TABLE, columns, where, whereArgs,null,null,null);
          if (cursor.moveToNext()) {
@@ -130,7 +130,7 @@ import java.util.Date;
 
          String[] columns = {DatabaseHelper.NOTIFICATION_ID, DatabaseHelper.KEY,
                             DatabaseHelper.TITLE, DatabaseHelper.APP_ID, DatabaseHelper.URL,
-                            DatabaseHelper.SENT_DATE};
+                            DatabaseHelper.EMITTER, DatabaseHelper.SENT_DATE};
 
          ArrayList<Notification> notifications = new ArrayList<>();
          Cursor cursor = db.query(DatabaseHelper.NOTIFICATION_TABLE, columns, null, null,null,null,DatabaseHelper.SENT_DATE + " DESC");

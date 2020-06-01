@@ -27,6 +27,7 @@ public class Notification {
         notification.title = cursor.getString(cursor.getColumnIndex(DatabaseHelper.TITLE));
         notification.appId = cursor.getString(cursor.getColumnIndex(DatabaseHelper.APP_ID));
         notification.url = cursor.getString(cursor.getColumnIndex(DatabaseHelper.URL));
+        notification.emitter = cursor.getString(cursor.getColumnIndex(DatabaseHelper.EMITTER));
         notification.sent_date = cursor.getString(cursor.getColumnIndex(DatabaseHelper.SENT_DATE));
         return notification;
     }
@@ -39,6 +40,7 @@ public class Notification {
             obj.put("title", title);
             obj.put("appId", appId);
             obj.put("url", url);
+            obj.put("emitter", emitter);
             obj.put("sent_date", sent_date);
             return obj;
         }
