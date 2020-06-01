@@ -5,9 +5,9 @@ import org.json.JSONObject;
 
 public class IdentityAvatar {
     String contentType;
-    byte[] base64ImageData;
+    String base64ImageData;
 
-    public IdentityAvatar(String contentType, byte[] base64ImageData) {
+    public IdentityAvatar(String contentType, String base64ImageData) {
         this.contentType = contentType;
         this.base64ImageData = base64ImageData;
     }
@@ -31,7 +31,7 @@ public class IdentityAvatar {
         try {
             IdentityAvatar avatar = new IdentityAvatar(
                     jsonObj.getString("contentType"),
-                    (byte[]) jsonObj.get("base64ImageData"));
+                    jsonObj.getString("base64ImageData"));
 
             return avatar;
         } catch (JSONException e) {

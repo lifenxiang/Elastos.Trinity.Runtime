@@ -50,6 +50,9 @@
  * declare let contactNotifier: ContactNotifierPlugin.ContactNotifier;
  */
 declare namespace ContactNotifierPlugin {
+    /**
+     * Structure used to send a remote notification to a contact.
+     */
     type RemoteNotificationRequest = {
         /** Identification key used to overwrite a previous notification if it has the same key. */
         key?: string,
@@ -59,6 +62,22 @@ declare namespace ContactNotifierPlugin {
         url?: string
     }
 
+    /**
+     * Structure holding information about a contact avater picture.
+     */
+    type ContactAvatar = {
+        /** Picture content type: "image/jpeg" or "image/png" */
+        contentType: string;
+        /** Raw picture bytes encoded to a base64 string */
+        base64ImageData: string;
+    }
+
+    /**
+     * Contact entity that represents a previously added contact. 
+     * 
+     * A contact in this contact notifier is mainly a pair of DID/Carrier address, but it also
+     * holds optional references to the contact name and avatar, for display purpose.
+     */
     interface Contact {
         /**
          * Returns the permanent DID string of this contact. 
@@ -70,6 +89,31 @@ declare namespace ContactNotifierPlugin {
          * Returns the permanent carrier user ID of this contact.
          */
         getCarrierUserID(): string;
+
+        /**
+         * Returns the contact name.
+         */
+        getName(): string;
+
+        /**
+         * Updates the contact name.
+         * 
+         * @param name The new contact name, or null to clear the current one.
+         */
+        setName(name: string): Promise<void>;
+
+        /**
+         * Returns a ContactAvatar object representing the contact profile picture, or null if there is no
+         * such information available.
+         */
+        getAvatar(): ContactAvatar;
+
+        /**
+         * Sets the contact avatar picture.
+         * 
+         * @param avatar The new contact avatar picture, or null to clear the current one.
+         */
+        setAvatar(avatar: ContactAvatar): Promise<void>;
 
         /**
          * Sends a notification to the notification manager of a distant friend's Trinity instance.

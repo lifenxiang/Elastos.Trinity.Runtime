@@ -99,16 +99,9 @@
 
      public IdentityEntry getDIDSessionSignedInIdentity() throws Exception {
          SQLiteDatabase db = helper.getWritableDatabase();
-         String[] columns = {
-                 DatabaseHelper.DIDSESSION_DIDSTOREID,
-                 DatabaseHelper.DIDSESSION_DIDSTRING,
-                 DatabaseHelper.DIDSESSION_NAME,
-                 DatabaseHelper.DIDSESSION_AVATAR_CONTENTTYPE,
-                 DatabaseHelper.DIDSESSION_AVATAR_DATA
-         };
          String where = DatabaseHelper.DIDSESSION_SIGNEDIN + "=?";
          String[] whereArgs = {"1"};
-         Cursor cursor = db.query(DatabaseHelper.DIDSESSIONS_TABLE, columns, where, whereArgs,null,null,null);
+         Cursor cursor = db.query(DatabaseHelper.DIDSESSIONS_TABLE, null, where, whereArgs,null,null,null);
 
          if (cursor.moveToNext()) {
              return didSessionIdentityFromCursor(cursor);
@@ -145,7 +138,7 @@
          String didString = cursor.getString(cursor.getColumnIndex(DatabaseHelper.DIDSESSION_DIDSTRING));
          String name = cursor.getString(cursor.getColumnIndex(DatabaseHelper.DIDSESSION_NAME));
          String avatarContentType = cursor.getString(cursor.getColumnIndex(DatabaseHelper.DIDSESSION_AVATAR_CONTENTTYPE));
-         byte[] avatarImageData = cursor.getBlob(cursor.getColumnIndex(DatabaseHelper.DIDSESSION_AVATAR_DATA));
+         String avatarImageData = cursor.getString(cursor.getColumnIndex(DatabaseHelper.DIDSESSION_AVATAR_DATA));
 
          IdentityAvatar avatar = null;
          if (avatarContentType != null && avatarImageData != null) {

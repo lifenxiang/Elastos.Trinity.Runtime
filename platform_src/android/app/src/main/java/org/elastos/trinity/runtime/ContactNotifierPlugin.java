@@ -30,6 +30,7 @@ import org.elastos.carrier.Carrier;
 import org.elastos.carrier.exceptions.CarrierException;
 import org.elastos.trinity.runtime.TrinityPlugin;
 import org.elastos.trinity.runtime.contactnotifier.Contact;
+import org.elastos.trinity.runtime.contactnotifier.ContactAvatar;
 import org.elastos.trinity.runtime.contactnotifier.ContactNotifier;
 import org.elastos.trinity.runtime.contactnotifier.InvitationRequestsMode;
 import org.elastos.trinity.runtime.contactnotifier.OnlineStatus;
@@ -96,6 +97,12 @@ public class ContactNotifierPlugin extends TrinityPlugin {
                     break;
                 case "contactGetOnlineStatus":
                     this.contactGetOnlineStatus(args ,callbackContext);
+                    break;
+                case "contactSetName":
+                    this.contactSetName(args, callbackContext);
+                    break;
+                case "contactSetAvatar":
+                    this.contactSetAvatar(args, callbackContext);
                     break;
 
                 default:
@@ -420,6 +427,62 @@ public class ContactNotifierPlugin extends TrinityPlugin {
         catch (Exception e) {
             e.printStackTrace();
             sendError(callbackContext, "contactGetOnlineStatus", e.getLocalizedMessage());
+        }
+    }
+
+    private void contactSetName(JSONArray args, CallbackContext callbackContext) throws Exception {
+        try {
+            JSONObject contactAsJson = args.getJSONObject(0);
+            String name = args.isNull(1) ? null : args.getString(1);
+
+            Contact contact = getNotifier().resolveContact(contactDIDFromJSON(contactAsJson));
+            if (contact == null) {
+                sendError(callbackContext, "contactSetName", "Invalid contact object");
+                return;
+            }
+
+            contact.setName(name);
+
+            JSONObject result = new JSONObject();
+            sendSuccess(callbackContext, result);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            sendError(callbackContext, "contactSetName", e.getLocalizedMessage());
+        }
+    }
+
+    private void contactSetAvatar(JSONArray args, CallbackContext callbackContext) throws Exception {
+        try {
+            JSONObject contactAsJson = args.getJSONObject(0);
+            JSONObject avatarAsJson = args.isNull(1) ? null : args.getJSONObject(1);
+
+            Contact contact = getNotifier().resolveContact(contactDIDFromJSON(contactAsJson));
+            if (contact == null) {
+                sendError(callbackContext, "contactSetName", "Invalid contact object");
+                return;
+            }
+
+            ContactAvatar avatar;
+            if (avatarAsJson != null) {
+                avatar = ContactAvatar.fromJsonObject(avatarAsJson);
+                if (avatar == null) {
+                    sendError(callbackContext, "contactSetAvatar", "Invalid contact avatar object");
+                    return;
+                }
+            }
+            else {
+                avatar =  null;
+            }
+
+            contact.setAvatar(avatar);
+
+            JSONObject result = new JSONObject();
+            sendSuccess(callbackContext, result);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            sendError(callbackContext, "contactSetAvatar", e.getLocalizedMessage());
         }
     }
 

@@ -11,6 +11,8 @@ public class Contact {
 
     public String did;
     public String carrierUserID;
+    public String name;
+    public ContactAvatar avatar;
     public boolean notificationsBlocked;
 
     /**
@@ -22,6 +24,8 @@ public class Contact {
         contact.did = cursor.getString(cursor.getColumnIndex(DatabaseHelper.DID));
         contact.carrierUserID = cursor.getString(cursor.getColumnIndex(DatabaseHelper.CARRIER_USER_ID));
         contact.notificationsBlocked = cursor.getInt(cursor.getColumnIndex(DatabaseHelper.NOTIFICATIONS_BLOCKED)) == 1;
+        contact.name = cursor.getString(cursor.getColumnIndex(DatabaseHelper.NAME));
+        contact.avatar = ContactAvatar.fromDatabaseCursor(cursor);
         return contact;
     }
 
@@ -31,6 +35,8 @@ public class Contact {
             obj.put("did", did);
             obj.put("carrierUserID", carrierUserID);
             obj.put("notificationsBlocked", notificationsBlocked);
+            obj.put("name", name);
+            obj.put("avatar", avatar.asJsonObject());
             return obj;
         }
         catch (JSONException e) {
@@ -65,5 +71,15 @@ public class Contact {
      */
     public OnlineStatus getOnlineStatus() {
         return notifier.onlineStatusFromCarrierStatus(notifier.carrierHelper.getFriendOnlineStatus(carrierUserID));
+    }
+
+    public void setName(String name) {
+        this.name = name;
+        notifier.dbAdapter.updateContactName(notifier.didSessionDID, did, this.name);
+    }
+
+    public void setAvatar(ContactAvatar avatar) {
+        this.avatar = avatar;
+        notifier.dbAdapter.updateContactAvatar(notifier.didSessionDID, did, this.avatar);
     }
 }

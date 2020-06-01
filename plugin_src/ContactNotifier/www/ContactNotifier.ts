@@ -25,6 +25,8 @@ let exec = cordova.exec;
 class ContactImpl implements ContactNotifierPlugin.Contact {
     did: string = null;
     carrierUserID: string = null;
+    name: string = null;
+    avatar: ContactNotifierPlugin.ContactAvatar = null;
 
     getDID(): string {
         return this.did;
@@ -32,6 +34,38 @@ class ContactImpl implements ContactNotifierPlugin.Contact {
 
     getCarrierUserID(): string {
         return this.carrierUserID;
+    }
+
+    getName(): string {
+        return this.name;
+    }
+
+    setName(name: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            exec(ret => {
+                this.name = name;
+                resolve();
+            }, err =>{
+                console.error("Error while calling ContactNotifierPlugin.setName()", err);
+                reject(err);
+            }, 'ContactNotifierPlugin', 'contactSetName', [this, name]);
+        });
+    }
+
+    getAvatar(): ContactNotifierPlugin.ContactAvatar {
+        return this.avatar;
+    }
+
+    setAvatar(avatar: ContactNotifierPlugin.ContactAvatar): Promise<void> {
+        return new Promise((resolve, reject) => {
+            exec(ret => {
+                this.avatar = avatar;
+                resolve();
+            }, err =>{
+                console.error("Error while calling ContactNotifierPlugin.setAvatar()", err);
+                reject(err);
+            }, 'ContactNotifierPlugin', 'contactSetAvatar', [this, avatar]);
+        });
     }
 
     sendRemoteNotification(remoteNotification: ContactNotifierPlugin.RemoteNotificationRequest): Promise<void> {

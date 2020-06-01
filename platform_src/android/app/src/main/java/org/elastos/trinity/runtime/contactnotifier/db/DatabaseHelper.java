@@ -23,11 +23,14 @@
 package org.elastos.trinity.runtime.contactnotifier.db;
 
 import android.content.Context;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
  public class DatabaseHelper extends SQLiteOpenHelper {
-     private static final int DATABASE_VERSION = 1;
+     private static final int DATABASE_VERSION = 2;
+     private static final String LOG_TAG = "ConNotDBHelper";
 
      // Tables
      private static final String DATABASE_NAME = "contactnotifier.db";
@@ -45,6 +48,9 @@ import android.database.sqlite.SQLiteOpenHelper;
      public static final String ADDED_DATE = "added";
      public static final String SENT_DATE = "sent";
      public static final String RECEIVED_DATE = "received";
+     public static final String NAME = "name";
+     public static final String AVATAR_CONTENTTYPE = "avatar_contenttype";
+     public static final String AVATAR_DATA = "avatar_data";
 
      public static final String KEY = "key";
      public static final String VALUE = "value";
@@ -65,7 +71,10 @@ import android.database.sqlite.SQLiteOpenHelper;
                  DID + " varchar(128), " +
                  CARRIER_USER_ID + " varchar(128), " + // Permanent friend user id to talk (notifications) to him
                  NOTIFICATIONS_BLOCKED + " integer(1), " + // Whether this contact can send notifications to current user or not
-                 ADDED_DATE + " date)";
+                 ADDED_DATE + " date, " +
+                 NAME + " varchar(128), " +
+                 AVATAR_CONTENTTYPE + " varchar(32), " +
+                 AVATAR_DATA + " text)";
          db.execSQL(contactsSQL);
 
          // SENT INVITATIONS
@@ -89,6 +98,27 @@ import android.database.sqlite.SQLiteOpenHelper;
 
      @Override
      public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+         // Use the if (old < N) format to make sure users get all upgrades even if they directly upgrade from vN to v(N+5)
+         if (oldVersion < 2) {
+             Log.d(LOG_TAG, "Upgrading database to v2");
+             upgradeToV2(db);
+         }
+     }
+
+     // 20200601 - Added contact name and avatar
+     private void upgradeToV2(SQLiteDatabase db) {
+         try {
+             String strSQL = "ALTER TABLE " + CONTACTS_TABLE + " ADD COLUMN " + NAME + " varchar(128); ";
+             db.execSQL(strSQL);
+
+             strSQL = "ALTER TABLE " + CONTACTS_TABLE + " ADD COLUMN " + AVATAR_CONTENTTYPE + " varchar(32); ";
+             db.execSQL(strSQL);
+
+             strSQL = "ALTER TABLE " + CONTACTS_TABLE + " ADD COLUMN " + AVATAR_DATA + " text; ";
+             db.execSQL(strSQL);
+         } catch (SQLException e) {
+             e.printStackTrace();
+         }
      }
 
      @Override

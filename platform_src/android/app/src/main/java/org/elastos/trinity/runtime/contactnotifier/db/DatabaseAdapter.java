@@ -28,6 +28,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import org.elastos.trinity.runtime.contactnotifier.Contact;
+import org.elastos.trinity.runtime.contactnotifier.ContactAvatar;
 import org.elastos.trinity.runtime.contactnotifier.ContactNotifier;
 
 import java.util.ArrayList;
@@ -73,14 +74,38 @@ import java.util.Date;
          db.update(DatabaseHelper.CONTACTS_TABLE, contentValues, where, whereArgs );
      }
 
+     public void updateContactName(String didSessionDID, String did, String name) {
+         SQLiteDatabase db = helper.getWritableDatabase();
+
+         String where = DatabaseHelper.DID_SESSION_DID + "=? AND " + DatabaseHelper.DID + "=?";
+         String[] whereArgs = {didSessionDID, did};
+
+         ContentValues contentValues = new ContentValues();
+         contentValues.put(DatabaseHelper.NAME, name);
+
+         db.update(DatabaseHelper.CONTACTS_TABLE, contentValues, where, whereArgs );
+     }
+
+     public void updateContactAvatar(String didSessionDID, String did, ContactAvatar avatar) {
+         SQLiteDatabase db = helper.getWritableDatabase();
+
+         String where = DatabaseHelper.DID_SESSION_DID + "=? AND " + DatabaseHelper.DID + "=?";
+         String[] whereArgs = {didSessionDID, did};
+
+         ContentValues contentValues = new ContentValues();
+         contentValues.put(DatabaseHelper.AVATAR_CONTENTTYPE, avatar.contentType);
+         contentValues.put(DatabaseHelper.AVATAR_DATA, avatar.base64ImageData);
+
+         db.update(DatabaseHelper.CONTACTS_TABLE, contentValues, where, whereArgs );
+     }
+
      public Contact getContactByDID(String didSessionDID, String contactDID) {
          SQLiteDatabase db = helper.getWritableDatabase();
 
          String where = DatabaseHelper.DID_SESSION_DID + "=? AND " + DatabaseHelper.DID + "=?";
          String[] whereArgs = {didSessionDID, contactDID};
-         String[] columns = {DatabaseHelper.DID, DatabaseHelper.CARRIER_USER_ID, DatabaseHelper.NOTIFICATIONS_BLOCKED, DatabaseHelper.ADDED_DATE};
 
-         Cursor cursor = db.query(DatabaseHelper.CONTACTS_TABLE, columns, where, whereArgs,null,null,null);
+         Cursor cursor = db.query(DatabaseHelper.CONTACTS_TABLE, null, where, whereArgs,null,null,null);
          if (cursor.moveToNext()) {
              return Contact.fromDatabaseCursor(notifier, cursor);
          }
@@ -93,9 +118,9 @@ import java.util.Date;
 
          String where = DatabaseHelper.DID_SESSION_DID + "=? AND " + DatabaseHelper.CARRIER_USER_ID + "=?";
          String[] whereArgs = {didSessionDID, carrierUserID};
-         String[] columns = {DatabaseHelper.DID, DatabaseHelper.CARRIER_USER_ID, DatabaseHelper.NOTIFICATIONS_BLOCKED, DatabaseHelper.ADDED_DATE};
+         //String[] columns = {DatabaseHelper.DID, DatabaseHelper.CARRIER_USER_ID, DatabaseHelper.NOTIFICATIONS_BLOCKED, DatabaseHelper.ADDED_DATE};
 
-         Cursor cursor = db.query(DatabaseHelper.CONTACTS_TABLE, columns, where, whereArgs,null,null,null);
+         Cursor cursor = db.query(DatabaseHelper.CONTACTS_TABLE, null, where, whereArgs,null,null,null);
          if (cursor.moveToNext()) {
              Contact contact = Contact.fromDatabaseCursor(notifier, cursor);
              return contact;

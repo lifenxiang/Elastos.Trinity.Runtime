@@ -25,9 +25,11 @@
  import android.content.Context;
  import android.database.sqlite.SQLiteDatabase;
  import android.database.sqlite.SQLiteOpenHelper;
+ import android.util.Log;
 
  public class DatabaseHelper extends SQLiteOpenHelper {
-     private static final int DATABASE_VERSION = 1;
+     private static final int DATABASE_VERSION = 2;
+     private static final String LOG_TAG = "DIDSessDBHelper";
 
      // Tables
      private static final String DATABASE_NAME = "didsessions.db";
@@ -51,18 +53,34 @@
 
      @Override
      public void onCreate(SQLiteDatabase db) {
+         createDIDSessionsTable(db);
+     }
+
+     private void createDIDSessionsTable(SQLiteDatabase db) {
          String strSQL =  "create table " + DIDSESSIONS_TABLE + "(tid integer primary key autoincrement, " +
                  DIDSESSION_DIDSTOREID + " varchar(32) NOT NULL, " +
                  DIDSESSION_DIDSTRING + " varchar(128) NOT NULL, " +
                  DIDSESSION_NAME + " varchar(128), " +
                  DIDSESSION_SIGNEDIN + " integer, "+
                  DIDSESSION_AVATAR_CONTENTTYPE + " varchar(32), " +
-                 DIDSESSION_AVATAR_DATA + " blob)";
+                 DIDSESSION_AVATAR_DATA + " text)";
          db.execSQL(strSQL);
      }
 
      @Override
      public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+         // Use the if (old < N) format to make sure users get all upgrades even if they directly upgrade from vN to v(N+5)
+         if (oldVersion < 2) {
+             Log.d(LOG_TAG, "Upgrading database to v2");
+             upgradeToV2(db);
+         }
+     }
+
+     // 20200601 - Changed avatar format from blob to text
+     private void upgradeToV2(SQLiteDatabase db) {
+         // Delete did sessions tazble and create a new one.
+         db.execSQL("DROP TABLE IF EXISTS " + DIDSESSIONS_TABLE);
+         createDIDSessionsTable(db);
      }
 
      @Override
