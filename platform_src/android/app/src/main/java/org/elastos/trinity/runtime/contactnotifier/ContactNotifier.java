@@ -396,7 +396,7 @@ public class ContactNotifier {
         // Notify the listeners
         notifyInvitationAcceptedByFriend(contact);
 
-        String targetUrl = "https://scheme.elastos.org/viewfrien?did="+invitation.did;
+        String targetUrl = "https://scheme.elastos.org/viewfriend?did="+invitation.did;
         // TODO: resolve DID document, find firstname if any, and adjust the notification to include the firstname
         sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, "Your friend has accepted your invitation. Touch to view details.", targetUrl, FRIENDS_APP_PACKAGE_ID);
     }
