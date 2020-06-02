@@ -41,7 +41,7 @@
     </platform>
 
     <preference name="AndroidLaunchMode" value="singleTask" />
-    <preference name="SplashShowOnlyFirstTime" value="false" />
+    <preference name="SplashShowOnlyFirstTime" value="true" />
     <preference name="ShowSplashScreenSpinner" value="false" />
     <preference name="SplashMaintainAspectRatio" value="true" />
 
