@@ -87,12 +87,6 @@ public class WebViewActivity extends FragmentActivity {
         setContentView(R.layout.activity_view);
         appManager = new AppManager(this);
 
-        try {
-            ContactNotifier.getSharedInstance(this, "did:elastos:FIXME"); // TODO - FIXME! @dongxiao - should be first called when a DID session starts, with a real DID!
-        } catch (CarrierException e) {
-            e.printStackTrace();
-        }
-
         getIntentUri();
 
 //        gestureDetector = new GestureDetector(this, onGestureListener);

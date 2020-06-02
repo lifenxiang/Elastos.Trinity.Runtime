@@ -1,7 +1,9 @@
 package org.elastos.trinity.runtime.contactnotifier;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.util.Log;
 
 import org.elastos.carrier.Carrier;
@@ -9,6 +11,12 @@ import org.elastos.carrier.ConnectionStatus;
 import org.elastos.carrier.FriendInfo;
 import org.elastos.carrier.PresenceStatus;
 import org.elastos.carrier.exceptions.CarrierException;
+import org.elastos.did.DID;
+import org.elastos.did.DIDDocument;
+import org.elastos.did.VerifiableCredential;
+import org.elastos.did.exception.DIDException;
+import org.elastos.did.exception.DIDResolveException;
+import org.elastos.trinity.plugins.did.DIDPlugin;
 import org.elastos.trinity.runtime.contactnotifier.comm.CarrierHelper;
 import org.elastos.trinity.runtime.contactnotifier.db.DatabaseAdapter;
 import org.elastos.trinity.runtime.contactnotifier.db.ReceivedInvitation;
@@ -18,8 +26,6 @@ import org.elastos.trinity.runtime.notificationmanager.NotificationRequest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-
-// TODO: When did sessions are ready, call ContactNotifier.getSharedInstance() as soon as a DID session starts, to initialize carrier early.
 
 public class ContactNotifier {
     public static final String LOG_TAG = "ContactNotifier";
@@ -54,6 +60,15 @@ public class ContactNotifier {
     }
 
     private ContactNotifier(Context context, String didSessionDID) throws CarrierException {
+        // Initialize the DID back end as we will need it. Though it's not clean to call the DID plugin
+        // Directly for this. Need to create a DID class inside runtime.
+        try {
+            DIDPlugin.initializeDIDBackend(context);
+        }
+        catch (DIDResolveException e) {
+            e.printStackTrace(); // Will not happen - invalid exception
+        }
+
         this.context = context;
         this.didSessionDID = didSessionDID;
         this.dbAdapter = new DatabaseAdapter(this, context);
@@ -283,11 +298,26 @@ public class ContactNotifier {
                     try {
                         carrierHelper.acceptFriend(carrierUserId, (succeeded, reason)->{
                             if (succeeded) {
-                                Log.d(LOG_TAG, "Adding contact locally");
-                                dbAdapter.addContact(didSessionDID, did, carrierUserId);
-                                String targetUrl = "https://scheme.elastos.org/viewfriend?did="+did;
-                                // TODO: resolve DID document, find firstname if any, and adjust the notification to include the firstname
-                                sendLocalNotification(did,"newcontact-"+did, "Someone was just added as a new contact. Touch to view his/her profile.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+                                // Try to find more info about this contact
+                                resolveOnChainDIDInfo(did, (name, avatarHash)->{
+                                    String targetUrl = "https://scheme.elastos.org/viewfriend?did="+did;
+
+                                    boolean notificationSent = false;
+                                    Log.d(LOG_TAG, "Adding contact locally");
+                                    Contact addedContact = dbAdapter.addContact(didSessionDID, did, carrierUserId);
+                                    if (addedContact != null) {
+                                        if (name != null) {
+                                            // Save contact name to database for better display later on
+                                            addedContact.setName(name);
+                                            sendLocalNotification(did,"newcontact-"+did, name+" was just added as a new contact. Touch to view his/her profile.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+                                            notificationSent = true;
+                                        }
+                                    }
+
+                                    if (!notificationSent) {
+                                        sendLocalNotification(did,"newcontact-"+did, "Someone was just added as a new contact. Touch to view his/her profile.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+                                    }
+                                });
                             }
                         });
                     }
@@ -301,9 +331,16 @@ public class ContactNotifier {
                 else {
                     // MANUALLY_ACCEPT - Manual approval
                     long invitationID = dbAdapter.addReceivedInvitation(didSessionDID, did, carrierUserId);
-                    String targetUrl = "https://scheme.elastos.org/viewfriendinvitation?did="+did+"&invitationid="+invitationID;
-                    // TODO: resolve DID document, find firstname if any, and adjust the notification to include the firstname
-                    sendLocalNotification(did,"contactreq-"+did, "Someone wants to add you as a contact. Touch to view more details.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+
+                    // Try to find more info about this contact
+                    resolveOnChainDIDInfo(did, (name, avatarHash)-> {
+                        String targetUrl = "https://scheme.elastos.org/viewfriendinvitation?did="+did+"&invitationid="+invitationID;
+
+                        if (name != null)
+                            sendLocalNotification(did,"contactreq-"+did, name+" wants to add you as a contact. Touch to view more details.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+                        else
+                            sendLocalNotification(did,"contactreq-"+did, "Someone wants to add you as a contact. Touch to view more details.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+                    });
                 }
             }
 
@@ -388,17 +425,26 @@ public class ContactNotifier {
         Log.d(LOG_TAG, "Friend has accepted our invitation. Adding contact locally");
 
         // Add carrier friend as a contact
-        Contact contact = dbAdapter.addContact(didSessionDID, invitation.did, friendId);
+        Contact addedContact = dbAdapter.addContact(didSessionDID, invitation.did, friendId);
 
         // Delete the pending invitation request
         dbAdapter.removeSentInvitationByAddress(didSessionDID, invitation.carrierAddress);
 
-        // Notify the listeners
-        notifyInvitationAcceptedByFriend(contact);
+        resolveOnChainDIDInfo(invitation.did, (name, avatarHash)-> {
+            String targetUrl = "https://scheme.elastos.org/viewfriend?did="+invitation.did;
 
-        String targetUrl = "https://scheme.elastos.org/viewfriend?did="+invitation.did;
-        // TODO: resolve DID document, find firstname if any, and adjust the notification to include the firstname
-        sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, "Your friend has accepted your invitation. Touch to view details.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+            if (name != null) {
+                // Save name to database for later use
+                addedContact.setName(name);
+                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, name + "has accepted your invitation. Touch to view details.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+            }
+            else {
+                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, "Your friend has accepted your invitation. Touch to view details.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+            }
+
+            // Notify the listeners
+            notifyInvitationAcceptedByFriend(addedContact);
+        });
     }
 
     private void notifyOnlineStatusChanged(String friendId, ConnectionStatus status) {
@@ -458,5 +504,50 @@ public class ContactNotifier {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Retrieves info about a given remote DID from its did document (on chain).
+     */
+    @SuppressLint("StaticFieldLeak")
+    void resolveOnChainDIDInfo(String did, OnChainDIDInfoReceived listener) {
+        Log.d(LOG_TAG, "Trying to get more info about did "+did+" on chain.");
+        new AsyncTask<Void, Void, DIDDocument>() {
+            @Override
+            protected DIDDocument doInBackground(Void... voids) {
+                DIDDocument didDocument;
+                try {
+                    didDocument = new DID(did).resolve(false);
+                } catch (DIDException e) {
+                    e.printStackTrace();
+                    return null;
+                }
+                return didDocument;
+            }
+
+            @Override
+            protected void onPostExecute(DIDDocument didDocument) {
+                if (didDocument == null) {
+                    listener.onDIDInfo(null, null);
+                }
+                else {
+                    String name = null, avatarHash = null;
+
+                    // Try to find a name credential
+                    VerifiableCredential nameCredential = didDocument.getCredential("name");
+                    if (nameCredential != null) {
+                        nameCredential.getSubject().getPropertyAsString("name");
+                    }
+
+                    // TODO: try to find the avatar hash
+
+                    listener.onDIDInfo(name, avatarHash);
+                }
+            }
+        }.execute();
+    }
+
+    private interface OnChainDIDInfoReceived {
+        void onDIDInfo(String name, String avatarIPFSHash);
     }
 }
