@@ -122,7 +122,7 @@ public class PasswordManagerPlugin extends TrinityPlugin {
     private JSONObject buildGenericError(String error) {
         try {
             JSONObject result = new JSONObject();
-            if (error.contains("BAD_DECRYPT"))
+            if (error.contains("BAD_DECRYPT") || error.contains("Authentication failed") || error.contains("Authentication error"))
                 result.put("code", NATIVE_ERROR_CODE_INVALID_PASSWORD);
             else
                 result.put("code", NATIVE_ERROR_CODE_UNSPECIFIED);
