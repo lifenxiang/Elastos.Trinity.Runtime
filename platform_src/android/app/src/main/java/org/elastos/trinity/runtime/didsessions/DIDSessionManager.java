@@ -145,8 +145,6 @@ public class DIDSessionManager {
                             JSONObject presentationAsJsonObj = new JSONObject(presentation.toString());
                             JSONObject jwtPayloadJson = new JSONObject();
                             jwtPayloadJson.put("presentation", presentationAsJsonObj);
-                            jwtPayloadJson.put("nonce", nonce);
-                            jwtPayloadJson.put("realm", realm);
 
                             // Sign as JWT
                             JwsHeader header = JwtBuilder.createJwsHeader();
