@@ -44,8 +44,11 @@ class NotificationManagerImpl implements NotificationManagerPlugin.NotificationM
 
     getNotifications(): Promise<NotificationManagerPlugin.Notification[]> {
         return new Promise((resolve, reject) => {
-            exec((notifications: NotificationManagerPlugin.Notification[]) => {
-                resolve(notifications);
+            exec((result: { notifications: NotificationManagerPlugin.Notification[] }) => {
+                if (result)
+                    resolve(result.notifications);
+                else
+                    resolve(null);
             }, err =>{
                 console.error("Error while calling NotificationManagerPlugin.getNotifications()", err);
                 reject(err);

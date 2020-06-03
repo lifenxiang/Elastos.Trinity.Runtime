@@ -341,7 +341,7 @@
             "description": {
                 "en": "This capsule will be able to connect to the Elastos carrier network to communicate with other peers.",
                 "zh": "此应用程序将能够连接到 elastOS carrier 网络，并与其它节点通信。",
-                "fr": "Cette capsule pourra se conencter au réseau de communication Elastos Carrier qui est un réseau de communication point-à-point, sans intermédiaires."
+                "fr": "Cette capsule pourra se connecter au réseau de communication Elastos Carrier qui est un réseau de communication point-à-point, sans intermédiaires."
             }
         }
     },

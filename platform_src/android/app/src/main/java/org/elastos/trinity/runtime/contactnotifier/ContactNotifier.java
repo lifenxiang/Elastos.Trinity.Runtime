@@ -124,7 +124,7 @@ public class ContactNotifier {
         }
 
         // Remove from carrier
-        carrierHelper.removeFriend(contact.carrierUserID, (succeeded, reason)->{
+        carrierHelper.removeFriend(did, contact.carrierUserID, (succeeded, reason)->{
             // Remove from database
             dbAdapter.removeContact(didSessionDID, did);
         });
@@ -368,7 +368,7 @@ public class ContactNotifier {
                     }
                 }
                 else {
-                    Log.w(ContactNotifier.LOG_TAG, "Remote notification received from unknown contact. Friend ID = "+friendId);
+                    Log.w(ContactNotifier.LOG_TAG, "Remote notification received from unknown contact. Dropping. Friend ID = "+friendId);
                 }
             }
         });
@@ -528,15 +528,21 @@ public class ContactNotifier {
             @Override
             protected void onPostExecute(DIDDocument didDocument) {
                 if (didDocument == null) {
+                    Log.d(LOG_TAG, "Empty did document. No additional contact info fond on DID sidechain");
                     listener.onDIDInfo(null, null);
                 }
                 else {
+                    Log.d(LOG_TAG, "Contact Did document found. Trying to extract name and avatar");
                     String name = null, avatarHash = null;
 
                     // Try to find a name credential
                     VerifiableCredential nameCredential = didDocument.getCredential("name");
                     if (nameCredential != null) {
-                        nameCredential.getSubject().getPropertyAsString("name");
+                        Log.d(LOG_TAG, "Found a name credential");
+                        name = nameCredential.getSubject().getPropertyAsString("name");
+                    }
+                    else {
+                        Log.d(LOG_TAG, "No name credential found");
                     }
 
                     // TODO: try to find the avatar hash
