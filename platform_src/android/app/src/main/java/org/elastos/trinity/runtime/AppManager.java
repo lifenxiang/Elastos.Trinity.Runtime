@@ -182,16 +182,23 @@ public class AppManager {
         IdentityEntry entry = null;
         try {
             entry = DIDSessionManager.getSharedInstance().getSignedInIdentity();
-            if (entry != null) {
-                signIn();
-            }
         }
         catch (Exception e){
             e.printStackTrace();
         }
 
-        if (entry == null) {
-            startDIDSession();
+        if (entry != null) {
+            signIning = false;
+            did = entry.didString;
+            reInit();
+        }
+        else {
+            try {
+                startDIDSession();
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
         }
 
         if (PreferenceManager.getShareInstance().getDeveloperMode()) {
@@ -257,7 +264,6 @@ public class AppManager {
         dbAdapter.setUserDBAdapter(null);
 
         pathInfo = basePathInfo;
-//        did = "";
     }
     /**
      * Signs in to a new DID session.
@@ -300,20 +306,12 @@ public class AppManager {
         return diddessionInfo;
     }
 
-    public void startDIDSession() {
-        DIDSessionViewFragment fragment = new DIDSessionViewFragment();
-        activity.getSupportFragmentManager().beginTransaction()
-                .add(R.id.content, fragment, getDIDSessionId())
-                .commit();
+    public void startDIDSession() throws Exception{
+        start(getDIDSessionId());
     }
 
     public void closeDIDSession() throws Exception {
-        DIDSessionViewFragment fragment = (DIDSessionViewFragment) getFragmentById(getDIDSessionId());
-        if (fragment != null) {
-            activity.getSupportFragmentManager().beginTransaction()
-                    .remove(fragment)
-                    .commit();
-        }
+        close(getDIDSessionId());
 
         IdentityEntry entry = DIDSessionManager.getSharedInstance().getSignedInIdentity();
         did = entry.didString;
@@ -604,7 +602,7 @@ public class AppManager {
         }
 
         if (isLauncher(id)) {
-            id = launcherInfo.app_id;
+            id = getLauncherInfo().app_id;
         }
 
         return checkPath(pathInfo.dataPath + id + "/");
@@ -616,8 +614,12 @@ public class AppManager {
 
 
     public String getTempPath(String id) {
+        if (id == null) {
+            return null;
+        }
+
         if (isLauncher(id)) {
-            id = launcherInfo.app_id;
+            id = getLauncherInfo().app_id;
         }
         return checkPath(pathInfo.tempPath + id + "/");
     }
@@ -767,10 +769,6 @@ public class AppManager {
     }
 
     public void start(String id) throws Exception {
-        if (isDIDSession(id)) {
-            return;
-        }
-
         AppInfo info = getAppInfo(id);
         if (info == null) {
             throw new Exception("No such app!");
@@ -808,15 +806,11 @@ public class AppManager {
     }
 
     public void close(String id) throws Exception {
-        if (isDIDSession(id)) {
-            return;
-        }
-
         if (isLauncher(id)) {
             throw new Exception("Launcher can't close!");
         }
 
-        AppInfo info = appInfos.get(id);
+        AppInfo info = getAppInfo(id);
         if (info == null) {
             throw new Exception("No such app!");
         }
@@ -832,15 +826,17 @@ public class AppManager {
         IntentManager.getShareInstance().removeAppFromIntentList(id);
 
         if (fragment == curFragment) {
-            String id2 = lastList.get(1);
-            WebViewFragment fragment2 = getFragmentById(id2);
-            if (fragment2 == null) {
-                fragment2 = getFragmentById(LAUNCHER);
+            if (lastList.size() > 1) {
+                String id2 = lastList.get(1);
+                WebViewFragment fragment2 = getFragmentById(id2);
                 if (fragment2 == null) {
-                    throw new Exception("RT inner error!");
+                    fragment2 = getFragmentById(LAUNCHER);
+                    if (fragment2 == null) {
+                        throw new Exception("RT inner error!");
+                    }
                 }
+                switchContent(fragment2, id2);
             }
-            switchContent(fragment2, id2);
         }
 
         FragmentTransaction transaction = manager.beginTransaction();

@@ -89,7 +89,8 @@ public class WebViewFragment extends Fragment {
     public static WebViewFragment newInstance(String id) {
         if (id != null) {
             WebViewFragment fragment = null;
-            if (AppManager.getShareInstance().isLauncher(id)) {
+            if (AppManager.getShareInstance().isLauncher(id)
+                || AppManager.getShareInstance().isDIDSession(id)) {
                 fragment = new LauncherViewFragment();
             }
             else {
