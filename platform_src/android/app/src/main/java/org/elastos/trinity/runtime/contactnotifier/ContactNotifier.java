@@ -169,11 +169,31 @@ public class ContactNotifier {
      * @param carrierAddress Target carrier address. Usually shared privately or publicly by the future contact.
      */
     public void sendInvitation(String targetDID, String carrierAddress) throws Exception {
-        carrierHelper.sendInvitation(carrierAddress, (succeeded, reason)->{
-            if (succeeded) {
-                dbAdapter.addSentInvitation(didSessionDID, targetDID, carrierAddress);
-            }
-        });
+        // It's possible that we are already connected to that friend, for example if we added him earlier then
+        // deleted him. In such case, we don't send any invitation and we directly re-add the friend as a contact.
+        FriendInfo existingCarrierFriend = carrierHelper.getFriendUserInfoFromAddress(carrierAddress);
+        if (existingCarrierFriend != null) {
+            Log.d(LOG_TAG, "Already a carrier friend.");
+            // Try to find more info about this contact
+            resolveOnChainDIDInfo(targetDID, (name, avatarHash)->{
+                Log.d(LOG_TAG, "Already a carrier friend. Directly adding as a new contact locally");
+                Contact addedContact = dbAdapter.addContact(didSessionDID, targetDID, existingCarrierFriend.getUserId());
+                if (addedContact != null) {
+                    if (name != null) {
+                        // Save contact name to database for better display later on
+                        addedContact.setName(name);
+                    }
+                }
+            });
+        }
+        else {
+            Log.d(LOG_TAG, "Not yet a carrier friend. Sending a carrier invitation.");
+            carrierHelper.sendInvitation(carrierAddress, (succeeded, reason)->{
+                if (succeeded) {
+                    dbAdapter.addSentInvitation(didSessionDID, targetDID, carrierAddress);
+                }
+            });
+        }
     }
 
     /**
@@ -371,6 +391,11 @@ public class ContactNotifier {
                     Log.w(ContactNotifier.LOG_TAG, "Remote notification received from unknown contact. Dropping. Friend ID = "+friendId);
                 }
             }
+
+            @Override
+            public void onFriendAdded(FriendInfo info) {
+                checkFriendInvitationAccepted(info.getUserId());
+            }
         });
     }
 
@@ -391,10 +416,19 @@ public class ContactNotifier {
             // AND this friend is in our sent invitations list, this means the friend has accepted our previous invitation.
             // This is the only way to get this information from carrier. So in such case, we can add hims as a real contact
             // now, and remove the sent invitation.
-            SentInvitation invitation = findSentInvitationByFriendId(info.getUserId());
-            if (invitation != null) {
-                handleFriendInvitationAccepted(invitation, info.getUserId());
-            }
+            checkFriendInvitationAccepted(info.getUserId());
+        }
+    }
+
+    private void checkFriendInvitationAccepted(String carrierUserId) {
+        Log.d(LOG_TAG, "Checking if a carrier peer id should be added as a friend");
+        SentInvitation invitation = findSentInvitationByFriendId(carrierUserId);
+        if (invitation != null) {
+            Log.d(LOG_TAG, "There is an on going invitation. Adding friend");
+            handleFriendInvitationAccepted(invitation, carrierUserId);
+        }
+        else {
+            Log.d(LOG_TAG, "There is no on going invitation.");
         }
     }
 
@@ -436,7 +470,7 @@ public class ContactNotifier {
             if (name != null) {
                 // Save name to database for later use
                 addedContact.setName(name);
-                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, name + "has accepted your invitation. Touch to view details.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, name + " has accepted your invitation. Touch to view details.", targetUrl, FRIENDS_APP_PACKAGE_ID);
             }
             else {
                 sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, "Your friend has accepted your invitation. Touch to view details.", targetUrl, FRIENDS_APP_PACKAGE_ID);

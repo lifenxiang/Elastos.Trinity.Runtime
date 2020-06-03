@@ -39,6 +39,7 @@ public class CarrierHelper {
         void onFriendOnlineStatusChange(FriendInfo info);
         void onFriendPresenceStatusChange(FriendInfo info);
         void onRemoteNotification(String friendId, RemoteNotificationRequest remoteNotification);
+        void onFriendAdded(FriendInfo info);
     }
 
     public CarrierHelper(ContactNotifier notifier, String didSessionDID, Context context) throws CarrierException {
@@ -58,6 +59,7 @@ public class CarrierHelper {
             @Override
             public void onConnection(Carrier carrier, ConnectionStatus status) {
                 Log.i(ContactNotifier.LOG_TAG, "Carrier connection status: " + status);
+                displayMyUserId();
 
                 if(status == ConnectionStatus.Connected) {
                     // We are now connected to carrier network, we can start to send friend requests, or messages
@@ -92,6 +94,7 @@ public class CarrierHelper {
             @Override
             public void onFriendAdded(Carrier carrier, FriendInfo info) {
                 Log.i(ContactNotifier.LOG_TAG, "Carrier friend added. Peer UserId: " + info.getUserId());
+                onCarrierEventListener.onFriendAdded(info);
             }
 
             @Override
@@ -152,7 +155,29 @@ public class CarrierHelper {
         return carrierInstance.getAddress();
     }
 
+    private void displayMyUserId() {
+        try {
+            Log.d(ContactNotifier.LOG_TAG, "My contact notifier user ID: "+carrierInstance.getUserId());
+        } catch (CarrierException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Returns a friend info fo a given carrier address, in case we are already friends
+     */
+    public FriendInfo getFriendUserInfoFromAddress(String carrierAddress) {
+        try {
+            FriendInfo info = carrierInstance.getFriend(Carrier.getIdFromAddress(carrierAddress));
+            return info;
+        } catch (CarrierException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public void sendInvitation(String contactCarrierAddress, OnCommandExecuted completionListener) {
+
         queueCommand(new ContactInvitationCommand(this, contactCarrierAddress, completionListener));
     }
 
