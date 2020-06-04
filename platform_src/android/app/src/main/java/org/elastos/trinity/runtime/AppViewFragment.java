@@ -44,6 +44,10 @@ import java.util.ArrayList;
     }
 
     private boolean isPluginAllowedToLoad(String name) {
+        if (name.equals("SplashScreen") && appInfo.start_visible.equals("hide")) {
+            return false;
+        }
+
         return true;
 //        for (String item : AppManager.defaultPlugins) {
 //            if (item.equals(name)) {

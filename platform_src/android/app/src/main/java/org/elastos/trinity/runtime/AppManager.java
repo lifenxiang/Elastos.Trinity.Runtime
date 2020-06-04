@@ -754,7 +754,7 @@ public class AppManager {
     }
 
     public boolean doBackPressed() {
-        if (launcherInfo == null || curFragment == null || isLauncher(curFragment.id)) {
+        if (launcherInfo == null || curFragment == null || isLauncher(curFragment.id) || isDIDSession(curFragment.id)) {
             return true;
         }
         else {
