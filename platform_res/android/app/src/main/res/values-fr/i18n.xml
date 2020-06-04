@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pwm_prompt_title">Saisie du mot de passe principal</string>
+    <string name="pwm_prompt_subtitle">Votre mot de passe principal est requis pour continuer.</string>
+    <string name="pwm_prompt_wrong_password">Veuillez réessayer.</string>
+    <string name="pwm_prompt_use_biometric_auth">Authentification biométrique</string>
+    <string name="pwm_prompt_cancel">Annuler</string>
+    <string name="pwm_prompt_next">Suivant</string>
+    <string name="pwm_create_title">Création du mot de passe principal</string>
+    <string name="pwm_create_subtitle">Votre mot de passe principal sécurisera les mots de passe des applications dans un lieu sûr.</string>
+    <string name="pwm_create_enter_passwod">Mot de passe</string>
+    <string name="pwm_create_repeat_password">Vérification du mot de passe</string>
+    <string name="pwm_create_cancel">Annuler</string>
+    <string name="pwm_create_create">Créer</string>
+</resources>
