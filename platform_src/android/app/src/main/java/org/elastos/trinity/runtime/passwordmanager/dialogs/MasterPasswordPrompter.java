@@ -233,7 +233,7 @@ public class MasterPasswordPrompter extends AlertDialog {
         }
 
         private void updateBiometryIntroText() {
-            lblBiometricIntro.setText("Continue to authenticate using fingerprint or face recognition");
+            lblBiometricIntro.setText(R.string.pwm_prompt_continue_with_biometry);
         }
 
         private boolean canUseBiometrictAuth() {
