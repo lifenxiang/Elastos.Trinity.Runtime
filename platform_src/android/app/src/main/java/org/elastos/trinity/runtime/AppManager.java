@@ -577,13 +577,17 @@ public class AppManager {
         }
     }
 
+    private String getAppLocalPath(AppInfo info) {
+        String path = basePathInfo.appsPath;
+        if (!info.share) {
+            path = pathInfo.appsPath;
+        }
+        return path + info.app_id + "/";
+    }
+
     public String getAppPath(AppInfo info) {
         if (info.remote == 0) {
-            String path = basePathInfo.appsPath;
-            if (!info.share) {
-                path = pathInfo.appsPath;
-            }
-            return path + info.app_id + "/";
+            return getAppLocalPath(info);
         }
         else {
             return info.start_url.substring(0, info.start_url.lastIndexOf("/") + 1);
@@ -644,7 +648,7 @@ public class AppManager {
 
     public String getIconUrl(AppInfo info) {
         if (info.type.equals("url")) {
-            return "file://" + pathInfo.appsPath + info.app_id + "/";
+            return "file://" + getAppLocalPath(info);
         }
         else {
             return getAppUrl(info);
