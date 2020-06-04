@@ -26,6 +26,7 @@ import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
 import org.elastos.trinity.runtime.didsessions.DIDSessionManager;
 import org.elastos.trinity.runtime.didsessions.IdentityEntry;
+import org.elastos.trinity.runtime.didsessions.SignInOptions;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -127,14 +128,21 @@ public class DIDSessionManagerPlugin extends TrinityPlugin {
     }
 
     private void signIn(JSONArray args, CallbackContext callbackContext) throws Exception {
-        if (args.length() != 1) {
-            callbackContext.error("Wrong number of parameters passed");
+        JSONObject identityEntryJson = args.isNull(0) ? null : args.getJSONObject(0);
+        if (identityEntryJson == null) {
+            callbackContext.error("Invalid identity entry");
             return;
         }
 
-        JSONObject identityEntryJson = args.getJSONObject(0);
         IdentityEntry identityToSignIn = IdentityEntry.fromJsonObject(identityEntryJson);
-        DIDSessionManager.getSharedInstance().signIn(identityToSignIn);
+
+        JSONObject signInOptionsJson = args.isNull(1) ? null : args.getJSONObject(1);
+        SignInOptions signInOptions = null;
+        if (signInOptionsJson != null) {
+            signInOptions = SignInOptions.fromJsonObject(signInOptionsJson);
+        }
+
+        DIDSessionManager.getSharedInstance().signIn(identityToSignIn, signInOptions);
 
         callbackContext.success();
     }

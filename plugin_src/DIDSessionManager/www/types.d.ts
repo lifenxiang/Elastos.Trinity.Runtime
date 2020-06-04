@@ -48,6 +48,14 @@ declare namespace DIDSessionManagerPlugin {
         avatar?: IdentityAvatar;
     }
 
+    /**
+     * Option parameters that can be passed during the sign in operation.
+     */
+    type SignInOptions = {
+        /** Suggested session langauge code to use? */
+        sessionLanguage?: string;
+    }
+
     interface DIDSessionManager {
         /**
          * Inserts a new identity entry and saves it permanently.
@@ -81,7 +89,7 @@ declare namespace DIDSessionManagerPlugin {
          * All dApps get sandboxed in this DID context and don't see any information about the other available
          * identities.
          */
-        signIn(entry: IdentityEntry): Promise<void>;
+        signIn(entry: IdentityEntry, options?: SignInOptions): Promise<void>;
 
         /**
          * Signs the active identity out. All opened dApps are closed as there is no more active DID session.

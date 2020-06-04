@@ -190,7 +190,7 @@ public class AppManager {
         if (entry != null) {
             signIning = false;
             did = entry.didString;
-            reInit();
+            reInit(null);
         }
         else {
             try {
@@ -221,12 +221,22 @@ public class AppManager {
         return basePathInfo.dataPath;
     }
 
-    private void reInit() {
+    private void reInit(String sessionLanguage) {
         curFragment = null;
 
         pathInfo = new AppPathInfo(getDIDDir());
 
         dbAdapter.setUserDBAdapter(pathInfo.databasePath);
+
+        // If we have received an optional language info, we set the DID session language preference with it.
+        // This is normally passed by the DID session app to force the initial session language
+        if (sessionLanguage != null) {
+            try {
+                PreferenceManager.getShareInstance().setPreference("locale.language", sessionLanguage);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
         refreashInfos();
         getLauncherInfo();
@@ -268,11 +278,11 @@ public class AppManager {
     /**
      * Signs in to a new DID session.
      */
-    public void signIn() throws Exception {
+    public void signIn(String sessionLanguage) throws Exception {
         if (signIning) {
             signIning = false;
             closeDIDSession();
-            reInit();
+            reInit(sessionLanguage);
         }
     }
 

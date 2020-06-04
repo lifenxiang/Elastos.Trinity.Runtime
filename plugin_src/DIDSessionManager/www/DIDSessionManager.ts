@@ -67,14 +67,14 @@ class DIDSessionManagerImpl implements DIDSessionManagerPlugin.DIDSessionManager
         });
     }
 
-    signIn(entry: DIDSessionManagerPlugin.IdentityEntry): Promise<void> {
+    signIn(entry: DIDSessionManagerPlugin.IdentityEntry, options?: DIDSessionManagerPlugin.SignInOptions): Promise<void> {
         return new Promise((resolve, reject) => {
             exec(ret =>{
                 resolve();
             }, err =>{
                 console.error("Error while calling DIDSessionManagerPlugin.signIn()", err);
                 reject(err);
-            }, 'DIDSessionManagerPlugin', 'signIn', [entry]);
+            }, 'DIDSessionManagerPlugin', 'signIn', [entry, options]);
         });
     }
 

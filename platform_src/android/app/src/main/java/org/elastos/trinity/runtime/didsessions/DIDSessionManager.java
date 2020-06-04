@@ -74,7 +74,7 @@ public class DIDSessionManager {
         return dbAdapter.getDIDSessionSignedInIdentity();
     }
 
-    public void signIn(IdentityEntry identityToSignIn) throws Exception {
+    public void signIn(IdentityEntry identityToSignIn, SignInOptions options) throws Exception {
         // Make sure there is no signed in identity already
         IdentityEntry signedInIdentity = DIDSessionManager.getSharedInstance().getSignedInIdentity();
         if (signedInIdentity != null) {
@@ -83,8 +83,12 @@ public class DIDSessionManager {
 
         dbAdapter.setDIDSessionSignedInIdentity(identityToSignIn);
 
+        String sessionLanguage = null;
+        if (options != null)
+            sessionLanguage = options.sessionLanguage;
+
         // Ask the manager to handle the UI sign in flow.
-        appManager.signIn();
+        appManager.signIn(sessionLanguage);
     }
 
     public void signOut() throws Exception {
