@@ -20,21 +20,21 @@ public class CarrierHelper {
     public init(notifier: ContactNotifier, didSessionDID: String) throws {
         self.notifier = notifier
         self.didSessionDID = didSessionDID
-        
+
         try initialize()
     }
 
     private func initialize() throws {
         // Initial setup
         let options = DefaultCarrierOptions.createOptions(didSessionDID: didSessionDID)
-        
+
         class CarrierHandler : CarrierDelegate {
             let helper: CarrierHelper
-            
+
             init(helper: CarrierHelper) {
                 self.helper = helper
             }
-            
+
             func connectionStatusDidChange(_ carrier: Carrier, _ status: CarrierConnectionStatus) {
                 Log.i(ContactNotifier.LOG_TAG, "Carrier connection status: \(status)")
 
@@ -43,7 +43,7 @@ public class CarrierHelper {
                     helper.checkRunQueuedCommands()
                 }
             }
-            
+
             func didReceiveFriendRequest(_ carrier: Carrier, _ userId: String, _ userInfo: CarrierUserInfo, _ hello: String) {
                 Log.i(ContactNotifier.LOG_TAG, "Carrier received friend request. Peer UserId: \(userId)");
 
@@ -64,15 +64,15 @@ public class CarrierHelper {
                     Log.w(ContactNotifier.LOG_TAG, "Invitation received from carrier userId \(userId) but hello string can't be understood: \(hello)")
                 }
             }
-            
+
             func didReceiveFriendInviteRequest(_ carrier: Carrier, _ from: String, _ data: String) {
                 Log.i(ContactNotifier.LOG_TAG, "Did receive friend invite request from: \(from)")
             }
-            
+
             func newFriendAdded(_ carrier: Carrier, _ info: CarrierFriendInfo) {
                 Log.i(ContactNotifier.LOG_TAG, "Carrier friend added. Peer UserId: \(String(describing: info.userId))")
             }
-            
+
             func friendConnectionDidChange(_ carrier: Carrier, _ friendId: String, _ status: CarrierConnectionStatus) {
                 Log.i(ContactNotifier.LOG_TAG, "Carrier friend connection status changed - peer UserId: \(friendId)")
                 Log.i(ContactNotifier.LOG_TAG, "Friend status: \(status)")
@@ -81,16 +81,16 @@ public class CarrierHelper {
                     helper.onCarrierEventListener?.onFriendOnlineStatusChange(info)
                 }
             }
-            
+
             func friendPresenceDidChange(_ carrier: Carrier, _ friendId: String, _ newPresence: CarrierPresenceStatus) {
                 if let info = try? carrier.getFriendInfo(friendId) {
                     helper.onCarrierEventListener?.onFriendPresenceStatusChange(info)
                 }
             }
-            
-            func didReceiveFriendMessage(_ carrier: Carrier, _ from: String, _ data: Data, _ isOffline: Bool) {
+
+            func didReceiveFriendMessage(_ carrier: Carrier, _ from: String, _ data: Data, _ timestamp: Date, _ isOffline: Bool) {
                 let dataAsStr = String(data: data, encoding: .utf8)
-                
+
                 Log.i(ContactNotifier.LOG_TAG, "Message from userId: \(from)")
                 Log.i(ContactNotifier.LOG_TAG, "Message: \(String(describing: dataAsStr))")
 
@@ -102,7 +102,7 @@ public class CarrierHelper {
                     Log.i(ContactNotifier.LOG_TAG, "Received friend message but unable to read it as json")
                 }
             }
-            
+
             private func handleReceivedMessageCommand(friendId: String, request: Dictionary<String, Any>) {
                 if !request.keys.contains("command") {
                     Log.w(ContactNotifier.LOG_TAG, "Command received as JSON, but no command field inside")
@@ -142,7 +142,7 @@ public class CarrierHelper {
         // Start the service
         try carrierInstance!.start(iterateInterval: 5000) // Start carrier. Wait N milliseconds between each check of carrier status (polling)
     }
-    
+
     func setCarrierEventListener(_ listener: OnCarrierEventListener) {
         self.onCarrierEventListener = listener
     }
@@ -200,7 +200,7 @@ public class CarrierHelper {
         while commandQueue.count > 0 {
             if let command = commandQueue.first {
                 command.executeCommand()
-                
+
                 // Even if the command execution fails, we remove it from the queue. We don't want to be stuck forever on a
                 // corrupted command. In such case for now, we would loose the command though, which is not perfect and should be
                 // improved to be more robust.

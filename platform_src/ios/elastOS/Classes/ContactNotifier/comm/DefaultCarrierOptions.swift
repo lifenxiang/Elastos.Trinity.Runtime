@@ -5,7 +5,7 @@ public class DefaultCarrierOptions {
         let options = CarrierOptions()
 
         options.bootstrapNodes = [BootstrapNode]()
-        options.hivebootstrapNodes = [HiveBootstrapNode]()
+        options.expressNodes = [ExpressNode]()
         options.udpEnabled = true
 
         let dataPath = NSHomeDirectory() + "/Documents/data"
@@ -46,31 +46,31 @@ public class DefaultCarrierOptions {
         nodes.append(node)
 
         options.bootstrapNodes = nodes
-/*
-        //Hive
-        var expressNodes = Array<HiveBootstrapNode>()
-        var expNode: HiveBootstrapNode
 
-        expNode = HiveBootstrapNode()
+        //Hive
+        var expressNodes = Array<ExpressNode>()
+        var expNode: ExpressNode
+
+        expNode = ExpressNode()
         expNode.ipv4 = "ece00.trinity-tech.io"
         expNode.port = "443"
         expNode.publicKey = "FyTt6cgnoN1eAMfmTRJCaX2UoN6ojAgCimQEbv1bruy9"
         expressNodes.append(expNode)
 
-        expNode = HiveBootstrapNode()
+        expNode = ExpressNode()
         expNode.ipv4 = "ece01.trinity-tech.io"
         expNode.port = "443"
         expNode.publicKey = "FyTt6cgnoN1eAMfmTRJCaX2UoN6ojAgCimQEbv1bruy9"
         expressNodes.append(expNode)
 
-        expNode = HiveBootstrapNode()
+        expNode = ExpressNode()
         expNode.ipv4 = "ece01.trinity-tech.cn"
         expNode.port = "443"
         expNode.publicKey = "FyTt6cgnoN1eAMfmTRJCaX2UoN6ojAgCimQEbv1bruy9"
         expressNodes.append(expNode)
 
-        options.hivebootstrapNodes = expressNodes
-*/
+        options.expressNodes = expressNodes
+
         return options
     }
 }
