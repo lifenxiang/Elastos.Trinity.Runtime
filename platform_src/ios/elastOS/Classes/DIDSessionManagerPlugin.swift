@@ -157,4 +157,32 @@ public class DIDSessionManagerPlugin : TrinityPlugin {
             self.error(command, "signOut", error.localizedDescription)
         }
     }
+    
+    @objc func authenticate(_ command: CDVInvokedUrlCommand) {
+        guard let nonce = command.arguments[0] as? String else {
+            self.error(command, "authenticate", "A nonce string must be provided")
+            return
+        }
+        
+        guard let realm = command.arguments[1] as? String else {
+            self.error(command, "authenticate", "A realm string must be provided")
+            return
+        }
+
+        var expiresIn = command.arguments[2] as? Int
+        if expiresIn == nil {
+            expiresIn = 5
+        }
+
+        do {
+            try DIDSessionManager.getSharedInstance().authenticate(nonce: nonce, realm: realm, expiresIn: expiresIn!) { jwtToken in
+                var jsonObj = Dictionary<String, Any>()
+                jsonObj["jwtToken"] = jwtToken
+                self.success(command, jsonObj)
+            }
+        }
+        catch let error {
+            self.error(command, "authenticate", error.localizedDescription)
+        }
+    }
 }

@@ -23,7 +23,8 @@
 import SQLite
  
 public class DIDSessionDatabaseHelper : SQLiteOpenHelper {
-    private static let DATABASE_VERSION = 1
+    private static let DATABASE_VERSION = 2
+    private static let LOG_TAG = "DIDSessDBHelper"
     
     // Tables
     private static let DATABASE_NAME = "didsession.db"
@@ -44,6 +45,10 @@ public class DIDSessionDatabaseHelper : SQLiteOpenHelper {
     }
     
     public override func onCreate(db: Connection) {
+        createDIDSessionsTable(db: db)
+    }
+    
+    private func createDIDSessionsTable(db: Connection) {
         let didSessionsSQL = "create table " +
             DIDSessionDatabaseHelper.DIDSESSIONS_TABLE + "(" +
             DIDSessionDatabaseHelper.TID + " integer primary key autoincrement, " +
@@ -52,11 +57,23 @@ public class DIDSessionDatabaseHelper : SQLiteOpenHelper {
             DIDSessionDatabaseHelper.NAME + " varchar(128), " +
             DIDSessionDatabaseHelper.SIGNEDIN + " integer, " +
             DIDSessionDatabaseHelper.AVATAR_CONTENTTYPE + " varchar(32), " +
-            DIDSessionDatabaseHelper.AVATAR_DATA + " blob)"
+            DIDSessionDatabaseHelper.AVATAR_DATA + " text)"
         try! db.execute(didSessionsSQL)
     }
     
     public override func onUpgrade(db: Connection, oldVersion: Int, newVersion: Int) {
+        // Use the if (old < N) format to make sure users get all upgrades even if they directly upgrade from vN to v(N+5)
+        if (oldVersion < 2) {
+            Log.d(DIDSessionDatabaseHelper.LOG_TAG, "Upgrading database to v2")
+            upgradeToV2(db: db)
+        }
+    }
+    
+    // 20200601 - Changed avatar format from blob to text
+    private func upgradeToV2(db: Connection) {
+        // Delete did sessions tazble and create a new one.
+        try! db.execute("DROP TABLE IF EXISTS " + DIDSessionDatabaseHelper.DIDSESSIONS_TABLE)
+        createDIDSessionsTable(db: db)
     }
     
     public override func onDowngrade(db: Connection, oldVersion: Int, newVersion: Int) {
