@@ -306,6 +306,9 @@ public class PasswordManager {
 
                         // Remember the new password locally
                         dbInfo.activeMasterPassword = password
+                        
+                        // Disable biometric auth to force re-activating it, as the password has changed.
+                        self.setBiometricAuthEnabled(false)
 
                         onMasterPasswordChanged()
                     }
