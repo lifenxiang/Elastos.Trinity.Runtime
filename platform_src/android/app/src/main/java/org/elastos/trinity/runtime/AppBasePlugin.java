@@ -251,7 +251,6 @@ public class AppBasePlugin extends TrinityPlugin {
 
     private JSONArray jsonAppIcons(AppInfo info) throws JSONException {
         JSONArray jsons = new JSONArray();
-        String appUrl = appManager.getIconUrl(info);
 
         AppInfo.Icon[] icons = new AppInfo.Icon[info.icons.size()];
         info.icons.toArray(icons);
@@ -798,8 +797,7 @@ public class AppBasePlugin extends TrinityPlugin {
                 if (info != null) {
                     index = Integer.valueOf(str.substring(index + 1));
                     AppInfo.Icon icon = info.icons.get(index);
-                    String appUrl = appManager.getIconUrl(info);
-                    url = appManager.resetPath(appUrl, icon.src);
+                    url = appManager.getIconUrl(info, icon.src);
                 }
             }
         }

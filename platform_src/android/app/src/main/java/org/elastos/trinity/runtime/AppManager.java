@@ -648,20 +648,16 @@ public class AppManager {
         return pathInfo.configPath;
     }
 
-    public String getIconUrl(AppInfo info) {
-        if (info.type.equals("url")) {
-            return "file://" + getAppLocalPath(info);
-        }
-        else {
-            return getAppUrl(info);
-        }
+
+    public String getIconUrl(AppInfo info, String iconSrc) {
+        String url = "file://" + getAppLocalPath(info);
+        return resetPath(url, iconSrc);
     }
 
-    public String[] getIconPaths(AppInfo info) {
-        String path = getAppPath(info);
+    public String[] getIconUrls(AppInfo info) {
         String[] iconPaths = new String[info.icons.size()];
         for (int i = 0; i < info.icons.size(); i++) {
-            iconPaths[i] = path + info.icons.get(i).src;
+            iconPaths[i] = getIconUrl(info, info.icons.get(i).src);
         }
         return iconPaths;
     }

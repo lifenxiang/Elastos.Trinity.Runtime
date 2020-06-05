@@ -111,7 +111,7 @@ public class ApiAuthorityDialog extends AlertDialog {
                 lblRisk.setText(R.string.api_perm_risk_average);
             }
 
-            String[] iconPaths = AppManager.getShareInstance().getIconPaths(appInfo);
+            String[] iconPaths = AppManager.getShareInstance().getIconUrls(appInfo);
             if (iconPaths.length > 0) {
                 String appIconPath = iconPaths[0];
                 ivAppIcon.setImageURI(Uri.parse(appIconPath));

@@ -5,8 +5,6 @@ import android.app.DialogFragment;
 import android.net.Uri;
 import android.os.Bundle;
 
-import androidx.core.graphics.drawable.RoundedBitmapDrawable;
-import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -15,7 +13,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import java.io.File;
 import java.util.ArrayList;
 
 @SuppressLint("ValidFragment")
@@ -125,10 +122,10 @@ public class IntentActionChooserFragment extends DialogFragment {
                 AppInfo appInfo = appInfos.get(position);
 
                 // TODO: dirty - use a method to get app icon path in a clean way.
-                String[] iconPaths = appManager.getIconPaths(appInfo);
+                String[] iconPaths = appManager.getIconUrls(appInfo);
                 if (iconPaths != null && iconPaths.length > 0) {
                     String appIconPath = iconPaths[0];
-                    holder.ivAppIcon.setImageURI(Uri.fromFile(new File(appIconPath)));
+                    holder.ivAppIcon.setImageURI(Uri.parse(appIconPath));
                 } else {
                     holder.ivAppIcon.setVisibility(View.INVISIBLE);
                 }
