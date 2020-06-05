@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.res.AssetManager;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
@@ -88,6 +89,7 @@ public class ApiAuthorityManager {
 
     private class LockObj {
         int authority = AppInfo.AUTHORITY_NOINIT;
+        boolean isUiThread = false;
     }
 
     private LockObj apiLock = new LockObj();
@@ -131,6 +133,9 @@ public class ApiAuthorityManager {
                 if (apiLock.authority != originAuthority && apiLock.authority != AppInfo.AUTHORITY_NOINIT ) {
                     return apiLock.authority;
                 }
+
+                apiLock.isUiThread = Looper.myLooper() == Looper.getMainLooper();
+
                 activity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -138,7 +143,7 @@ public class ApiAuthorityManager {
                     }
                 });
 
-                if (apiLock.authority == originAuthority) {
+                if (!apiLock.isUiThread && apiLock.authority == originAuthority) {
                     apiLock.wait();
                 }
             }

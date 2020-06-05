@@ -32,6 +32,8 @@ import android.net.Uri;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 
@@ -1080,6 +1082,7 @@ public class AppManager {
 
     private class LockObj {
         int authority = AppInfo.AUTHORITY_NOINIT;
+        boolean isUiThread = false;
     }
     private LockObj urlLock = new LockObj();
     private LockObj pluginLock = new LockObj();
@@ -1157,6 +1160,8 @@ public class AppManager {
                     return urlLock.authority;
                 }
 
+                urlLock.isUiThread = Looper.myLooper() == Looper.getMainLooper();
+
                 activity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -1164,8 +1169,7 @@ public class AppManager {
                     }
                 });
 
-                if (urlLock.authority == originAuthority) {
-                    //TODO::If use UiThread, maybe will deadlock
+                if (!urlLock.isUiThread && urlLock.authority == originAuthority) {
                     urlLock.wait();
                 }
             }
