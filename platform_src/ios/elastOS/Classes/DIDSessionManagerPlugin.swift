@@ -126,16 +126,14 @@ public class DIDSessionManagerPlugin : TrinityPlugin {
     }
 
     @objc func signIn(_ command: CDVInvokedUrlCommand) {
-        if command.arguments.count != 1 {
-            error(command, "signIn", "Wrong number of parameters passed")
-            return
-        }
-
         do {
             if let identityEntryJson = command.arguments[0] as? Dictionary<String, Any>,
                 let identityToSignIn = IdentityEntry.fromJsonObject(identityEntryJson) {
                 
-                try DIDSessionManager.getSharedInstance().signIn(identityToSignIn: identityToSignIn)
+                let signInOptionsJson = command.arguments[1] as? Dictionary<String, Any>
+                let signInOptions = SignInOptions.fromJsonObject(signInOptionsJson)
+                
+                try DIDSessionManager.getSharedInstance().signIn(identityToSignIn: identityToSignIn, options: signInOptions)
 
                 success(command)
             }

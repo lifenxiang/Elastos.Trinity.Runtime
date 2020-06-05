@@ -603,12 +603,14 @@ class AppManager: NSObject {
     /**
      * Signs in to a new DID session.
      */
-    public func signIn() throws {
+    public func signIn(sessionLanguage: String?) throws {
         // Stop the did session app
         try close("org.elastos.trinity.dapp.didsession")
 
         // Start the launcher app
         try launchStartupScreen()
+        
+        // TODO @dongxiao: use sessionLanguage in reInit() after implemented, to set preference locale, like on android
     }
 
     /**

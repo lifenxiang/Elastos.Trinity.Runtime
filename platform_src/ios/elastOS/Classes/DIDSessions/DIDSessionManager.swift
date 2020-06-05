@@ -58,16 +58,18 @@ public class DIDSessionManager {
         return try dbAdapter.getDIDSessionSignedInIdentity()
     }
 
-    func signIn(identityToSignIn: IdentityEntry) throws {
+    func signIn(identityToSignIn: IdentityEntry, options: SignInOptions?) throws {
         // Make sure there is no signed in identity already
         guard (try DIDSessionManager.getSharedInstance().getSignedInIdentity()) == nil else {
             throw "Unable to sign in. Please first sign out from the currently signed in identity"
         }
 
         try dbAdapter.setDIDSessionSignedInIdentity(entry: identityToSignIn)
-
+        
+        let sessionLanguage = options?.sessionLanguage
+      
         // Ask the manager to handle the UI sign in flow.
-        try appManager!.signIn()
+        try appManager!.signIn(sessionLanguage: sessionLanguage)
     }
 
     public func signOut() throws {
