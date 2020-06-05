@@ -11,6 +11,7 @@
     <string name="pwm_create_subtitle">Your master password will secure all apps passwords into a safe place.</string>
     <string name="pwm_create_enter_passwod">Enter password</string>
     <string name="pwm_create_repeat_password">Repeat password</string>
+    <string name="pwm_create_no_match">Passwords don\'t match</string>
     <string name="pwm_create_cancel">Cancel</string>
     <string name="pwm_create_create">Create</string>
 </resources>

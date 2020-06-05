@@ -11,6 +11,7 @@
     <string name="pwm_create_subtitle">您的主密码会将所有应用的密码保存在安全的地方。</string>
     <string name="pwm_create_enter_passwod">输入密码</string>
     <string name="pwm_create_repeat_password">请再次输入密码</string>
+    <string name="pwm_create_no_match">密码不一致</string>
     <string name="pwm_create_cancel">取消</string>
     <string name="pwm_create_create">创建</string>
 </resources>

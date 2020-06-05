@@ -11,6 +11,7 @@
     <string name="pwm_create_subtitle">Votre mot de passe principal sécurisera les mots de passe des applications dans un lieu sûr.</string>
     <string name="pwm_create_enter_passwod">Mot de passe</string>
     <string name="pwm_create_repeat_password">Vérification du mot de passe</string>
+    <string name="pwm_create_no_match">Les mots de passe ne correspondent pas</string>
     <string name="pwm_create_cancel">Annuler</string>
     <string name="pwm_create_create">Créer</string>
 </resources>

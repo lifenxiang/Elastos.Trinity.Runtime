@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Build;
 import android.os.CancellationSignal;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
@@ -56,6 +57,7 @@ public class MasterPasswordCreator extends AlertDialog {
         TextView lblIntro;
         EditText etPassword;
         EditText etPasswordRepeat;
+        TextView lblWrongPassword;
         Button btCancel;
         Button btNext;
         CardView cardDeny;
@@ -98,6 +100,7 @@ public class MasterPasswordCreator extends AlertDialog {
             btNext = view.findViewById(R.id.btNext);
             cardDeny = view.findViewById(R.id.cardDeny);
             cardAccept = view.findViewById(R.id.cardAccept);
+            lblWrongPassword = view.findViewById(R.id.lblWrongPassword);
 
             // Customize colors
             llRoot.setBackgroundColor(UIStyling.popupMainBackgroundColor);
@@ -113,6 +116,8 @@ public class MasterPasswordCreator extends AlertDialog {
             etPasswordRepeat.setTextColor(UIStyling.popupMainTextColor);
             etPasswordRepeat.setHintTextColor(UIStyling.popupInputHintTextColor);
 
+            lblWrongPassword.setVisibility(View.GONE);
+
             btCancel.setOnClickListener(v -> {
                 alertDialog.dismiss();
                 onCancelClickedListener.onCancelClicked();
@@ -127,6 +132,16 @@ public class MasterPasswordCreator extends AlertDialog {
                     alertDialog.dismiss();
                     onNextClickedListener.onNextClicked(password);
                 }
+                else if (!password.equals(passwordRepeat)) {
+                    lblWrongPassword.setVisibility(View.VISIBLE);
+                }
+            });
+
+            etPassword.setOnFocusChangeListener((view12, b) -> {
+                lblWrongPassword.setVisibility(View.GONE);
+            });
+            etPasswordRepeat.setOnFocusChangeListener((view12, b) -> {
+                lblWrongPassword.setVisibility(View.GONE);
             });
 
             alertDialogBuilder.setView(view);
