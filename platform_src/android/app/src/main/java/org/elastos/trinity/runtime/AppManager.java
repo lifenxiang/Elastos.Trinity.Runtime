@@ -809,7 +809,7 @@ public class AppManager {
         activity.runOnUiThread((Runnable) () -> {
             if (curFragment.titlebar != null) {
                 if (show) {
-                    curFragment.titlebar.showActivityIndicator(TitleBarActivityType.LAUNCH, "Starting");
+                    curFragment.titlebar.showActivityIndicator(TitleBarActivityType.LAUNCH, activity.getResources().getString(R.string.app_starting));
                 } else {
                     curFragment.titlebar.hideActivityIndicator(TitleBarActivityType.LAUNCH);
                 }

@@ -24,4 +24,9 @@
     <string name="api_perm_risk_high">潜在危害</string>
     <string name="api_perm_deny">拒绝</string>
     <string name="api_perm_accept">同意</string>
+
+    <string name="intent_choose_title">打开方式:</string>
+    <string name="intent_choose_another">其它应用</string>
+
+    <string name="app_starting">正在启动</string>
 </resources>

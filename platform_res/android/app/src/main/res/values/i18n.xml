@@ -24,4 +24,9 @@
     <string name="api_perm_risk_high">Potentially Harmful</string>
     <string name="api_perm_deny">Deny</string>
     <string name="api_perm_accept">Allow</string>
+
+    <string name="intent_choose_title">Continue this action with:</string>
+    <string name="intent_choose_another">Another app</string>
+
+    <string name="app_starting">Starting</string>
 </resources>

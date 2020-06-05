@@ -138,7 +138,7 @@ public class IntentActionChooserFragment extends DialogFragment {
             else {
                 // Native share index
                 holder.ivAppIcon.setImageResource(R.drawable.ic_share_chooser);
-                holder.tvAppName.setText("Another app");
+                holder.tvAppName.setText(R.string.intent_choose_another);
 
                 holder.rootView.setOnClickListener(view -> {
                     nativeShareListener.onNativeShare();
