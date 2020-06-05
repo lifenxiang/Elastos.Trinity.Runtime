@@ -19,6 +19,7 @@ import android.widget.TextView;
 import androidx.cardview.widget.CardView;
 
 import org.elastos.trinity.plugins.fingerprint.FingerPrintAuthHelper;
+import org.elastos.trinity.runtime.PreferenceManager;
 import org.elastos.trinity.runtime.R;
 import org.elastos.trinity.runtime.UIStyling;
 import org.elastos.trinity.runtime.passwordmanager.PasswordManager;
@@ -87,7 +88,8 @@ public class MasterPasswordCreator extends AlertDialog {
         }
 
         public void prompt() {
-            View view = LayoutInflater.from(activity).inflate(R.layout.dialog_password_manager_create, null);
+            Context localizedContext = PreferenceManager.getShareInstance().getLocalizedContext(activity);
+            View view = LayoutInflater.from(localizedContext).inflate(R.layout.dialog_password_manager_create, null);
 
             // Hook UI items
             llRoot = view.findViewById(R.id.llRoot);

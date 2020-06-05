@@ -7,6 +7,7 @@
     <string name="pwm_prompt_continue_with_biometry">Continue to authenticate using fingerprint or face recognition</string>
     <string name="pwm_prompt_cancel">Cancel</string>
     <string name="pwm_prompt_next">Next</string>
+
     <string name="pwm_create_title">Please create your master password</string>
     <string name="pwm_create_subtitle">Your master password will secure all apps passwords into a safe place.</string>
     <string name="pwm_create_enter_passwod">Enter password</string>
@@ -14,4 +15,13 @@
     <string name="pwm_create_no_match">Passwords don\'t match</string>
     <string name="pwm_create_cancel">Cancel</string>
     <string name="pwm_create_create">Create</string>
+
+    <string name="api_perm_title">This capsule is requesting access to sensitive features.</string>
+    <string name="api_perm_feature">Feature:</string>
+    <string name="api_perm_description">What can the capsule do with it?</string>
+    <string name="api_perm_risk_low">Low Risk</string>
+    <string name="api_perm_risk_average">Moderate risk</string>
+    <string name="api_perm_risk_high">Potentially Harmful</string>
+    <string name="api_perm_deny">Deny</string>
+    <string name="api_perm_accept">Allow</string>
 </resources>

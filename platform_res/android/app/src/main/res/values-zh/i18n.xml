@@ -7,6 +7,7 @@
     <string name="pwm_prompt_continue_with_biometry">继续使用指纹或面部识别进行身份验证</string>
     <string name="pwm_prompt_cancel">取消</string>
     <string name="pwm_prompt_next">下一步</string>
+
     <string name="pwm_create_title">请创建您的主密码</string>
     <string name="pwm_create_subtitle">您的主密码会将所有应用的密码保存在安全的地方。</string>
     <string name="pwm_create_enter_passwod">输入密码</string>
@@ -14,4 +15,13 @@
     <string name="pwm_create_no_match">密码不一致</string>
     <string name="pwm_create_cancel">取消</string>
     <string name="pwm_create_create">创建</string>
+
+    <string name="api_perm_title">该胶囊要求使用敏感功能.</string>
+    <string name="api_perm_feature">功能:</string>
+    <string name="api_perm_description">胶囊通过此功能能做什么?</string>
+    <string name="api_perm_risk_low">低风险</string>
+    <string name="api_perm_risk_average">中等风险</string>
+    <string name="api_perm_risk_high">潜在危害</string>
+    <string name="api_perm_deny">拒绝</string>
+    <string name="api_perm_accept">同意</string>
 </resources>

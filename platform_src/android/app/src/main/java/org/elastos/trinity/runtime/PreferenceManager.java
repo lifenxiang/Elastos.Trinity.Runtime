@@ -1,9 +1,11 @@
 package org.elastos.trinity.runtime;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
+import android.content.res.Configuration;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -147,6 +149,28 @@ public class PreferenceManager {
         json.put("data", data);
         AppManager.getShareInstance().broadcastMessage(AppManager.MSG_TYPE_IN_REFRESH,
                 json.toString() , "system");
+    }
+
+    /**
+     * From a given base context (ex: activity), returns a new context on which the default locale/language has been
+     * modified to match trinity's language, so that native screens and dialogs can show native strings in the right language.
+     */
+    public Context getLocalizedContext(Context context) {
+        String language;
+        try {
+            language = getCurrentLocale();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return context;
+        }
+
+        Configuration config = context.getResources().getConfiguration();
+        Locale locale = new Locale(language);
+        Locale.setDefault(locale);
+        config.locale = locale;
+        context.getResources().updateConfiguration(config, context.getResources().getDisplayMetrics());
+
+        return context.createConfigurationContext(config);
     }
 
     public Boolean getDeveloperMode() {

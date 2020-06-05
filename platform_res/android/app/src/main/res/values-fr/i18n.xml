@@ -7,6 +7,7 @@
     <string name="pwm_prompt_continue_with_biometry">Continuez pour vous authentifier par empreinte ou par reconnaissance faciale.</string>
     <string name="pwm_prompt_cancel">Annuler</string>
     <string name="pwm_prompt_next">Suivant</string>
+
     <string name="pwm_create_title">Création du mot de passe principal</string>
     <string name="pwm_create_subtitle">Votre mot de passe principal sécurisera les mots de passe des applications dans un lieu sûr.</string>
     <string name="pwm_create_enter_passwod">Mot de passe</string>
@@ -14,4 +15,13 @@
     <string name="pwm_create_no_match">Les mots de passe ne correspondent pas</string>
     <string name="pwm_create_cancel">Annuler</string>
     <string name="pwm_create_create">Créer</string>
+
+    <string name="api_perm_title">Cette capsule souhaite accéder à une fonctionnalité sensible.</string>
+    <string name="api_perm_feature">Fonctionnalité:</string>
+    <string name="api_perm_description">Que pourra faire la capsule?</string>
+    <string name="api_perm_risk_low">Risque faible</string>
+    <string name="api_perm_risk_average">Risque modéré</string>
+    <string name="api_perm_risk_high">Possiblement dangereux</string>
+    <string name="api_perm_deny">Refuser</string>
+    <string name="api_perm_accept">Autoriser</string>
 </resources>

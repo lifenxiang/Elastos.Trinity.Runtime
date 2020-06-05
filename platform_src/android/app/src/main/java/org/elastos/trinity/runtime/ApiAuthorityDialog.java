@@ -33,7 +33,7 @@ public class ApiAuthorityDialog extends AlertDialog {
         private OnAcceptClickedListener onAcceptClickedListener;
 
         public Builder(Context context) {
-            this.context = context;
+            this.context = PreferenceManager.getShareInstance().getLocalizedContext(context);
             alertDialogBuilder = new android.app.AlertDialog.Builder(context);
 
             alertDialogBuilder.setCancelable(false);
@@ -95,20 +95,20 @@ public class ApiAuthorityDialog extends AlertDialog {
 
             // Apply data
             lblAppName.setText(appInfo.name);
-            lblTitle.setText("This capsule is requesting access to a sensitive feature");
+            lblTitle.setText(R.string.api_perm_title);
             lblFeatureValue.setText(authInfo.getLocalizedTitle());
             lblDescriptionValue.setText(authInfo.getLocalizedDescription());
 
             if (authInfo.dangerLevel.equals(ApiAuthorityManager.DANGER_LEVEL_LOW)) {
                 ivRisk.setImageResource(R.drawable.ic_risk_green);
-                lblRisk.setText("Low Risk");
+                lblRisk.setText(R.string.api_perm_risk_low);
             }
             else if (authInfo.dangerLevel.equals(ApiAuthorityManager.DANGER_LEVEL_HIGH)) {
                 ivRisk.setImageResource(R.drawable.ic_risk_red);
-                lblRisk.setText("Potentially Harmful");
+                lblRisk.setText(R.string.api_perm_risk_high);
             } else {
                 ivRisk.setImageResource(R.drawable.ic_risk_yellow);
-                lblRisk.setText("Average Risk");
+                lblRisk.setText(R.string.api_perm_risk_average);
             }
 
             String[] iconPaths = AppManager.getShareInstance().getIconPaths(appInfo);

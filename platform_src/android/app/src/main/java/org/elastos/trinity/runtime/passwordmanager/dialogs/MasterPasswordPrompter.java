@@ -18,6 +18,7 @@ import androidx.biometric.BiometricManager;
 import androidx.cardview.widget.CardView;
 
 import org.elastos.trinity.plugins.fingerprint.FingerPrintAuthHelper;
+import org.elastos.trinity.runtime.PreferenceManager;
 import org.elastos.trinity.runtime.R;
 import org.elastos.trinity.runtime.UIStyling;
 import org.elastos.trinity.runtime.passwordmanager.PasswordManager;
@@ -65,8 +66,8 @@ public class MasterPasswordPrompter extends AlertDialog {
             this.activity = activity;
             this.did = did;
             this.passwordManager = passwordManager;
-            alertDialogBuilder = new android.app.AlertDialog.Builder(activity);
 
+            alertDialogBuilder = new android.app.AlertDialog.Builder(activity);
             alertDialogBuilder.setCancelable(false);
         }
 
@@ -86,7 +87,8 @@ public class MasterPasswordPrompter extends AlertDialog {
         }
 
         public void prompt(boolean passwordWasWrong) {
-            View view = LayoutInflater.from(activity).inflate(R.layout.dialog_password_manager_prompt, null);
+            Context localizedContext = PreferenceManager.getShareInstance().getLocalizedContext(activity);
+            View view = LayoutInflater.from(localizedContext).inflate(R.layout.dialog_password_manager_prompt, null);
 
             // Hook UI items
             llRoot = view.findViewById(R.id.llRoot);

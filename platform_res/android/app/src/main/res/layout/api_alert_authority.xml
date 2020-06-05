@@ -44,7 +44,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:fontFamily="sans-serif-black"
-            android:text="This application is requesting access to sensitive features."
+            android:text="@string/api_perm_title"
             android:textAlignment="center"
             android:textSize="16sp" />
 
@@ -54,7 +54,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:fontFamily="sans-serif-medium"
-            android:text="Feature:" />
+            android:text="@string/api_perm_feature" />
 
         <TextView
             android:id="@+id/lblFeatureValue"
@@ -69,7 +69,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:fontFamily="sans-serif-medium"
-            android:text="What can the capsule do with it?" />
+            android:text="@string/api_perm_description" />
 
         <TextView
             android:id="@+id/lblDescriptionValue"
@@ -129,7 +129,7 @@
                 android:foreground="?android:attr/selectableItemBackground"
                 android:gravity="center"
                 android:padding="10dp"
-                android:text="Deny"
+                android:text="@string/api_perm_deny"
                 android:textColor="#FFFFFF"
                 android:textSize="18sp">
 
@@ -155,7 +155,7 @@
                 android:foreground="?android:attr/selectableItemBackground"
                 android:gravity="center"
                 android:padding="10dp"
-                android:text="Accept"
+                android:text="@string/api_perm_accept"
                 android:textColor="#FFFFFF"
                 android:textSize="18sp">
 
