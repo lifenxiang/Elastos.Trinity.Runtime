@@ -87,6 +87,14 @@
             </array>
         </config-file>
 
+        <config-file target="*-Info.plist" parent="CFBundleLocalizations">
+            <array>
+                <string>en</string>
+                <string>zh</string>
+                <string>fr</string>
+            </array>
+        </config-file>
+
         <config-file parent="com.apple.developer.associated-domains" target="*-Debug.plist">
             <array>
                 <string>applinks:scheme.elastos.org</string>

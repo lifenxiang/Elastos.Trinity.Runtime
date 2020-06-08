@@ -97,6 +97,10 @@ module.exports = function(ctx) {
     let customGroupKey = runtimeProj.findPBXGroupKeyAndType({ name: 'CustomTemplate' }, 'PBXGroup');
     runtimeProj.addToPbxGroup(walletGroupKey, customGroupKey);
 
+    // for Language strings
+    let stringsPath = process.cwd() + "/platform_res/ios/elastOS/Strings";
+    let resourcesGroupKey = runtimeProj.findPBXGroupKeyAndType({ name: 'Resources' }, 'PBXGroup');
+    runtimeProj.addResourceFile(stringsPath, {}, resourcesGroupKey);
 
     //
     // Write back the new XCode project
