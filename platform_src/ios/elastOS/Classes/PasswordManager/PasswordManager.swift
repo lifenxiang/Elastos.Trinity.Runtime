@@ -425,6 +425,7 @@ public class PasswordManager {
             // Master password is locked - prompt it to user
             let prompterController = MasterPasswordPrompterAlertController(nibName: "MasterPasswordPrompter", bundle: Bundle.main)
             
+            prompterController.setDID(did)
             prompterController.setPasswordManager(self)
             prompterController.setPreviousAttemptWasWrong(isPasswordRetry)
 
@@ -442,7 +443,7 @@ public class PasswordManager {
                         // User chose to enable biometric authentication (was not enabled before). So we save the
                         // master password to the biometric crypto space.
                         if (shouldSavePasswordToBiometric) {
-                            let fingerPrintAuthHelper = FingerPrintAuthHelper(dAppID: PasswordManager.FAKE_PASSWORD_MANAGER_PLUGIN_APP_ID)
+                            let fingerPrintAuthHelper = FingerPrintAuthHelper(did: did, dAppID: PasswordManager.FAKE_PASSWORD_MANAGER_PLUGIN_APP_ID)
                             fingerPrintAuthHelper.authenticateAndSavePassword(passwordKey: PasswordManager.MASTER_PASSWORD_BIOMETRIC_KEY, password: password) { error in
                                 if error == nil {
                                     // Save user's choice to use biometric auth method next time

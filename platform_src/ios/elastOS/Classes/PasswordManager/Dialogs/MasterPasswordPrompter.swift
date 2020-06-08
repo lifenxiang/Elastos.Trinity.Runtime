@@ -38,6 +38,7 @@ class MasterPasswordPrompterAlertController: UIViewController {
     @IBOutlet weak var passwordContainer: UIView!
     
     private var passwordManager: PasswordManager? = nil
+    private var did: String? = nil
     
     private var isPasswordRetry: Bool = false
     private var shouldInitiateBiometry: Bool = false // Whether biometry should be prompted to save password, or just used (previously saved)
@@ -103,6 +104,10 @@ class MasterPasswordPrompterAlertController: UIViewController {
         }
     }
     
+    public func setDID(_ did: String) {
+        self.did = did
+    }
+    
     public func setPasswordManager(_ passwordManager: PasswordManager) {
         self.passwordManager = passwordManager
     }
@@ -157,7 +162,7 @@ class MasterPasswordPrompterAlertController: UIViewController {
         
         let shouldSaveToBiometric = shouldInitiateBiometry && swBiometric.isOn
         if (swBiometric.isOn && !shouldInitiateBiometry) {
-            let fingerPrintAuthHelper = FingerPrintAuthHelper(dAppID: PasswordManager.FAKE_PASSWORD_MANAGER_PLUGIN_APP_ID)
+            let fingerPrintAuthHelper = FingerPrintAuthHelper(did: did!, dAppID: PasswordManager.FAKE_PASSWORD_MANAGER_PLUGIN_APP_ID)
             
             
             fingerPrintAuthHelper.authenticateAndGetPassword(passwordKey: PasswordManager.MASTER_PASSWORD_BIOMETRIC_KEY) { password, error  in
