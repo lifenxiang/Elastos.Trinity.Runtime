@@ -143,7 +143,7 @@ public class CarrierHelper {
             }
 
             private func handleReceivedRemoteNotification(friendId: String, request: Dictionary<String, Any>) {
-                if !request.keys.contains("key") || !request.keys.contains("title") {
+                if !request.keys.contains("title") {
                     Log.w(ContactNotifier.LOG_TAG, "Invalid remote notification command received: missing mandatory fields")
                     return
                 }

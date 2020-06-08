@@ -31,13 +31,13 @@ public class RemoteNotificationRequest {
     public var url: String? = nil
 
     public static func fromJSONObject(_ obj: Dictionary<String, Any>) -> RemoteNotificationRequest? {
-        guard obj.keys.contains("key") && obj.keys.contains("title") else {
-            return nil
-        }
-        
         let notif = RemoteNotificationRequest()
         
         notif.key = obj["key"] as? String
+        if notif.key == nil {
+            // If no key is provided, generate a random key. This way, notification will not override each other.
+            notif.key = "\(Int.random(in: 1...Int.max))"
+        }
         
         if obj.keys.contains("appId") {
             notif.appId = obj["appId"] as? String
