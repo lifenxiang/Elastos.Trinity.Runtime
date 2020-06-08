@@ -340,6 +340,56 @@ class ContactNotifierPlugin : TrinityPlugin {
             self.error(command, "contactGetOnlineStatus", error.localizedDescription)
         }
     }
+    
+    @objc func contactSetName(_ command: CDVInvokedUrlCommand) {
+        do {
+            let contactAsJson = command.arguments[0] as! Dictionary<String, Any>
+            let name = command.arguments[1] as? String
+
+            if let contact = try getNotifier().resolveContact(did: contactDIDFromJSON(contactAsJson)) {
+                contact.setName(name)
+                self.success(command)
+            }
+            else {
+                error(command, "contactSetName", "Invalid contact object")
+            }
+        }
+        catch (let error) {
+            print(error)
+            self.error(command, "contactSetName", error.localizedDescription)
+        }
+    }
+    
+    @objc func contactSetAvatar(_ command: CDVInvokedUrlCommand) {
+        do {
+            let contactAsJson = command.arguments[0] as! Dictionary<String, Any>
+            let avatarAsJson = command.arguments[1] as? Dictionary<String, Any>
+
+            guard let contact = try getNotifier().resolveContact(did: contactDIDFromJSON(contactAsJson)) else {
+                error(command, "contactSetAvatar", "Invalid contact object")
+                return
+            }
+            
+            let avatar: ContactAvatar?
+            if avatarAsJson == nil {
+                avatar = nil
+            }
+            else {
+                avatar = ContactAvatar.fromJsonObject(avatarAsJson!)
+                if avatar == nil {
+                    error(command, "contactSetAvatar", "Invalid avatar object")
+                }
+                else {
+                    contact.setAvatar(avatar!)
+                    self.success(command)
+                }
+            }
+        }
+        catch (let error) {
+            print(error)
+            self.error(command, "contactSetAvatar", error.localizedDescription)
+        }
+    }
 
     private func contactDIDFromJSON(_ contactAsJSON: Dictionary<String, Any>) throws -> String? {
         if !contactAsJSON.keys.contains("did") {

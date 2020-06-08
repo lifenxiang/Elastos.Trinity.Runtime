@@ -459,7 +459,7 @@ public class ContactNotifierPlugin extends TrinityPlugin {
 
             Contact contact = getNotifier().resolveContact(contactDIDFromJSON(contactAsJson));
             if (contact == null) {
-                sendError(callbackContext, "contactSetName", "Invalid contact object");
+                sendError(callbackContext, "contactSetAvatar", "Invalid contact object");
                 return;
             }
 
