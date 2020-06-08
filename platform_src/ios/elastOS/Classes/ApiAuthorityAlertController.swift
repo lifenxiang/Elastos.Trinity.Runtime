@@ -65,28 +65,34 @@ class ApiAuthorityAlertController: UIViewController {
         btnAccept.titleColor = UIStyling.popupMainTextColor
         btnAccept.cornerRadius = 8
         
+        // i18n
+        lblIntroduction.text = "api_perm_title".localized
+        lblFeature.text = "api_perm_feature".localized
+        lblCapability.text = "api_perm_description".localized
+        btnDeny.titleString = "api_perm_deny".localized
+        btnAccept.titleString = "api_perm_accept".localized
+        
         // Apply data
         lblAppName.text = appInfo!.name
-        lblIntroduction.text = "This capsule is requesting access to a sensitive feature"
         lblFeatureValue.text = authInfo.getLocalizedTitle()
         lblCapabilitiesValue.text = authInfo.getLocalizedDescription();
         
         if authInfo.dangerLevel == ApiDangerLevel.LOW.rawValue {
             imgRisk.image = UIImage(named: "ic_risk_green")
-            lblRisk.text = "Low Risk"
+            lblRisk.text = "api_perm_risk_low".localized
             view.layer.borderColor = UIColor(hex: "#5cd552")?.cgColor
             view.layer.borderWidth = 1
             
         }
         else if authInfo.dangerLevel == ApiDangerLevel.HIGH.rawValue {
             imgRisk.image = UIImage(named: "ic_risk_red")
-            lblRisk.text = "Potentially Harmful"
+            lblRisk.text = "api_perm_risk_high".localized
             view.layer.borderColor = UIColor(hex: "#f55555")?.cgColor
             view.layer.borderWidth = 1
         }
         else {
             imgRisk.image = UIImage(named: "ic_risk_yellow")
-            lblRisk.text = "Average Risk"
+            lblRisk.text = "api_perm_risk_average".localized
             view.layer.borderColor = UIColor(hex: "#fdd034")?.cgColor
             view.layer.borderWidth = 1
         }

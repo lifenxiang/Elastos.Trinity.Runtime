@@ -60,10 +60,16 @@ class MasterPasswordCreatorAlertController: UIViewController {
         passwordUnderline.backgroundColor = UIStyling.popupMainBackgroundColor
         passwordRepeatUnderline.backgroundColor = UIStyling.popupMainBackgroundColor
         
+        // i18n
+        lblTitle.text = "pwm_create_title".localized
+        lblIntroduction.text = "pwm_create_subtitle".localized
+        btCancel.titleString = "pwm_create_cancel".localized
+        btNext.titleString = "pwm_create_create".localized
+        
         // Input placeholders
-        etPassword.attributedPlaceholder = NSAttributedString(string: "Enter password",
+        etPassword.attributedPlaceholder = NSAttributedString(string: "pwm_create_enter_password".localized,
         attributes: [NSAttributedString.Key.foregroundColor: UIStyling.popupInputHintTextColor])
-        etPasswordRepeat.attributedPlaceholder = NSAttributedString(string: "Repeat password",
+        etPasswordRepeat.attributedPlaceholder = NSAttributedString(string: "pwm_create_repeat_password".localized,
                                                                     attributes: [NSAttributedString.Key.foregroundColor: UIStyling.popupInputHintTextColor])
         
         // Focus password field when entering, so we can start typing at once

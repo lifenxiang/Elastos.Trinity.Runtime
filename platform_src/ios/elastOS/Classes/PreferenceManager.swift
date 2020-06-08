@@ -40,6 +40,14 @@ import Foundation
         // Make some services ready
         let darkMode = getBoolValue("ui.darkmode", false)
         prepareUIStyling(useDarkMode: darkMode)
+        
+        // Language
+        applyLanguageForI18N()
+    }
+    
+    private func applyLanguageForI18N() {
+        let lang = try? getCurrentLocale()
+        UserDefaults.standard.set(lang, forKey: "i18n_language")
     }
 
     @objc static func getShareInstance() -> PreferenceManager {
@@ -162,6 +170,9 @@ import Foundation
         }
         else if (key == "ui.darkmode") {
             prepareUIStyling(useDarkMode: value as! Bool)
+        }
+        else if (key == "locale.language") {
+            applyLanguageForI18N()
         }
 
         let dict = ["action": "preferenceChanged", "data": ["key": key, "value": value]] as [String : Any];

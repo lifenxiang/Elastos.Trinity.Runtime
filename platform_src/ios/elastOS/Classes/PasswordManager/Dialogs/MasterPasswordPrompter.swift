@@ -66,8 +66,16 @@ class MasterPasswordPrompterAlertController: UIViewController {
         passwordUnderline.backgroundColor = UIStyling.popupMainBackgroundColor
         lblBiometricSwitch.textColor = UIStyling.popupMainTextColor
         
+        // i18n
+        lblTitle.text = "pwm_prompt_title".localized
+        lblIntroduction.text = "pwm_prompt_subtitle".localized
+        lblTryAgain.text = "pwm_prompt_wrong_password".localized
+        lblBiometricSwitch.text = "pwm_prompt_use_biometric_auth".localized
+        btCancel.titleString = "pwm_prompt_cancel".localized
+        btNext.titleString = "pwm_prompt_next".localized
+        
         // Input placeholders
-        etPassword.attributedPlaceholder = NSAttributedString(string: "Enter password",
+        etPassword.attributedPlaceholder = NSAttributedString(string: "pwm_create_enter_password".localized,
         attributes: [NSAttributedString.Key.foregroundColor: UIStyling.popupInputHintTextColor])
         
         // Focus password field when entering, so we can start typing at once

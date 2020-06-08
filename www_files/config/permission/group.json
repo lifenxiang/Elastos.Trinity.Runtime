@@ -49,6 +49,9 @@
         "$user": {}
     },
     "didsession": {
+        "AppManager": [
+            "setCurrentLocale"
+        ],
         "DIDSessionManagerPlugin": ["*"],
         "PasswordManagerPlugin": [
             "setVirtualDIDContext"

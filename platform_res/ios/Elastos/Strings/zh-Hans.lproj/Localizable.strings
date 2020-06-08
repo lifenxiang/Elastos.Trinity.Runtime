@@ -1,0 +1,24 @@
+"pwm_prompt_title" = "请输入您的主密码";
+"pwm_prompt_subtitle" = "需要输入您的主密码才能继续";
+"pwm_prompt_wrong_password" = "密码错误，请重新输入";
+"pwm_prompt_use_biometric_auth" = "使用生物特征认证";
+"pwm_prompt_continue_with_biometry" = "继续使用指纹或面部识别进行身份验证";
+"pwm_prompt_cancel" = "取消";
+"pwm_prompt_next" = "下一步";
+
+"pwm_create_title" = "请创建您的主密码";
+"pwm_create_subtitle" = "您的主密码会将所有应用的密码保存在安全的地方。";
+"pwm_create_enter_password" = "输入密码";
+"pwm_create_repeat_password" = "请再次输入密码";
+"pwm_create_no_match" = "密码不一致";
+"pwm_create_cancel" = "取消";
+"pwm_create_create" = "创建";
+
+"api_perm_title" = "该胶囊要求使用敏感功能.";
+"api_perm_feature" = "功能:";
+"api_perm_description" = "胶囊通过此功能能做什么?";
+"api_perm_risk_low" = "低风险";
+"api_perm_risk_average" = "中等风险";
+"api_perm_risk_high" = "潜在危害";
+"api_perm_deny" = "拒绝";
+"api_perm_accept" = "同意";

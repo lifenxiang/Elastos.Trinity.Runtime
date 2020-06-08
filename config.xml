@@ -38,6 +38,14 @@
             <param name="ios-package" value="CDVWKWebViewEngine" />
         </feature>
         <preference name="CordovaWebViewEngine" value="CDVWKWebViewEngine" />
+
+        <edit-config target="CFBundleLocalizations" file="*-Info.plist" mode="overwrite">
+            <array>
+                <string>en</string>
+                <string>zh</string>
+                <string>fr</string>
+            </array>
+        </edit-config>
     </platform>
 
     <preference name="AndroidLaunchMode" value="singleTask" />
