@@ -63,7 +63,9 @@ public class DIDSessionDatabaseAdapter {
                 try db.run(didSessions
                     .filter(didStoreIDField == entry.didStoreId && didStringField == entry.didString)
                     .update(
-                        nameField <- entry.name
+                        nameField <- entry.name,
+                        avatarContentTypeField <- entry.avatar?.contentType,
+                        avatarDataField <- entry.avatar?.base64ImageData
                     ))
             }
         }
@@ -73,7 +75,9 @@ public class DIDSessionDatabaseAdapter {
                     didStoreIDField <- entry.didStoreId,
                     didStringField <- entry.didString,
                     nameField <- entry.name,
-                    signedInField <- false
+                    signedInField <- false,
+                    avatarContentTypeField <- entry.avatar?.contentType,
+                    avatarDataField <- entry.avatar?.base64ImageData
                 ))
             }
         }
