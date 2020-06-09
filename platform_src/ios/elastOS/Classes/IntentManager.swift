@@ -383,23 +383,23 @@ class ShareIntentParams {
         }
     }
 
-    func parseJWT(_ jwt: String) throws -> [String: Any]? {
+    public static func parseJWT(_ jwt: String) throws -> [String: Any]? {
         let jwtDecoder = JWTDecoder.init(jwtVerifier: JWTVerifier.none)
         let data = jwt.data(using: .utf8) ?? nil
         if data == nil {
-            throw AppError.error("parseJWT error!");
+            throw AppError.error("parseJWT error!")
         }
         let decoded = try? jwtDecoder.decode(JWT<AnyCodable>.self, from: data!)
         if decoded == nil {
-            throw AppError.error("parseJWT error!");
+            throw AppError.error("parseJWT error!")
         }
         return decoded?.claims.value as? [String: Any]
     }
 
     func getParamsByJWT(_ jwt: String, _ info: IntentInfo) throws {
-        var jwtPayload = try parseJWT(jwt);
+        var jwtPayload = try IntentManager.parseJWT(jwt)
         if jwtPayload == nil {
-            throw AppError.error("getParamsByJWT error!");
+            throw AppError.error("getParamsByJWT error!")
         }
 
         jwtPayload!["type"] = "jwt";
