@@ -24,6 +24,7 @@
 // TODO: When did sessions are ready, call ContactNotifier.getSharedInstance() as soon as a DID session starts, to initialize carrier early.
 
 import ElastosCarrierSDK
+import ElastosDIDSDK
 
 public typealias onInvitationAccepted = (_ contact: Contact) -> Void
 public typealias onStatusChanged = (_ contact: Contact, _ status: OnlineStatus) -> Void
@@ -39,6 +40,8 @@ public class ContactNotifier {
 
     private static let ONLINE_STATUS_MODE_PREF_KEY = "onlinestatusmode"
     private static let INVITATION_REQUESTS_MODE_PREF_KEY = "invitationrequestsmode"
+    
+    private static let FRIENDS_APP_PACKAGE_ID = "org.elastos.trinity.dapp.friends"
 
     private static var instances = Dictionary<String, ContactNotifier>()  // Sandbox DIDs - One did session = one instance
 
@@ -151,9 +154,28 @@ public class ContactNotifier {
      * @param carrierAddress Target carrier address. Usually shared privately or publicly by the future contact.
      */
     public func sendInvitation(targetDID: String, carrierAddress: String) throws {
-        carrierHelper!.sendInvitation(contactCarrierAddress: carrierAddress) { succeeded, reason in
-            if succeeded {
-                self.dbAdapter!.addSentInvitation(didSessionDID: self.didSessionDID, targetDID: targetDID, targetCarrierAddress: carrierAddress)
+        // It's possible that we are already connected to that friend, for example if we added him earlier then
+        // deleted him. In such case, we don't send any invitation and we directly re-add the friend as a contact.
+        let existingCarrierFriend = carrierHelper!.getFriendUserInfoFromAddress(carrierAddress)
+        if existingCarrierFriend != nil {
+            Log.d(ContactNotifier.LOG_TAG, "Already a carrier friend.")
+            // Try to find more info about this contact
+            resolveOnChainDIDInfo(did: targetDID) { name, avatarHash in
+                Log.d(ContactNotifier.LOG_TAG, "Already a carrier friend. Directly adding as a new contact locally")
+                let addedContact = try? self.dbAdapter!.addContact(didSessionDID: self.didSessionDID, did: targetDID, carrierUserID: existingCarrierFriend!.userId!)
+                if addedContact != nil {
+                    if name != nil {
+                        // Save contact name to database for better display later on
+                        addedContact!.setName(name)
+                    }
+                }
+            }
+        }
+        else {
+            carrierHelper!.sendInvitation(contactCarrierAddress: carrierAddress) { succeeded, reason in
+                if succeeded {
+                    self.dbAdapter!.addSentInvitation(didSessionDID: self.didSessionDID, targetDID: targetDID, targetCarrierAddress: carrierAddress)
+                }
             }
         }
     }
@@ -175,12 +197,16 @@ public class ContactNotifier {
                     // Add the contact to our database
                     Log.d(ContactNotifier.LOG_TAG, "Accepting a friend invitation. Adding contact locally")
                     do {
-                        let contact = try self.dbAdapter!.addContact(didSessionDID: self.didSessionDID, did: invitation.did, carrierUserID: invitation.carrierUserID)
+                        if let contact = try self.dbAdapter!.addContact(didSessionDID: self.didSessionDID, did: invitation.did, carrierUserID: invitation.carrierUserID) {
                             
-                        // Delete the pending invitation request
-                        self.dbAdapter!.removeReceivedInvitation(didSessionDID: self.didSessionDID, invitationId: try? Int64(value: invitationId))
+                            // Delete the pending invitation request
+                            self.dbAdapter!.removeReceivedInvitation(didSessionDID: self.didSessionDID, invitationId: try? Int64(value: invitationId))
 
-                        listener.onInvitationAccepted(contact: contact)
+                            listener.onInvitationAccepted(contact: contact)
+                        }
+                        else {
+                            Log.e(ContactNotifier.LOG_TAG, "Unable to add contact while accepting an invitation! invitationId="+invitationId)
+                        }
                     }
                     catch (let error) {
                         Log.e(ContactNotifier.LOG_TAG, error.localizedDescription)
@@ -294,16 +320,30 @@ public class ContactNotifier {
 
                     notifier.carrierHelper!.acceptFriend(contactCarrierUserID: carrierUserId) { succeeded, reason in
                         if succeeded {
-                            Log.d(ContactNotifier.LOG_TAG, "Adding contact locally")
-                            do {
-                                _ = try self.notifier.dbAdapter!.addContact(didSessionDID: self.notifier.didSessionDID, did: did, carrierUserID: carrierUserId)
-                                
+                            // Try to find more info about this contact
+                            self.notifier.resolveOnChainDIDInfo(did: did) { name, avatarHash in
                                 let targetUrl = "https://scheme.elastos.org/viewfriend?did=\(did)"
-                                // TODO: resolve DID document, find firstname if any, and adjust the notification to include the firstname
-                                self.notifier.sendLocalNotification(relatedRemoteDID: did,key: "newcontact-\(did)", title: "Someone was just added as a new contact. Touch to view his/her profile.", url: targetUrl)
-                            }
-                            catch (let error) {
-                                Log.e(ContactNotifier.LOG_TAG, error.localizedDescription)
+
+                                var notificationSent = false
+                                Log.d(ContactNotifier.LOG_TAG, "Adding contact locally")
+                                do {
+                                    if let addedContact = try self.notifier.dbAdapter!.addContact(didSessionDID: self.notifier.didSessionDID, did: did, carrierUserID: carrierUserId) {
+                                        
+                                        if name != nil {
+                                            // Save contact name to database for better display later on
+                                            addedContact.setName(name)
+                                            self.notifier.sendLocalNotification(relatedRemoteDID: did,key: "newcontact-"+did, title: "\(name!) was just added as a new contact. Touch to view his/her profile.", url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
+                                            notificationSent = true
+                                        }
+                                    }
+                                    
+                                    if !notificationSent {
+                                        self.notifier.sendLocalNotification(relatedRemoteDID: did,key: "newcontact-"+did, title: "Someone was just added as a new contact. Touch to view his/her profile.", url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
+                                    }
+                                }
+                                catch (let error) {
+                                    Log.e(ContactNotifier.LOG_TAG, error.localizedDescription)
+                                }
                             }
                         }
                     }
@@ -316,9 +356,17 @@ public class ContactNotifier {
                     do {
                         let invitationID = try notifier.dbAdapter!.addReceivedInvitation(didSessionDID: notifier.didSessionDID, contactDID: did, contactCarrierUserId: carrierUserId)
                         
-                        let targetUrl = "https://scheme.elastos.org/viewfriendinvitation?did=(did)&invitationid=\(String(describing: invitationID))"
-                        // TODO: resolve DID document, find firstname if any, and adjust the notification to include the firstname
-                        notifier.sendLocalNotification(relatedRemoteDID: did,key: "contactreq-\(did)", title: "Someone wants to add you as a contact. Touch to view more details.", url: targetUrl)
+                        // Try to find more info about this contact
+                        self.notifier.resolveOnChainDIDInfo(did: did) { name, avatarHash in
+                            let targetUrl = "https://scheme.elastos.org/viewfriendinvitation?did=(did)&invitationid=\(String(describing: invitationID))"
+                            
+                            if name != nil {
+                                self.notifier.sendLocalNotification(relatedRemoteDID: did,key: "contactreq-\(did)", title: "\(name!) wants to add you as a contact. Touch to view more details.", url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
+                            }
+                            else {
+                                self.notifier.sendLocalNotification(relatedRemoteDID: did,key: "contactreq-\(did)", title: "Someone wants to add you as a contact. Touch to view more details.", url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
+                            }
+                        }
                     }
                     catch (let error) {
                         Log.e(ContactNotifier.LOG_TAG, error.localizedDescription)
@@ -358,7 +406,7 @@ public class ContactNotifier {
 
     private func updateFriendOnlineStatus(info: FriendInfo) {
         // Resolve the contact and make sure this friend wants to be seen.
-        let contact = try dbAdapter!.getContactByCarrierUserID(didSessionDID: didSessionDID, carrierUserID: info.userId!)
+        let contact = dbAdapter!.getContactByCarrierUserID(didSessionDID: didSessionDID, carrierUserID: info.userId!)
             
         if contact != nil {
             if info.presence == .None {
@@ -408,17 +456,30 @@ public class ContactNotifier {
         Log.d(ContactNotifier.LOG_TAG, "Friend has accepted our invitation. Adding contact locally")
 
         // Add carrier friend as a contact
-        let contact = try dbAdapter!.addContact(didSessionDID: didSessionDID, did: invitation.did, carrierUserID: friendId)
+        if let addedContact = try dbAdapter!.addContact(didSessionDID: didSessionDID, did: invitation.did, carrierUserID: friendId) {
         
-        // Delete the pending invitation request
-        dbAdapter!.removeSentInvitationByAddress(didSessionDID: didSessionDID, carrierAddress: invitation.carrierAddress)
+            // Delete the pending invitation request
+            dbAdapter!.removeSentInvitationByAddress(didSessionDID: didSessionDID, carrierAddress: invitation.carrierAddress)
 
-        // Notify the listeners
-        notifyInvitationAcceptedByFriend(contact: contact)
-
-        let targetUrl = "https://scheme.elastos.org/viewfrien?did=\(invitation.did)"
-        // TODO: resolve DID document, find firstname if any, and adjust the notification to include the firstname
-        sendLocalNotification(relatedRemoteDID: invitation.did,key: "friendaccepted-"+invitation.did, title: "Your friend has accepted your invitation. Touch to view details.", url: targetUrl)
+            resolveOnChainDIDInfo(did: invitation.did) { name, avatarHash in
+                let targetUrl = "https://scheme.elastos.org/viewfrien?did=\(invitation.did)"
+                
+                if name != nil {
+                    // Save name to database for later use
+                    addedContact.setName(name)
+                    self.sendLocalNotification(relatedRemoteDID: invitation.did,key: "friendaccepted-"+invitation.did, title: "Your friend has accepted your invitation. Touch to view details.", url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
+                }
+                else {
+                    self.sendLocalNotification(relatedRemoteDID: invitation.did,key: "friendaccepted-"+invitation.did, title: "Your friend has accepted your invitation. Touch to view details.", url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
+                }
+                
+                // Notify the listeners
+                self.notifyInvitationAcceptedByFriend(contact: addedContact)
+            }
+        }
+        else {
+            Log.e(ContactNotifier.LOG_TAG, "Failed to add contact to database in handleFriendInvitationAccepted, friendId = "+friendId)
+        }
     }
 
     private func notifyOnlineStatusChanged(friendId: String, status: CarrierConnectionStatus) {
@@ -464,6 +525,10 @@ public class ContactNotifier {
     }
 
     func sendLocalNotification(relatedRemoteDID: String, key: String, title: String, url: String?) {
+        sendLocalNotification(relatedRemoteDID: relatedRemoteDID, key: key, title: title, url: url, appId: "system")
+    }
+    
+    func sendLocalNotification(relatedRemoteDID: String, key: String, title: String, url: String?, appId: String) {
         /* TODO WHEN NOTIF PLUGIN IS DONE let testNotif = NotificationRequest()
         testNotif.key = key
         testNotif.title = title
@@ -475,5 +540,41 @@ public class ContactNotifier {
         } catch (let error) {
             print(error)
         }*/
+    }
+    
+    /**
+     * Retrieves info about a given remote DID from its did document (on chain).
+     */
+    func resolveOnChainDIDInfo(did: String, onDIDInfo: @escaping (_ name: String?, _ avatarIPFSHash: String?)->Void) {
+        Log.d(ContactNotifier.LOG_TAG, "Trying to get more info about did \(did) on chain.")
+        DispatchQueue(label: "CNDIDResolve").async {
+            do {
+                let didDocument = try DID(did).resolve(false)
+            
+                Log.d(ContactNotifier.LOG_TAG, "Contact Did document found. Trying to extract name and avatar")
+                var name: String? = nil, avatarHash: String? = nil
+
+                // Try to find a name credential
+                let nameCredential = try didDocument.credential(ofId: "name")
+                if nameCredential != nil {
+                    Log.d(ContactNotifier.LOG_TAG, "Found a name credential")
+                    name = nameCredential?.subject.getPropertyAsString(ofName: "name")
+                }
+                else {
+                    Log.d(ContactNotifier.LOG_TAG, "No name credential found")
+                }
+
+                // TODO: try to find the avatar hash
+
+                onDIDInfo(name, avatarHash)
+            }
+            catch DIDError.notFoundError {
+                Log.d(ContactNotifier.LOG_TAG, "Empty did document. No additional contact info fond on DID sidechain")
+                onDIDInfo(nil, nil)
+            }
+            catch (let error) {
+                print(error)
+            }
+        }
     }
 }

@@ -52,7 +52,7 @@ public class CNDatabaseAdapter {
         helper = CNDatabaseHelper()
     }
 
-    public func addContact(didSessionDID: String, did: String, carrierUserID: String) throws -> Contact {
+    public func addContact(didSessionDID: String, did: String, carrierUserID: String) throws -> Contact? {
         let db = try helper.getDatabase()
         
         try db.transaction {
@@ -65,7 +65,7 @@ public class CNDatabaseAdapter {
             ))
         }
         
-        return getContactByDID(didSessionDID: didSessionDID, contactDID: did)!
+        return getContactByDID(didSessionDID: didSessionDID, contactDID: did)
      }
 
     public func updateContactNotificationsBlocked(didSessionDID: String, did: String, shouldBlockNotifications: Bool) {

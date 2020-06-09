@@ -172,6 +172,19 @@ public class CarrierHelper {
     public func getOrCreateAddress() throws -> String{
         return carrierInstance!.getAddress()
     }
+    
+    /**
+     * Returns a friend info fo a given carrier address, in case we are already friends
+     */
+    public func getFriendUserInfoFromAddress(_ carrierAddress: String) -> FriendInfo? {
+        if let userId = Carrier.getUserIdFromAddress(carrierAddress) {
+            let info = try? carrierInstance?.getFriendInfo(userId)
+            return info
+        }
+        else {
+            return nil
+        }
+    }
 
     public func sendInvitation(contactCarrierAddress: String, completionListener: @escaping onCommandExecuted) {
         queueCommand(ContactInvitationCommand(helper: self, contactCarrierAddress: contactCarrierAddress, completionListener: completionListener))

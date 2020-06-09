@@ -534,7 +534,7 @@ public class ContactNotifier {
         testNotif.url = url;
         try {
             // NOTE: appid can't be null because the notification manager uses it for several things.
-            NotificationManager.getSharedInstance().sendNotification(testNotif, "system");
+            NotificationManager.getSharedInstance().sendNotification(testNotif, appId);
         } catch (Exception e) {
             e.printStackTrace();
         }
