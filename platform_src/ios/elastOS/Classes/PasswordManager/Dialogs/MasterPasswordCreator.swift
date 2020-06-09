@@ -33,12 +33,26 @@ class MasterPasswordCreatorAlertController: UIViewController {
     @IBOutlet weak var btNext: AdvancedButton!
     @IBOutlet weak var passwordUnderline: UIView!
     @IBOutlet weak var passwordRepeatUnderline: UIView!
+    @IBOutlet weak var lblPasswordsDontMatch: UILabel!
     
     private var canDisableMasterPasswordUse = true
     
     var onPasswordCreatedListener: ((_ password: String)->Void)?
     var onCancelListener: (()->Void)?
     var onDontUseMasterPasswordListener: (()->Void)?
+    
+    class TextInputsDelegate : NSObject, UITextFieldDelegate {
+        private let controller: MasterPasswordCreatorAlertController
+        
+        init(controller: MasterPasswordCreatorAlertController) {
+            self.controller = controller
+        }
+        
+        func textFieldDidEndEditing(_ textField: UITextField) {
+            // Clear the "wrong password" text when a text input focus changes (ready to enter a new password)
+            controller.lblPasswordsDontMatch.isHidden = true
+        }
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -65,12 +79,19 @@ class MasterPasswordCreatorAlertController: UIViewController {
         lblIntroduction.text = "pwm_create_subtitle".localized
         btCancel.titleString = "pwm_create_cancel".localized
         btNext.titleString = "pwm_create_create".localized
+        lblPasswordsDontMatch.text = "pwm_create_no_match".localized
+        
+        lblPasswordsDontMatch.isHidden = true
         
         // Input placeholders
         etPassword.attributedPlaceholder = NSAttributedString(string: "pwm_create_enter_password".localized,
         attributes: [NSAttributedString.Key.foregroundColor: UIStyling.popupInputHintTextColor])
         etPasswordRepeat.attributedPlaceholder = NSAttributedString(string: "pwm_create_repeat_password".localized,
                                                                     attributes: [NSAttributedString.Key.foregroundColor: UIStyling.popupInputHintTextColor])
+        
+        let inputsDelegate = TextInputsDelegate(controller: self)
+        etPassword.delegate = inputsDelegate
+        etPasswordRepeat.delegate = inputsDelegate
         
         // Focus password field when entering, so we can start typing at once
         etPassword.becomeFirstResponder()
@@ -95,6 +116,9 @@ class MasterPasswordCreatorAlertController: UIViewController {
     @IBAction func createClicked(_ sender: Any) {
         if let password = etPassword.text, let passwordConfirm = etPasswordRepeat.text, password != "", password == passwordConfirm {
             self.onPasswordCreatedListener?(password)
+        }
+        else {
+            lblPasswordsDontMatch.isHidden = false
         }
     }
 }
