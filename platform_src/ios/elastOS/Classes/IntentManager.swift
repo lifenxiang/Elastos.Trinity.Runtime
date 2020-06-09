@@ -491,8 +491,7 @@ class ShareIntentParams {
         }
     }
 
-    func createJWTResponse(_ info: IntentInfo, _ result: String) throws -> String? {
-
+    func createUnsignedJWTResponse(_ info: IntentInfo, _ result: String) throws -> String? {
         var claims = result.toDict();
         if (claims == nil) {
             throw AppError.error("createJWTResponse: result error!");
@@ -563,39 +562,97 @@ class ShareIntentParams {
         }
         return URL(string: url + param + result.encodingQuery())!;
     }
+    
+    /**
+     * Helper class to deal with app intent result types that can be either JSON objects with raw data,
+     * or JSON objects with "jwt" special field.
+     */
+    private class IntentResult {
+        let rawResult: String
+        var payload: Dictionary<String, Any>? = nil
+        var jwt: String? = nil
+
+        init(rawResult: String) throws {
+            self.rawResult = rawResult
+
+            if let resultAsJson = rawResult.toDict() {
+                if resultAsJson.keys.contains("jwt") {
+                    // The result is a single field named "jwt", that contains an already encoded JWT token
+                    jwt = resultAsJson["jwt"] as? String
+                    if jwt != nil {
+                        payload = try parseJWT(jwt!)
+                    }
+                    else {
+                        payload = nil
+                    }
+                }
+                else {
+                    // The result is a simple JSON object
+                    payload = resultAsJson
+                }
+            }
+            else {
+                // Unable to understand the passed result as JSON
+                payload = nil
+            }
+        }
+
+        func payloadAsString() -> String {
+            return payload!.description
+        }
+
+        func isAlreadyJWT() -> Bool {
+            return jwt != nil
+        }
+    }
 
     func sendIntentResponse(_ result: String, _ intentId: Int64, _ fromId: String) throws {
-        let info = intentContextList[intentId];
+        let info = intentContextList[intentId]
         if (info == nil) {
-            throw AppError.error(String(intentId) + " isn't exist!");
+            throw AppError.error(String(intentId) + " isn't exist!")
         }
 
-        var viewController: TrinityViewController? = nil;
-        viewController = appManager.getViewControllerById(info!.fromId);
+        var viewController: TrinityViewController? = nil
+        viewController = appManager.getViewControllerById(info!.fromId)
         if (viewController != nil) {
-            try self.appManager.start(info!.fromId);
+            try self.appManager.start(info!.fromId)
         }
+        
+        // The result object can be either a standard json object, or a {jwt:JWT} object.
+        let intentResult = try IntentResult(rawResult: result)
 
         if (info!.type == IntentInfo.API) {
             if (viewController != nil) {
-                info!.params = result;
-                info!.fromId = fromId;
-                viewController!.basePlugin!.onReceiveIntentResponse(info!);
+                info!.params = intentResult.payloadAsString()
+                info!.fromId = fromId
+                viewController!.basePlugin!.onReceiveIntentResponse(info!)
             }
         }
         else if (info!.redirectappurl != nil && viewController != nil && viewController!.basePlugin!.isUrlApp()) {
-            let url = getResultUrl(info!.redirectappurl!, result);
-            viewController!.loadUrl(url);
+            let url = getResultUrl(info!.redirectappurl!, result)
+            viewController!.loadUrl(url)
         }
         else {
-            var urlString = info!.redirecturl;
+            var urlString = info!.redirecturl
             if (urlString == nil) {
-                urlString = info!.callbackurl;
+                urlString = info!.callbackurl
             }
 
+            // If there is a provided URL callback for the intent, we want to send the intent response to that url
             if (urlString != nil) {
                 if (info!.type == IntentInfo.JWT) {
-                    let jwt = try createJWTResponse(info!, result);
+                    // Request intent was a JWT payload. We send the response as a JWT payload too
+                    var jwt = try createUnsignedJWTResponse(info!, result);
+                    
+                    if (intentResult.isAlreadyJWT()) {
+                        jwt = intentResult.jwt
+                        //System.out.println("DEBUG DELETE THIS - JWT TOKEN = "+jwt);
+                    }
+                    else {
+                        // App did not return a JWT, so we return an unsigned JWT instead
+                        jwt = try createUnsignedJWTResponse(info!, result)
+                    }
+                    
                     if (IntentManager.checkTrinityScheme(urlString!)) {
                         urlString = urlString! + "/" + jwt!;
                         try sendIntentByUri(URL(string: urlString!)!, info!.fromId);
@@ -609,11 +666,14 @@ class ShareIntentParams {
                     }
                 }
                 else if (info!.type == IntentInfo.URL){
+                    // Request intent was a raw url. We send the response as raw data, with decrypted JWT is the app returned a JWT
                     let ret = createUrlResponse(info!, result);
                     if (IntentManager.checkTrinityScheme(urlString!)) {
+                        // Response url is a trinity url that we can handle internally
                         let url = getResultUrl(urlString!, ret!);
                         try sendIntentByUri(url, info!.fromId);
                     } else {
+                        // Response url can't be handled by trinity. So we either call an intent to open it, or HTTP POST data
                         if (info!.redirecturl != nil) {
                             let url = getResultUrl(urlString!, ret!);
                             IntentManager.openUrl(url);
