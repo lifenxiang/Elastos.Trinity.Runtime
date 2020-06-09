@@ -36,6 +36,7 @@ import androidx.fragment.app.FragmentTransaction;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
+import android.webkit.WebViewDatabase;
 
 import org.apache.cordova.PluginManager;
 import org.elastos.carrier.exceptions.CarrierException;
@@ -714,9 +715,12 @@ public class AppManager {
         FragmentManager manager = activity.getSupportFragmentManager();
         List<Fragment> fragments = manager.getFragments();
         for (int i = 0; i < fragments.size(); i++) {
-            WebViewFragment fragment = (WebViewFragment)fragments.get(i);
-            if ((fragment != null) && (fragment.id.equals(id))) {
-                return fragment;
+            Fragment fragment = fragments.get(i);
+            if (fragment instanceof WebViewFragment) {
+                WebViewFragment webViewFragment = (WebViewFragment)fragment;
+                if (webViewFragment.id.equals(id)) {
+                    return webViewFragment;
+                }
             }
         }
         return null;
