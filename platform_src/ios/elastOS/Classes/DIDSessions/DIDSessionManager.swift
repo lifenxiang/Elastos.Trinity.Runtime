@@ -130,28 +130,29 @@ public class DIDSessionManager {
                         .sealed(using: genericPasswordInfo!.password!)
 
                     // Generate a JWT payload that holds the same format as the "credaccess" scheme intent
-                    /* TODO - AFTER DIDSDK UPGRADE FOR JWT SUPPORT - var jwtPayloadJson = Dictionary<String, Any>()
-                    jwtPayloadJson["presentation"] = presentation.toString().dictionary
+                    var jwtPayloadJson = Dictionary<String, Any>()
+                    jwtPayloadJson["presentation"] = presentation.description.toDict()
                     
                     // Sign as JWT
-                    let header = JwtBuilder.createJwsHeader()
-                    header.setType(Header.JWT_TYPE).setContentType("json")
+                    let header = JwtBuilder.createHeader()
+                    _ = header.setType(Header.JWT_TYPE).setContentType("json")
 
-                    let expire = Calendar.current.date(byAdding: .minute, value: expiresIn, to: Date())!
+                    let iat = Date()
+                    let expire = Calendar.current.date(byAdding: .minute, value: expiresIn, to: iat)!
 
                     let body = JwtBuilder.createClaims()
-                    body.setIssuer(signedInIdentity.didString)
-                            .setIssuedAt(iat)
-                            .setExpiration(exp)
-                            .putAllWithJson(jwtPayloadJson.toString());
+                        .setIssuer(issuer: signedInIdentity.didString)
+                        .setIssuedAt(issuedAt: iat)
+                        .setExpiration(expiration: expire)
+                        // TODO MISSING IN SWIFT .putAllWithJson(jwtPayloadJson.toString())
 
-                    let jwtToken = didDocument.jwtBuilder()
-                            .setHeader(header)
-                            .setClaims(body)
-                            .sign(genericPasswordInfo.password)
-                            .compact();
+                    let jwtToken = try didDocument.jwtBuilder()
+                        .setHeader(header)
+                        .setClaims(body)
+                        .sign(using: genericPasswordInfo!.password!)
+                        .compact()
 
-                    onJWTCreated(jwtToken)*/
+                    onJWTCreated(jwtToken)
                 }
                 catch (let error) {
                     Log.e(DIDSessionManager.LOG_TAG, "Unable to generate an authentication JWT: "+error.localizedDescription)
