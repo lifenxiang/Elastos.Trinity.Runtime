@@ -76,6 +76,8 @@ public class PasswordManager {
     private static let LOG_TAG = "PWDManager"
     private static let SHARED_PREFS_KEY = "PWDMANAGERPREFS"
     private static let PASSWORD_MANAGER_APP_ID = "org.elastos.trinity.dapp.passwordmanager"
+    private static let DID_APPLICATION_APP_ID = "org.elastos.trinity.dapp.did"
+    private static let DID_SESSION_APPLICATION_APP_ID = "org.elastos.trinity.dapp.didsession"
 
     public static let FAKE_PASSWORD_MANAGER_PLUGIN_APP_ID = "fakemasterpasswordpluginappid"
     public static let MASTER_PASSWORD_BIOMETRIC_KEY = "masterpasswordkey"
@@ -117,11 +119,12 @@ public class PasswordManager {
                                 onError: @escaping (_ error: String)->Void) {
         
         let actualDID = try! getActualDIDContext(currentDIDContext: did)
+        let actualAppID = getActualAppID(appID)
         
         checkMasterPasswordCreationRequired(did: actualDID, onMasterPasswordCreated: {
             self.loadDatabase(did: actualDID, onDatabaseLoaded: {
                 do {
-                    try self.setPasswordInfoReal(info: info, did: actualDID, appID: appID)
+                    try self.setPasswordInfoReal(info: info, did: actualDID, appID: actualAppID)
                     onPasswordInfoSet()
                 }
                 catch (let error) {
@@ -155,11 +158,12 @@ public class PasswordManager {
                                 onError: @escaping (_ error: String)->Void) throws {
         
         let actualDID = try! getActualDIDContext(currentDIDContext: did)
+        let actualAppID = getActualAppID(appID)
 
         checkMasterPasswordCreationRequired(did: actualDID, onMasterPasswordCreated: {
             self.loadDatabase(did: actualDID, onDatabaseLoaded: {
                 do {
-                    let info = try self.getPasswordInfoReal(key: key, did: actualDID, appID: appID)
+                    let info = try self.getPasswordInfoReal(key: key, did: actualDID, appID: actualAppID)
                     onPasswordInfoRetrieved(info)
                 }
                 catch (let error) {
@@ -190,8 +194,9 @@ public class PasswordManager {
                                    onError: @escaping (_ error: String)->Void) {
         
         let actualDID = try! getActualDIDContext(currentDIDContext: did)
+        let actualAppID = getActualAppID(appID)
         
-        if (!appIsPasswordManager(appId: appID)) {
+        if (!appIsPasswordManager(appId: actualAppID)) {
             onError("Only the password manager application can call this API")
             return
         }
@@ -228,16 +233,18 @@ public class PasswordManager {
                                    onError: @escaping (_ error: String)->Void) throws {
         
         let actualDID = try! getActualDIDContext(currentDIDContext: did)
+        let actualAppID = getActualAppID(appID)
+        let actualTargetAppID = getActualAppID(targetAppID)
         
         // Only the password manager app can delete content that is not its own content.
-        if (!appIsPasswordManager(appId: appID) && appID != targetAppID) {
+        if (!appIsPasswordManager(appId: actualAppID) && actualAppID != actualTargetAppID) {
             onError("Only the application manager application can delete password info that does not belong to it.")
             return
         }
 
         loadDatabase(did: actualDID, onDatabaseLoaded: {
             do {
-                try self.deletePasswordInfoReal(key: key, did: actualDID, targetAppID: targetAppID)
+                try self.deletePasswordInfoReal(key: key, did: actualDID, targetAppID: actualTargetAppID)
                 onPasswordInfoDeleted()
             }
             catch (let error) {
@@ -278,8 +285,9 @@ public class PasswordManager {
                                      onError: @escaping (_ error: String)->Void) throws {
         
         let actualDID = try! getActualDIDContext(currentDIDContext: did)
+        let actualAppID = getActualAppID(appID)
         
-        if !appIsPasswordManager(appId: appID) {
+        if !appIsPasswordManager(appId: actualAppID) {
             print("Only the password manager application can call this API")
             return
         }
@@ -335,8 +343,9 @@ public class PasswordManager {
      */
     public func lockMasterPassword(did: String, appID: String) {
         let actualDID = try! getActualDIDContext(currentDIDContext: did)
+        let actualAppID = getActualAppID(appID)
         
-        if (!appIsPasswordManager(appId: appID)) {
+        if (!appIsPasswordManager(appId: actualAppID)) {
             print("Only the password manager application can call this API")
             return
         }
@@ -358,8 +367,9 @@ public class PasswordManager {
      */
     public func setUnlockMode(unlockMode: PasswordUnlockMode, did: String, appID: String) {
         let actualDID = try! getActualDIDContext(currentDIDContext: did)
+        let actualAppID = getActualAppID(appID)
         
-        if (!appIsPasswordManager(appId: appID)) {
+        if (!appIsPasswordManager(appId: actualAppID)) {
             print("Only the password manager application can call this API")
             return
         }
@@ -368,7 +378,7 @@ public class PasswordManager {
 
         // if the mode becomes UNLOCK_EVERY_TIME, we lock the database
         if (getUnlockMode() != .UNLOCK_EVERY_TIME && unlockMode == PasswordUnlockMode.UNLOCK_EVERY_TIME) {
-            lockDatabase(did: actualDID);
+            lockDatabase(did: actualDID)
         }
     }
 
@@ -402,6 +412,15 @@ public class PasswordManager {
                 throw "No signed in DID or virtual DID context exist. Need at least one of them!"
             }
         }
+    }
+    
+    private func getActualAppID(_ baseAppID: String) -> String{
+        // Share the same appid for did session and did apps, to be able to share passwords. Use a real app id, not a random
+        // string, for security reasons.
+        if baseAppID == PasswordManager.DID_SESSION_APPLICATION_APP_ID {
+            return PasswordManager.DID_APPLICATION_APP_ID
+        }
+        return baseAppID
     }
 
     private func appIsPasswordManager(appId: String) -> Bool {
