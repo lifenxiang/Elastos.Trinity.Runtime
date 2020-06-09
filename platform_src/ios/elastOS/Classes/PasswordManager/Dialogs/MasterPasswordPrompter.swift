@@ -36,6 +36,7 @@ class MasterPasswordPrompterAlertController: UIViewController {
     @IBOutlet weak var swBiometric: UISwitch!
     @IBOutlet weak var lblBiometricSwitch: UILabel!
     @IBOutlet weak var passwordContainer: UIView!
+    @IBOutlet weak var biometricStack: UIStackView!
     
     private var passwordManager: PasswordManager? = nil
     private var did: String? = nil
@@ -107,8 +108,7 @@ class MasterPasswordPrompterAlertController: UIViewController {
         }
         else {
             // No biometric auth mechanism available - hide the feature
-            swBiometric.isHidden = true
-            lblBiometricSwitch.isHidden = true
+            biometricStack.isHidden = true
         }
     }
     

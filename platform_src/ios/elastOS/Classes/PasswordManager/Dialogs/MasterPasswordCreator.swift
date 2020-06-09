@@ -41,14 +41,21 @@ class MasterPasswordCreatorAlertController: UIViewController {
     var onCancelListener: (()->Void)?
     var onDontUseMasterPasswordListener: (()->Void)?
     
+    private var inputsDelegate: TextInputsDelegate? = nil
+    
     class TextInputsDelegate : NSObject, UITextFieldDelegate {
         private let controller: MasterPasswordCreatorAlertController
         
         init(controller: MasterPasswordCreatorAlertController) {
             self.controller = controller
         }
+    
+        func textFieldDidChangeSelection(_ textField: UITextField) {
+            // Clear the "wrong password" text when a text input focus changes (ready to enter a new password)
+            controller.lblPasswordsDontMatch.isHidden = true
+        }
         
-        func textFieldDidEndEditing(_ textField: UITextField) {
+        func textFieldDidBeginEditing(_ textField: UITextField) {
             // Clear the "wrong password" text when a text input focus changes (ready to enter a new password)
             controller.lblPasswordsDontMatch.isHidden = true
         }
@@ -89,7 +96,7 @@ class MasterPasswordCreatorAlertController: UIViewController {
         etPasswordRepeat.attributedPlaceholder = NSAttributedString(string: "pwm_create_repeat_password".localized,
                                                                     attributes: [NSAttributedString.Key.foregroundColor: UIStyling.popupInputHintTextColor])
         
-        let inputsDelegate = TextInputsDelegate(controller: self)
+        self.inputsDelegate = TextInputsDelegate(controller: self)
         etPassword.delegate = inputsDelegate
         etPasswordRepeat.delegate = inputsDelegate
         
