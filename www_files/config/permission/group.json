@@ -34,6 +34,7 @@
             "broadcastMessage",
             "unInstall",
             "setUrlAuthority",
+            "setPluginAuthority",
             "alertPrompt"
         ],
         "DIDSessionManagerPlugin": [
