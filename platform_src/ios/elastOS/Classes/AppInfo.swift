@@ -85,6 +85,7 @@ class AppInfo: NSObject {
     @objc dynamic var category = "";
     @objc dynamic var key_words = "";
     @objc dynamic var start_visible = "";
+    var share = true;
 
     @objc static let AUTHORITY_NOEXIST = -1;
     @objc static let AUTHORITY_NOINIT = 0;
@@ -110,14 +111,32 @@ class AppInfo: NSObject {
     }
 
     @objc func addPlugin(_ plugin: String, _ authority: Int) {
+        for pluginAuth in plugins {
+            if (pluginAuth.plugin == plugin) {
+                pluginAuth.authority = authority;
+                return;
+            }
+        }
         plugins.append(PluginAuth(plugin, authority));
     }
 
     @objc func addUrl(_ url: String, _ authority: Int) {
+        for urlAuth in urls {
+            if (urlAuth.url == url) {
+                urlAuth.authority = authority;
+                return;
+            }
+        }
         urls.append(UrlAuth(url, authority));
     }
     
     @objc func addIntent(_ url: String, _ authority: Int) {
+        for urlAuth in intents {
+            if (urlAuth.url == url) {
+                urlAuth.authority = authority;
+                return;
+            }
+        }
         intents.append(UrlAuth(url, authority));
     }
     

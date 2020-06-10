@@ -228,8 +228,11 @@
         if (id == "") {
             self.error(command, "Invalid id.")
         }
-        else if (id == "launcher") {
+        else if (AppManager.getShareInstance().isLauncher(id)) {
             self.error(command, "Can't start launcher! Please use launcher().")
+        }
+        else if (AppManager.getShareInstance().isDIDSession(id)) {
+            self.error(command, "Can't start did session!")
         }
         else {
             do {
@@ -322,8 +325,7 @@
         }
 
         let icon = info!.icons[i!];
-        let appUrl = AppManager.getShareInstance().getIconPath(info!);
-        return resetPath(appUrl, icon.src);
+        return AppManager.getShareInstance().getIconUrl(info!, icon.src);
     }
 
     func jsonAppIcons(_ info: AppInfo) -> [Dictionary<String, String>] {
@@ -701,7 +703,7 @@
     @objc func setUrlAuthority(_ command: CDVInvokedUrlCommand) {
         let id = command.arguments[0] as? String ?? ""
         let url = command.arguments[1] as? String ?? ""
-        let authority = command.arguments[1] as? Int ?? 0
+        let authority = command.arguments[2] as? Int ?? 0
 
         if (id == "") {
             self.error(command, "Invalid id.")

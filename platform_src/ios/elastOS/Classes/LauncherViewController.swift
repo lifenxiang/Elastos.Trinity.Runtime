@@ -19,37 +19,34 @@
   * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   * SOFTWARE.
   */
- 
+
  import Foundation
- 
+
  @objc(LauncherViewController)
  class LauncherViewController : TrinityViewController {
-    
+
     override func loadSettings() {
         super.loadSettings();
-        self.id = "launcher";
-        self.appInfo = AppManager.getShareInstance().getLauncherInfo();
-        
-        self.whitelistFilter = WhitelistFilter(self.appInfo!);
+
         self.pluginObjects["CDVIntentAndNavigationFilter"] = self.whitelistFilter;
-        
+
         for (key, value) in pluginsMap {
             let name = key as! String;
             let className = value as! String;
             AppViewController.originalPluginsMap[name] = className;
         }
-        
+
         for item in self.startupPluginNames {
             let name = item as! String;
             AppViewController.originalStartupPluginNames.append(name);
         }
-        
+
         AppViewController.originalSettings = self.settings;
-        
+
         if(self.wwwFolderName == nil){
             self.wwwFolderName = "www";
         }
         self.startPage = AppManager.getShareInstance().getStartPath(self.appInfo!);
     }
-        
+
  }

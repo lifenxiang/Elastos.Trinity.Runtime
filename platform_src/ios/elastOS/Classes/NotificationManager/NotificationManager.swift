@@ -16,16 +16,18 @@ public class NotificationManager {
     private var onNotificationListeners = Array<onNotification>()
 
 
-    init(mainViewController: MainViewController) {
-        self.mainViewController = mainViewController
+    init() {
+        self.mainViewController = AppManager.getShareInstance().mainViewController
         self.dbAdapter = NMDatabaseAdapter(notifier: self)
-        NotificationManager.instance = self
 
         Log.i(NotificationManager.LOG_TAG, "Creating NotificationManager")
     }
 
     public static func getSharedInstance() throws -> NotificationManager {
-        return instance!
+        if (NotificationManager.instance == nil) {
+            NotificationManager.instance = NotificationManager();
+        }
+        return NotificationManager.instance!;
     }
 
     /**

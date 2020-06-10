@@ -31,17 +31,16 @@ public class DIDSessionManager {
 
     init() {
         dbAdapter = DIDSessionDatabaseAdapter()
-        DIDSessionManager.instance = self
-    }
-
-    public static func getSharedInstance() -> DIDSessionManager {
-        return instance!
-    }
-
-    func setAppManager(_ appManager: AppManager) {
-        self.appManager = appManager
+        self.appManager = AppManager.getShareInstance();
     }
     
+    public static func getSharedInstance() -> DIDSessionManager {
+        if (DIDSessionManager.instance == nil) {
+            DIDSessionManager.instance = DIDSessionManager();
+        }
+        return DIDSessionManager.instance!;
+    }
+
     func addIdentityEntry(entry: IdentityEntry) throws {
         _ = try dbAdapter.addDIDSessionIdentityEntry(entry: entry)
     }

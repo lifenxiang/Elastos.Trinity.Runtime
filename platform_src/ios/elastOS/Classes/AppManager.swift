@@ -22,74 +22,23 @@
 
 import Foundation
 
-@objc(AppManager)
-class AppManager: NSObject {
-    private static var appManager: AppManager?;
+class AppPathInfo {
+     let appsPath: String;
+     let dataPath: String;
+     let configPath: String;
+     let tempPath: String;
+     let databasePath: String;
 
-    /** The internal message */
-    static let MSG_TYPE_INTERNAL = 1;
-    /** The internal return message. */
-    static let MSG_TYPE_IN_RETURN = 2;
-    /** The internal refresh message. */
-    static let MSG_TYPE_IN_REFRESH = 3;
-    /** The installing message. */
-    static let MSG_TYPE_INSTALLING = 4;
-
-    /** The external message */
-    static let MSG_TYPE_EXTERNAL = 11;
-    /** The external launcher message */
-    static let MSG_TYPE_EX_LAUNCHER = 12;
-    /** The external install message */
-    static let MSG_TYPE_EX_INSTALL = 13;
-    /** The external return message. */
-    static let MSG_TYPE_EX_RETURN = 14;
-
-    static let LAUNCHER = "launcher";
-
-    let mainViewController: MainViewController;
-    var viewControllers = [String: TrinityViewController]();
-
-    let appsPath: String;
-    let dataPath: String;
-    let configPath: String;
-    let tempPath: String;
-
-    var curController: TrinityViewController?;
-
-    let dbAdapter: ManagerDBAdapter;
-
-    var appList: [AppInfo];
-    var appInfos = [String: AppInfo]();
-    var lastList = [String]();
-    var installer: AppInstaller;
-    var visibles = [String: Bool]();
-
-    private var launcherInfo: AppInfo? = nil;
-
-    var installUriList = [String]();
-    var intentUriList = [URL]();
-    var launcherReady = false;
-
-    static let defaultPlugins = [
-        "gesturehandler",
-        "appmanager",
-        "titlebarplugin",
-        "console",
-        "localstorage",
-        "handleopenurl",
-        "intentandnavigationfilter",
-        "authorityplugin",
-        "statusbar"
-    ];
-
-    init(_ mainViewController: MainViewController) {
-
-        self.mainViewController = mainViewController;
-
-        appsPath = NSHomeDirectory() + "/Documents/apps/";
-        dataPath = NSHomeDirectory() + "/Documents/data/";
-        configPath = NSHomeDirectory() + "/Documents/config/";
-        tempPath = NSHomeDirectory() + "/Documents/temp/";
+    init(_ basePath: String?) {
+        var baseDir = NSHomeDirectory() + "/Documents";
+        if (basePath != nil) {
+            baseDir = baseDir + "/" + basePath!;
+        }
+        appsPath = baseDir + "/apps/";
+        dataPath = baseDir + "/data/";
+        configPath = baseDir + "/config/";
+        tempPath = baseDir + "/temp/";
+        databasePath = baseDir + "/database/";
 
         let fileManager = FileManager.default
         if (!fileManager.fileExists(atPath: appsPath)) {
@@ -128,30 +77,120 @@ class AppManager: NSObject {
             }
         }
 
-        dbAdapter = ManagerDBAdapter(dataPath);
+        if (!fileManager.fileExists(atPath: databasePath)) {
+            do {
+                try fileManager.createDirectory(atPath: databasePath, withIntermediateDirectories: true, attributes: nil)
+            }
+            catch let error {
+                print("Make databasePath error: \(error)");
+            }
+        }
+    }
+ }
+
+@objc(AppManager)
+class AppManager: NSObject {
+    private static var appManager: AppManager?;
+
+    /** The internal message */
+    static let MSG_TYPE_INTERNAL = 1;
+    /** The internal return message. */
+    static let MSG_TYPE_IN_RETURN = 2;
+    /** The internal refresh message. */
+    static let MSG_TYPE_IN_REFRESH = 3;
+    /** The installing message. */
+    static let MSG_TYPE_INSTALLING = 4;
+
+    /** The external message */
+    static let MSG_TYPE_EXTERNAL = 11;
+    /** The external launcher message */
+    static let MSG_TYPE_EX_LAUNCHER = 12;
+    /** The external install message */
+    static let MSG_TYPE_EX_INSTALL = 13;
+    /** The external return message. */
+    static let MSG_TYPE_EX_RETURN = 14;
+
+    static let LAUNCHER = "launcher";
+    static let DIDSESSION = "didsession";
+
+    let mainViewController: MainViewController;
+    var viewControllers = [String: TrinityViewController]();
+
+    private let basePathInfo: AppPathInfo = AppPathInfo(nil);
+    private var pathInfo: AppPathInfo? = nil;
+
+    var curController: TrinityViewController?;
+
+    let dbAdapter: MergeDBAdapter;
+
+    var appList = [AppInfo]();
+    var appInfos = [String: AppInfo]();
+    var lastList = [String]();
+    var shareInstaller: AppInstaller;
+    var visibles = [String: Bool]();
+
+    private var launcherInfo: AppInfo? = nil;
+    private var diddessionInfo: AppInfo? = nil;
+    private var signIning = true;
+    private var did: String? = nil;
+
+    var installUriList = [String]();
+    var intentUriList = [URL]();
+    var launcherReady = false;
+
+    static let defaultPlugins = [
+        "gesturehandler",
+        "appmanager",
+        "titlebarplugin",
+        "console",
+        "localstorage",
+        "handleopenurl",
+        "intentandnavigationfilter",
+        "authorityplugin",
+        "statusbar"
+    ];
+
+    init(_ mainViewController: MainViewController) {
+
+        self.mainViewController = mainViewController;
+        pathInfo = basePathInfo;
+
+        dbAdapter = MergeDBAdapter(basePathInfo.dataPath);
 //        try! dbAdapter.clean();
-        installer = AppInstaller(appsPath, dataPath, tempPath, dbAdapter);
-        appList = try! dbAdapter.getAppInfos();
+        shareInstaller = AppInstaller(basePathInfo.appsPath, basePathInfo.tempPath, dbAdapter);
+
         super.init();
-
         AppManager.appManager = self;
-
-        PasswordManager.getSharedInstance().setAppManager(self)
 
         refreashInfos();
         getLauncherInfo();
         saveLauncher();
-
-        do {
-            // TMP BPI try loadLauncher();
-            try launchStartupScreen()
-        }
-        catch let error {
-            print("loadLauncher error: \(error)");
-        }
+        checkAndUpateDIDSession();
         saveBuiltInApps();
         refreashInfos();
-        sendRefreshList("initiated", nil);
+
+        var entry: IdentityEntry? = nil;
+        do {
+            entry = try DIDSessionManager.getSharedInstance().getSignedInIdentity();
+        }
+        catch let error {
+            print("getSignedInIdentity error: \(error)");
+        }
+
+
+        if (entry != nil) {
+            signIning = false;
+            did = entry!.didString;
+            reInit(nil);
+        }
+        else {
+            do {
+                try startDIDSession();
+            }
+            catch let error {
+                print("startDIDSession error: \(error)");
+            }
+        }
 
         if (PreferenceManager.getShareInstance().getDeveloperMode()) {
             CLIService.getShareInstance().start();
@@ -162,19 +201,144 @@ class AppManager: NSObject {
         return AppManager.appManager!;
     }
 
-    func getDBAdapter() -> ManagerDBAdapter {
+    public func getBaseDataPath() -> String {
+        return basePathInfo.dataPath;
+    }
+
+    private func reInit(_ sessionLanguage: String?) {
+        curController = nil;
+
+        pathInfo = AppPathInfo(getDIDDir());
+
+        dbAdapter.setUserDBAdapter(pathInfo?.databasePath);
+
+        // If we have received an optional language info, we set the DID session language preference with it.
+        // This is normally passed by the DID session app to force the initial session language
+        if (sessionLanguage != nil) {
+            do {
+                try PreferenceManager.getShareInstance().setPreference("locale.language", sessionLanguage);
+            }
+            catch let error {
+                    print("setPreference error: locale.language \(error)");
+            }
+        }
+
+        refreashInfos();
+        getLauncherInfo();
+        do {
+            try loadLauncher();
+        }
+        catch let error {
+            print("loadLauncher error: \(error)");
+        }
+        refreashInfos();
+        sendRefreshList("initiated", nil);
+    }
+
+    private func closeAll() throws {
+        for appId in getRunningList() {
+            if (!isLauncher(appId)) {
+                try close(appId);
+            }
+
+        }
+
+        for id in viewControllers.keys {
+            viewControllers[id]!.remove();
+            viewControllers[id] = nil;
+        }
+    }
+
+
+    private func clean() {
+        did = nil;
+        curController = nil;
+        appList = [AppInfo]();
+        lastList = [String]();
+        visibles = [String: Bool]();
+
+        dbAdapter.setUserDBAdapter(nil);
+        pathInfo = basePathInfo;
+    }
+
+    /**
+     * Signs in to a new DID session.
+     */
+    public func signIn(sessionLanguage: String?) throws {
+        if (signIning) {
+            signIning = false;
+            try closeDIDSession();
+            reInit(sessionLanguage);
+        }
+    }
+
+    /**
+     * Signs out from a DID session. All apps and services are closed, and launcher goes back to the DID session app prompt.
+     */
+    public func signOut() throws {
+        if (!signIning) {
+            signIning = true;
+            try closeAll();
+            clean();
+            try startDIDSession();
+        }
+    }
+
+    @objc func isSignIning() -> Bool {
+        return signIning;
+    }
+
+    public func getDIDSessionId() -> String {
+        return "org.elastos.trinity.dapp.didsession";
+    }
+
+    public func isDIDSession(_ appId: String) -> Bool {
+        return appId == "didsession" || appId == getDIDSessionId();
+    }
+
+    @objc func getDIDSessionAppInfo() -> AppInfo? {
+        if (diddessionInfo == nil) {
+            diddessionInfo = try? dbAdapter.getAppInfo(getDIDSessionId());
+        }
+        return diddessionInfo;
+    }
+
+    func startDIDSession() throws {
+        try start(getDIDSessionId());
+    }
+
+    func closeDIDSession() throws {
+        try close(getDIDSessionId());
+
+        let entry = try DIDSessionManager.getSharedInstance().getSignedInIdentity();
+        did = entry?.didString;
+    }
+
+    @objc func getDID() -> String? {
+        return did;
+    }
+
+    func getDIDDir() -> String? {
+        var did = getDID();
+        if (did != nil) {
+            did!.replacingOccurrences(of: ":", with: "_")
+        }
+        return did;
+    }
+
+    func getDBAdapter() -> MergeDBAdapter {
         return dbAdapter;
     }
 
-    func copyConfigFiles() {
-        let path = getAbsolutePath("www/config");
-        do {
-            try installer.copyAssetsFolder(path, configPath);
-        }
-        catch let error {
-            print("Copy configPath error: \(error)");
-        }
-    }
+//    func copyConfigFiles() {
+//        let path = getAbsolutePath("www/config");
+//        do {
+//            try shareInstaller.copyAssetsFolder(path, configPath);
+//        }
+//        catch let error {
+//            print("Copy configPath error: \(error)");
+//        }
+//    }
 
     func setAppVisible(_ id: String, _ visible: String) {
         if (visible == "hide") {
@@ -226,7 +390,10 @@ class AppManager: NSObject {
     }
 
     @objc func getAppInfo(_ id: String) -> AppInfo? {
-        if (isLauncher(id)) {
+        if (isDIDSession(id)) {
+            return getDIDSessionAppInfo();
+        }
+        else if (isLauncher(id)) {
             return getLauncherInfo();
         }
         else {
@@ -246,10 +413,18 @@ class AppManager: NSObject {
             return info.start_url;
         }
     }
+    
+    func getAppLocalPath(_ info: AppInfo) -> String {
+        var path = basePathInfo.appsPath;
+        if (!info.share) {
+            path = pathInfo!.appsPath;
+        }
+        return path + info.app_id + "/";
+    }
 
     @objc func getAppPath(_ info: AppInfo) -> String {
         if (!info.remote) {
-            return appsPath + info.app_id + "/";
+            return getAppLocalPath(info)
         }
         else {
             let index = info.start_url.range(of: "/", options: .backwards)!.lowerBound;
@@ -265,12 +440,26 @@ class AppManager: NSObject {
         return url;
     }
 
+    private func checkPath(_ path: String) -> String {
+        let fileManager = FileManager.default
+        if (!fileManager.fileExists(atPath: path)) {
+            do {
+                try fileManager.createDirectory(atPath: path, withIntermediateDirectories: true, attributes: nil)
+            }
+            catch let error {
+                print("Make appsPath error: \(error)");
+            }
+        }
+        return path;
+    }
+
     @objc func getDataPath(_ id: String) -> String {
         var appId = id;
-        if (id == "launcher") {
+        if (isLauncher(appId)) {
             appId = getLauncherInfo()!.app_id;
         }
-        return dataPath + appId + "/";
+
+        return checkPath(pathInfo!.dataPath + appId + "/");
     }
 
     @objc func getDataUrl(_ id: String) -> String {
@@ -279,10 +468,11 @@ class AppManager: NSObject {
 
     @objc func getTempPath(_ id: String) -> String {
         var appId = id;
-        if (id == "launcher") {
+        if (isLauncher(appId)) {
             appId = getLauncherInfo()!.app_id;
         }
-        return tempPath + appId + "/";
+
+        return checkPath(pathInfo!.tempPath + appId + "/");
     }
 
     @objc func getTempUrl(_ id: String) -> String {
@@ -290,23 +480,21 @@ class AppManager: NSObject {
     }
 
     @objc func getConfigPath() -> String {
-        return configPath;
+        return pathInfo!.configPath;
     }
 
-    func getIconPath(_ info: AppInfo) -> String {
-        if (info.type == "url") {
-            return appsPath + info.app_id + "/";
-        }
-        else {
-            return getAppPath(info);
-        }
+    func getIconUrl(_ info: AppInfo, _ iconSrc: String) -> String {
+        let url = "file://" + getAppLocalPath(info);
+        return resetPath(url, iconSrc);
     }
 
+    //TODO:: change to getIconUrls
     func getIconPaths(_ info: AppInfo) -> [String] {
         let path = getAppPath(info)
         var iconPaths = [String]()
         for i in 0..<info.icons.count {
             iconPaths.append(path + info.icons[i].src)
+//            iconPaths.append(getIconUrl(info, info.icons[i].src));
         }
         return iconPaths
     }
@@ -326,7 +514,7 @@ class AppManager: NSObject {
             }
         }
 
-        let builtInInfo = try installer.parseManifest(path + "/manifest.json", launcher)!;
+        let builtInInfo = try shareInstaller.parseManifest(path + "/manifest.json", launcher)!;
         let installedInfo = getAppInfo(id);
         var needInstall = true;
 
@@ -339,7 +527,7 @@ class AppManager: NSObject {
                 else {
                     Log.d("AppManager", "built in version \(builtInInfo.version_code) > installed version \(installedInfo!.version_code) for \(installedInfo!.app_id): uninstalling installed")
                 }
-                try installer.unInstall(installedInfo, true)
+                try shareInstaller.unInstall(installedInfo, true)
             }
             else {
                 Log.d("AppManager", "Built in version <= installed version, No need to install");
@@ -352,9 +540,9 @@ class AppManager: NSObject {
 
         if (needInstall) {
             Log.d("AppManager", "Needs install - copying assets and setting built-in to 1");
-            try installer.copyAssetsFolder(originPath, appsPath + builtInInfo.app_id);
+            try shareInstaller.copyAssetsFolder(originPath, basePathInfo.appsPath + builtInInfo.app_id);
             builtInInfo.built_in = true;
-            try dbAdapter.addAppInfo(builtInInfo);
+            try dbAdapter.addAppInfo(builtInInfo, true);
             if (launcher) {
                 launcherInfo = nil;
                 getLauncherInfo();
@@ -366,19 +554,37 @@ class AppManager: NSObject {
 
     private func saveLauncher() {
         do {
-            try installBuiltInApp("www/", "launcher", true);
-
             //For Launcher update by install()
-            let path = appsPath + AppManager.LAUNCHER;
+            let path = basePathInfo.appsPath + AppManager.LAUNCHER;
             let fileManager = FileManager.default;
             if (fileManager.fileExists(atPath: path)) {
-                let info = try installer.getInfoByManifest(path + "/", true);
+                let info = try shareInstaller.getInfoByManifest(path + "/", true);
                 info!.built_in = true;
-                try dbAdapter.removeAppInfo(launcherInfo!);
-                try installer.renameFolder(path, appsPath, launcherInfo!.app_id);
-                try dbAdapter.addAppInfo(info!);
+                try dbAdapter.removeAppInfo(launcherInfo!, true);
+                try shareInstaller.renameFolder(path, basePathInfo.appsPath, launcherInfo!.app_id);
+                try dbAdapter.addAppInfo(info!, true);
                 launcherInfo = nil;
                 getLauncherInfo();
+            }
+
+            try installBuiltInApp("www/", "launcher", true);
+        } catch let error {
+            print("saveLauncher error: \(error)");
+        }
+    }
+
+    private func checkAndUpateDIDSession() {
+        do {
+            //For Launcher update by install()
+            let path = basePathInfo.appsPath + AppManager.DIDSESSION;
+            let fileManager = FileManager.default;
+            if (fileManager.fileExists(atPath: path)) {
+                let info = try shareInstaller.getInfoByManifest(path + "/", false);
+                info!.built_in = true;
+                try dbAdapter.removeAppInfo(getDIDSessionAppInfo()!, true);
+                try shareInstaller.renameFolder(path, basePathInfo.appsPath, getDIDSessionId());
+                try dbAdapter.addAppInfo(info!, true);
+                diddessionInfo = nil;
             }
         } catch let error {
             print("saveLauncher error: \(error)");
@@ -424,7 +630,7 @@ class AppManager: NSObject {
     }
 
     func install(_ url: String, _ update: Bool) throws -> AppInfo? {
-        let info = try installer.install(url, update);
+        let info = try shareInstaller.install(url, update);
         if (info != nil) {
             refreashInfos();
 
@@ -442,7 +648,7 @@ class AppManager: NSObject {
     func unInstall(_ id: String, _ update: Bool) throws {
         try close(id);
         let info = appInfos[id];
-        try installer.unInstall(info, update);
+        try shareInstaller.unInstall(info, update);
         refreashInfos();
         if (!update) {
             if (info!.built_in) {
@@ -464,6 +670,7 @@ class AppManager: NSObject {
 
     func getViewControllerById(_ appId: String) -> TrinityViewController? {
         var id = appId;
+
         if (isLauncher(id)) {
             id = AppManager.LAUNCHER;
         }
@@ -502,7 +709,10 @@ class AppManager: NSObject {
         var viewController = getViewControllerById(id);
         if viewController == nil {
             if (isLauncher(id)) {
-                viewController = LauncherViewController();
+                viewController = LauncherViewController(getLauncherInfo()!);
+            }
+            else if (isDIDSession(id)) {
+                viewController = LauncherViewController(getDIDSessionAppInfo()!);
             }
             else {
                 let appInfo = appInfos[id];
@@ -537,6 +747,10 @@ class AppManager: NSObject {
     }
 
     func close(_ id: String) throws {
+        if (isDIDSession(id)) {
+            return;
+        }
+
         if (isLauncher(id)) {
             throw AppError.error("Launcher can't close!");
         }
@@ -570,62 +784,13 @@ class AppManager: NSObject {
         sendRefreshList("closed", info!);
     }
 
-    /**
-     * Closes all running apps, except the launcher app.
-     */
-    public func closeAll() throws {
-        for appId in getRunningList() {
-            if appId != AppManager.LAUNCHER {
-                try close(appId)
-            }
-        }
-    }
-
     func loadLauncher() throws {
-        try start("launcher");
-    }
-    
-    public func launchStartupScreen() throws {
-        // Check if a there is a signed in DID. If so, directly start the launcher. If not,
-        // start the DID session dapp
-        DIDSessionManager.getSharedInstance().setAppManager(self)
-        if let signedInIdentity = try DIDSessionManager.getSharedInstance().getSignedInIdentity() {
-            // A DID is signed in
-            try loadLauncher()
-        }
-        else {
-            // No DID signed in
-            try loadLauncher() // TODO - IMPORTANT NOTE: for now because did session app crashes if launcher was not loaded, we also start the launcher FOR TEST. Later , launcher should NOT start if DID session starts
-            try start("org.elastos.trinity.dapp.didsession")
-        }
-    }
-    
-    /**
-     * Signs in to a new DID session.
-     */
-    public func signIn(sessionLanguage: String?) throws {
-        // Stop the did session app
-        try close("org.elastos.trinity.dapp.didsession")
-
-        // Start the launcher app
-        try launchStartupScreen()
-        
-        // TODO @dongxiao: use sessionLanguage in reInit() after implemented, to set preference locale, like on android
-    }
-
-    /**
-     * Signs out from a DID session. All apps and services are closed, and launcher goes back to the DID session app prompt.
-     */
-    public func signOut() throws {
-        try closeAll()
-
-        // Go back to the startup screen
-        try launchStartupScreen()
+        try start(AppManager.LAUNCHER);
     }
 
    func checkInProtectList(_ uri: String) throws {
         let protectList = ConfigManager.getShareInstance().getStringArrayValue("dapp.protectList", [String]());
-        let info = try installer.getInfoFromUrl(uri);
+        let info = try shareInstaller.getInfoFromUrl(uri);
         if (info != nil && info!.app_id != "" ) {
             if (protectList.contains(info!.app_id.lowercased())) {
                 throw AppError.error("Don't allow install '\(info!.app_id)' by the third party app.");
@@ -723,6 +888,10 @@ class AppManager: NSObject {
    }
 
     func sendMessage(_ toId: String, _ type: Int, _ msg: String, _ fromId: String) throws {
+        if (signIning) {
+            return;
+        }
+
         let viewController = getViewControllerById(toId);
         if (viewController != nil) {
             viewController!.basePlugin!.onReceive(msg, type, fromId);
@@ -803,7 +972,7 @@ class AppManager: NSObject {
 
         for urlAuth in info!.urls {
             if (urlAuth.url == url) {
-                try dbAdapter.updateUrlAuth(urlAuth, authority);
+                try dbAdapter.updateUrlAuth(info!.tid, url, authority);
                 urlAuth.authority = authority;
                 sendRefreshList("authorityChanged", info!);
                 return;

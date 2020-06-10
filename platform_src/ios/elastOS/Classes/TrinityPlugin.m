@@ -61,7 +61,7 @@
     self.configPath = [appManager getConfigPath ];
     self.tempPath = [appManager getTempPath:info.app_id];
     self.appId = info.app_id;
-    self.did = nil; // @"didElastosFIXME"; // TODO: FAKE DID FOR NOW
+    self.did = [appManager getDID];
 }
 
 - (BOOL)isAllowAccess:(NSString *)url {
@@ -140,7 +140,7 @@
         [self setError:error];
         return NULL;
     }
-    
+
     if ([path hasPrefix:@"trinity://"]) {
         NSString*  subPath = [path substringFromIndex:10];
         NSString* id = NULL;
@@ -248,7 +248,12 @@
 
 - (void)pluginInitialize {
     if (appInfo == NULL) {
-        [self setInfo:[[AppManager getShareInstance] getLauncherInfo]];
+        if ([[AppManager getShareInstance] isSignIning]) {
+            [self setInfo:[[AppManager getShareInstance] getDIDSessionAppInfo]];
+        }
+        else {
+            [self setInfo:[[AppManager getShareInstance] getLauncherInfo]];
+        }
     }
     [super pluginInitialize];
 }

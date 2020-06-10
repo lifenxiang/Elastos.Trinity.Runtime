@@ -38,6 +38,13 @@ class TrinityViewController : CDVViewController {
 
     @IBOutlet weak var titlebarHeightConstraint: NSLayoutConstraint!
     
+    convenience init(_ appInfo: AppInfo) {
+        self.init();
+        self.appInfo = appInfo;
+        self.id = appInfo.app_id;
+        self.whitelistFilter = WhitelistFilter(appInfo);
+    }
+    
     override func loadView() {
         super.loadView()
         if let nib = Bundle.main.loadNibNamed("TrinityViewController", owner: self),

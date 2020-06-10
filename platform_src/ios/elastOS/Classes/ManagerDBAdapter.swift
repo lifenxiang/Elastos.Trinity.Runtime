@@ -382,10 +382,26 @@ class ManagerDBAdapter {
         }
         return infos[0];
     }
+    
+    func getAppAuthInfo(_ info: AppInfo) throws {
+        for pluginAuth in try db.prepare(plugins.select(*).filter(app_tid == info.tid)) {
+            let name = pluginAuth[plugin];
+            let auth = pluginAuth[authority]
+            info.addPlugin(name, auth);
+        }
+
+        for urlAuth in try db.prepare(urls.select(*).filter(app_tid == info.tid)) {
+            info.addUrl(urlAuth[url], urlAuth[authority]);
+        }
+
+        for urlAuth in try db.prepare(intents.select(*).filter(app_tid == info.tid)) {
+            info.addIntent(urlAuth[url], urlAuth[authority]);
+        }
+    }
 
     func getAppInfos() throws -> [AppInfo] {
         let query = apps.select(*)
-            .filter(!launcher)
+            .filter(!launcher && app_id != AppManager.getShareInstance().getDIDSessionId())
         let rows = try db.prepare(query);
         return try getInfos(rows);
     }
@@ -415,10 +431,15 @@ class ManagerDBAdapter {
         }
     }
 
-    func updateUrlAuth(_ item: UrlAuth, _ auth: Int) throws {
+    func updateUrlAuth(_ tid: Int64, _ url: String, _ auth: Int) throws {
         try db.transaction {
-            let urlAuth = urls.filter(url == item.url);
-            try db.run(urlAuth.update(authority <- auth));
+            let urlAuth = urls.filter(self.url == url);
+            let ret = try db.run(urlAuth.update(authority <- auth));
+            if (ret != 2) {
+                try db.run(urls.insert(app_tid <- tid,
+                                       self.url <- url,
+                                       authority <- auth));
+            }
         }
     }
 

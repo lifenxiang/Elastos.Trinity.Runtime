@@ -61,9 +61,6 @@ class MainViewController: UIViewController {
 
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
-        didSessionManager = DIDSessionManager()
-        passwordManager = PasswordManager(mainViewController: self)
-        notificationManager = NotificationManager(mainViewController: self)
         appManager = AppManager(self)
 
         do {

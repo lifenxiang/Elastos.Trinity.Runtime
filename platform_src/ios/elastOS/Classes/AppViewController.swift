@@ -31,16 +31,6 @@
 
     var trinityPluginsMap = [String: String]();
 
-    convenience init(_ appInfo: AppInfo) {
-        self.init();
-        self.appInfo = appInfo;
-        self.id = appInfo.app_id;
-        self.whitelistFilter = WhitelistFilter(appInfo);
-        self.permissionGroup = PermissionManager.getShareInstance().getPermissionGroup(appInfo.app_id);
-
-        AppManager.getShareInstance().getDBAdapter().resetApiDenyAuth(id);
-    }
-
     override func loadSettings() {
         // Get the plugin dictionary, whitelist and settings from the delegate.
         self.pluginsMap = [String: String]();
@@ -66,24 +56,33 @@
         // Initialize the plugin objects dict.
         self.pluginObjects = NSMutableDictionary(capacity: 30);
         self.pluginObjects["WhitelistFiter"] = self.whitelistFilter;
+        
+        self.permissionGroup = PermissionManager.getShareInstance().getPermissionGroup(id);
+
+        AppManager.getShareInstance().getDBAdapter().resetApiDenyAuth(id);
     }
 
     override func filterPlugin(_ pluginName: String, _ className: String) -> NullPlugin? {
-        if !AppManager.defaultPlugins.contains(pluginName) {
-            var setPlugin = false;
-            for pluginAuth in (appInfo?.plugins)! {
-                if pluginName == pluginAuth.plugin {
-                    setPlugin = true;
-                    break;
-                }
-            }
-            if !setPlugin {
-                let nullPlugin = NullPlugin(pluginName);
-                self.register(nullPlugin, withClassName: className);
-                return nullPlugin;
-            }
-
+        if ((pluginName == "splashscreen") && (appInfo!.start_visible == "hide")) {
+            let nullPlugin = NullPlugin(pluginName);
+            self.register(nullPlugin, withClassName: className);
+            return nullPlugin;
         }
+        // if !AppManager.defaultPlugins.contains(pluginName) {
+        //     var setPlugin = false;
+        //     for pluginAuth in (appInfo?.plugins)! {
+        //         if pluginName == pluginAuth.plugin {
+        //             setPlugin = true;
+        //             break;
+        //         }
+        //     }
+        //     if !setPlugin {
+        //         let nullPlugin = NullPlugin(pluginName);
+        //         self.register(nullPlugin, withClassName: className);
+        //         return nullPlugin;
+        //     }
+
+        // }
         return nil;
     }
 
@@ -98,7 +97,7 @@
         }
         return obj;
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad();
         getTitlebar().setTitle(appInfo!.name)

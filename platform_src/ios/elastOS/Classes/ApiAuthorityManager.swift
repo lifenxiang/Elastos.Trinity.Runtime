@@ -66,7 +66,7 @@ class ApiAuthorityInfo {
 class ApiAuthorityManager {
     var infoList = [String: ApiAuthorityInfo]();
     static var apiAuthorityManager: ApiAuthorityManager?;
-    let dbAdapter: ManagerDBAdapter;
+    let dbAdapter: MergeDBAdapter;
     let appManager: AppManager;
 
     public init() {

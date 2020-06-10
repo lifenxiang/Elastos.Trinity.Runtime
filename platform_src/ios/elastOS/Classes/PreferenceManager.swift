@@ -27,7 +27,7 @@ import Foundation
  class PreferenceManager: NSObject {
     private static var preferenceManager: PreferenceManager?;
     private var defaultPreferences = [String: Any]();
-    let dbAdapter: ManagerDBAdapter;
+    let dbAdapter: MergeDBAdapter;
     public var versionChanged: Bool = false;
 
     override init() {

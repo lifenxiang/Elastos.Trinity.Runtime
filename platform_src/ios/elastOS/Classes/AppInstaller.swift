@@ -49,11 +49,10 @@
     var appPath: String = "";
     var dataPath: String = "";
     var tempPath: String = "";
-    var dbAdapter: ManagerDBAdapter;
+    var dbAdapter: MergeDBAdapter;
 
-    init(_ appPath: String, _ dataPath: String, _ tempPath: String, _ dbAdapter: ManagerDBAdapter) {
+    init(_ appPath: String, _ tempPath: String, _ dbAdapter: MergeDBAdapter) {
         self.appPath = appPath;
-        self.dataPath = dataPath;
         self.tempPath = tempPath;
         self.dbAdapter = dbAdapter;
     }
@@ -161,7 +160,7 @@
 
         try fileManager.copyItem(atPath: src, toPath: dest)
     }
-    
+
     private func updateAppInfo(_ info: AppInfo, _ oldInfo: AppInfo) {
         for auth in info.plugins {
             for oldAuth in oldInfo.plugins {
@@ -170,7 +169,7 @@
                 }
             }
         }
-        
+
         for auth in info.urls {
             for oldAuth in oldInfo.urls {
                 if (auth.url == oldAuth.url) {
@@ -189,17 +188,17 @@
             try deleteAllFiles(to);
         }
         try FileManager.default.moveItem(atPath: from, toPath: to);
-        
+
     }
 
     private func sendInstallingMessage(_ action: String, _ appId: String, _ url: String) throws {
         try AppManager.getShareInstance().sendLauncherMessage(AppManager.MSG_TYPE_INSTALLING,
                 "{\"action\":\"" + action + "\", \"id\":\"" + appId + "\" , \"url\":\"" + url + "\"}", "system");
     }
-    
+
     func getPathFromUrl(_ url: String) -> String {
         var path = url;
-        
+
         if (url.hasPrefix("asset://")) {
             path = getAssetPath(url);
         }
@@ -209,13 +208,13 @@
         }
         return path;
     }
-    
+
     func getInfoFromUrl(_ url: String) throws -> AppInfo? {
         let zipPath = getPathFromUrl(url);
-        
+
         let temp = "tmp_" + UUID().uuidString
         let temPath = self.tempPath + temp;
-        
+
         if (FileManager.default.fileExists(atPath:temPath)) {
             try deleteAllFiles(temPath);
         }
@@ -228,16 +227,16 @@
 
         return info!;
     }
-    
+
     func install(_ url: String, _ update: Bool) throws -> AppInfo? {
         let originUrl = url;
         let zipPath = getPathFromUrl(url);
-        
+
         try sendInstallingMessage("start", "", originUrl);
-        
+
         let temp = "tmp_" + UUID().uuidString
         let temPath = appPath + temp;
-        
+
         if (FileManager.default.fileExists(atPath:temPath)) {
             try deleteAllFiles(temPath);
         }
@@ -246,9 +245,9 @@
             throw AppError.error("UnpackZip fail!");
         }
         try sendInstallingMessage("unpacked", "", originUrl);
-        
+
         let verifyDigest = PreferenceManager.getShareInstance().getDeveloperInstallVerify();
-        
+
         if (verifyDigest) {
             if (!verifyEpkDigest(temPath)) {
                 throw AppError.error("verifyEpkDigest fail!");
@@ -265,13 +264,13 @@
             try deleteAllFiles(temPath);
             throw AppError.error("Get app info error!");
         }
-        
+
         let appManager = AppManager.getShareInstance();
         let oldInfo = appManager.getAppInfo(info!.app_id);
         if (oldInfo != nil) {
             if (update) {
                 print("AppInstaller install() - uninstalling " + info!.app_id+" - update = true");
-                if (!oldInfo!.launcher) {
+                if (!oldInfo!.launcher  && !appManager.isDIDSession(oldInfo!.app_id)) {
                     try AppManager.getShareInstance().unInstall(info!.app_id, true);
                     try sendInstallingMessage("uninstalled_old", info!.app_id, originUrl);
                 }
@@ -287,17 +286,20 @@
             print("AppInstaller", "install() - No old info - nothing to uninstall or delete");
             info!.built_in = false;
         }
-        
+
         if (oldInfo != nil && oldInfo!.launcher) {
             try renameFolder(temPath, appPath, AppManager.LAUNCHER);
         }
+        else if (oldInfo != nil && appManager.isDIDSession(oldInfo!.app_id)) {
+            try renameFolder(temPath, appPath, AppManager.DIDSESSION);
+        }
         else {
             try renameFolder(temPath, appPath, info!.app_id);
-            try appManager.dbAdapter.addAppInfo(info!);
+            try appManager.dbAdapter.addAppInfo(info!, true);
         }
 
         try sendInstallingMessage("finish", info!.app_id, originUrl);
-        
+
         return info!;
     }
 
@@ -309,18 +311,18 @@
 //        guard !info!.built_in else {
 //            throw AppError.error("App is a built in!");
 //        }
-        
-        try dbAdapter.removeAppInfo(info!);
-        
+
+        try dbAdapter.removeAppInfo(info!, true);
+
         let appPath = self.appPath + info!.app_id
         try deleteAllFiles(appPath);
-        
+
         if (!update) {
 //            Log.d("AppInstaller", "unInstall() - update = false - deleting all files");
-            let dataPath = self.dataPath + info!.app_id
+            let dataPath = AppManager.getShareInstance().getDataPath(info!.app_id);
             try deleteAllFiles(dataPath);
-            
-            let tempPath = self.tempPath + info!.app_id
+
+            let tempPath = AppManager.getShareInstance().getTempPath(info!.app_id);
             try deleteAllFiles(tempPath);
         }
     }
@@ -382,7 +384,7 @@
             throw AppError.error("Parse Manifest.json error: '\(name)' no exist!");
         }
     }
-    
+
     func parseManifest(_ path: String, _ launcher: Bool = false) throws -> AppInfo? {
         let appInfo = AppInfo();
         let url = URL.init(fileURLWithPath: path)
@@ -429,8 +431,8 @@
         else {
             appInfo.start_visible = "show";
         }
-        
-        value = json["short_name"] as? String;  
+
+        value = json["short_name"] as? String;
         if value != nil {
             appInfo.short_name = value!;
         }
@@ -467,7 +469,7 @@
                 appInfo.author_email = value!;
             }
         }
-        
+
         value = json["category"] as? String;
         if value != nil {
             appInfo.category = value!;
@@ -475,7 +477,7 @@
         else {
             appInfo.category = "other";
         }
-        
+
         value = json["key_words"] as? String;
         if value != nil {
             appInfo.key_words = value!;
@@ -517,7 +519,7 @@
                 appInfo.addIntent(urlString, authority);
             }
         }
-        
+
         let frameworks = json["framework"] as? [String];
         if (frameworks != nil) {
             for framework in frameworks! {
@@ -584,24 +586,6 @@
 
         appInfo.install_time = Int64(Date().timeIntervalSince1970);
         appInfo.launcher = launcher;
-
-        let fileManager = FileManager.default
-        if (!fileManager.fileExists(atPath: dataPath + appInfo.app_id)) {
-            do {
-                try fileManager.createDirectory(atPath: dataPath + appInfo.app_id, withIntermediateDirectories: true, attributes: nil)
-            }
-            catch let error {
-                print("Make dataPath error: \(error)");
-            }
-        }
-        if (!fileManager.fileExists(atPath: tempPath + appInfo.app_id)) {
-            do {
-                try fileManager.createDirectory(atPath: tempPath + appInfo.app_id, withIntermediateDirectories: true, attributes: nil)
-            }
-            catch let error {
-                print("Make tempPath error: \(error)");
-            }
-        }
 
         return appInfo;
     }

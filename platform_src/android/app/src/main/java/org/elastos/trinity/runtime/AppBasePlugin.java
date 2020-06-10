@@ -187,6 +187,9 @@ public class AppBasePlugin extends TrinityPlugin {
         else if (appManager.isLauncher(id)) {
             callbackContext.error("Can't start launcher! Please use launcher().");
         }
+        else if (appManager.isDIDSession(id)) {
+            callbackContext.error("Can't start did session!");
+        }
         else {
             appManager.start(id);
             callbackContext.success("ok");

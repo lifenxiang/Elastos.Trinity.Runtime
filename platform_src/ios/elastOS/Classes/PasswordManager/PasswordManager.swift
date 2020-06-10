@@ -92,17 +92,16 @@ public class PasswordManager {
     private var databasesInfo = Dictionary<String, PasswordDatabaseInfo>()
     private var virtualDIDContext: String? = nil
 
-    init(mainViewController: MainViewController) {
-        self.mainViewController = mainViewController
-        PasswordManager.instance = self
+    init() {
+        self.appManager = AppManager.getShareInstance();
+        self.mainViewController = appManager!.mainViewController
     }
-
-    func setAppManager(_ appManager: AppManager) {
-        self.appManager = appManager
-    }
-
+    
     public static func getSharedInstance() -> PasswordManager {
-        return instance!
+        if (PasswordManager.instance == nil) {
+            PasswordManager.instance = PasswordManager();
+        }
+        return PasswordManager.instance!;
     }
 
     /**
@@ -540,7 +539,7 @@ public class PasswordManager {
     }
     
     private func getDatabaseDirectory(did: String) -> String {
-        return appManager!.dataPath + "/pwm/" + did
+        return appManager!.getBaseDataPath() + "/pwm/" + did
     }
 
     private func getDatabaseFilePath(did: String) -> String {
