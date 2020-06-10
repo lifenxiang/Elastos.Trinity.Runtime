@@ -25,6 +25,7 @@ import android.widget.TextView;
 
 import org.elastos.trinity.runtime.AppInfo;
 import org.elastos.trinity.runtime.AppManager;
+import org.elastos.trinity.runtime.PreferenceManager;
 import org.elastos.trinity.runtime.R;
 
 import java.util.ArrayList;
@@ -128,8 +129,15 @@ public class TitleBar extends FrameLayout {
         btnInnerRight.setPaddingDp(12);
         btnOuterRight.setPaddingDp(12);
 
-        setBackgroundColor("#7A81F1");
-        setForegroundMode(TitleBarForegroundMode.LIGHT);
+        if (PreferenceManager.getShareInstance().getBooleanValue("ui.darkmode", true)) {
+            setBackgroundColor("#191a2f");
+            setForegroundMode(TitleBarForegroundMode.LIGHT);
+        }
+        else {
+            setBackgroundColor("#f8f8ff");
+            setForegroundMode(TitleBarForegroundMode.DARK);
+        }
+
         setAnimationHintText(null);
 
         updateIcons();
