@@ -113,7 +113,7 @@ public class PasswordManager {
      * Password info could fail to be saved in case user cancels the master password creation or enters
      * a wrong master password then cancels.
      */
-    public func setPasswordInfo(info: PasswordInfo, did: String, appID: String,
+    public func setPasswordInfo(info: PasswordInfo, did: String?, appID: String,
                                 onPasswordInfoSet: @escaping ()->Void,
                                 onCancel: @escaping ()->Void,
                                 onError: @escaping (_ error: String)->Void) {
@@ -152,7 +152,7 @@ public class PasswordManager {
      *
      * @returns The password info, or null if nothing was found.
      */
-    public func getPasswordInfo(key: String, did: String, appID: String,
+    public func getPasswordInfo(key: String, did: String?, appID: String,
                                 onPasswordInfoRetrieved: @escaping (_ password: PasswordInfo?)->Void,
                                 onCancel: @escaping ()->Void,
                                 onError: @escaping (_ error: String)->Void) throws {
@@ -188,7 +188,7 @@ public class PasswordManager {
      *
      * @returns The list of existing password information.
      */
-    public func getAllPasswordInfo(did: String, appID: String,
+    public func getAllPasswordInfo(did: String?, appID: String,
                                    onAllPasswordInfoRetrieved: @escaping (_ info: [PasswordInfo])->Void,
                                    onCancel: @escaping ()->Void,
                                    onError: @escaping (_ error: String)->Void) {
@@ -227,7 +227,7 @@ public class PasswordManager {
      *
      * @param key Unique identifier for the password info to delete.
      */
-    public func deletePasswordInfo(key: String, did: String, appID: String, targetAppID: String,
+    public func deletePasswordInfo(key: String, did: String?, appID: String, targetAppID: String,
                                    onPasswordInfoDeleted: @escaping ()->Void,
                                    onCancel: @escaping ()->Void,
                                    onError: @escaping (_ error: String)->Void) throws {
@@ -279,7 +279,7 @@ public class PasswordManager {
      *
      * Only the password manager application is allowed to call this API.
      */
-    public func changeMasterPassword(did: String, appID: String,
+    public func changeMasterPassword(did: String?, appID: String,
                                      onMasterPasswordChanged: @escaping ()->Void,
                                      onCancel: @escaping ()->Void,
                                      onError: @escaping (_ error: String)->Void) throws {
@@ -365,7 +365,7 @@ public class PasswordManager {
      *
      * @param unlockMode Unlock strategy to use.
      */
-    public func setUnlockMode(unlockMode: PasswordUnlockMode, did: String, appID: String) {
+    public func setUnlockMode(unlockMode: PasswordUnlockMode, did: String?, appID: String) {
         let actualDID = try! getActualDIDContext(currentDIDContext: did)
         let actualAppID = getActualAppID(appID)
         
