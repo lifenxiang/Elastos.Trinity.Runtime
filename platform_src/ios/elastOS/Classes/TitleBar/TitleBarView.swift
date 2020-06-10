@@ -220,9 +220,14 @@ class TitleBarView: UIView {
         activityHintTexts[.UPLOAD] = nil
         activityHintTexts[.OTHER] = nil
 
-
-        _ = setBackgroundColor("#7A81F1")
-        setForegroundMode(.LIGHT)
+        if PreferenceManager.getShareInstance().getBoolValue("ui.darkmode", true) {
+            _ = setBackgroundColor("#191a2f")
+            setForegroundMode(.LIGHT)
+        }
+        else {
+            _ = setBackgroundColor("#f8f8ff")
+            setForegroundMode(.DARK)
+        }
         setAnimationHintText(nil)
 
         updateIcons()
