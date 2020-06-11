@@ -24,6 +24,7 @@ import ElastosDIDSDK
 
 public class DIDSessionManager {
     private static let LOG_TAG = "DIDSessionManager"
+    private static let DID_SESSION_APPLICATION_APP_ID = "org.elastos.trinity.dapp.didsession"
     private static var instance: DIDSessionManager? = nil
     
     private let dbAdapter: DIDSessionDatabaseAdapter
@@ -72,6 +73,11 @@ public class DIDSessionManager {
     }
 
     public func signOut() throws {
+        if let signedInIdentity = try? getSignedInIdentity() {
+            // Lock password manager session database
+            PasswordManager.getSharedInstance().lockMasterPassword(did: signedInIdentity.didString)
+        }
+            
         try dbAdapter.setDIDSessionSignedInIdentity(entry: nil)
 
         // Ask the app manager to sign out and redirect user to the right screen

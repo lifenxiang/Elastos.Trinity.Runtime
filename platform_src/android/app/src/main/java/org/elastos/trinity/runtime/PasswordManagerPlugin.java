@@ -320,7 +320,7 @@ public class PasswordManagerPlugin extends TrinityPlugin {
     }
 
     private void lockMasterPassword(JSONArray args, CallbackContext callbackContext) throws Exception {
-        PasswordManager.getSharedInstance().lockMasterPassword(did, appId);
+        PasswordManager.getSharedInstance().lockMasterPassword(did);
 
         JSONObject result = new JSONObject();
 

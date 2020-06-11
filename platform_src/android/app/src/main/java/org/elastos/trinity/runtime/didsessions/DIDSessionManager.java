@@ -92,6 +92,12 @@ public class DIDSessionManager {
     }
 
     public void signOut() throws Exception {
+        IdentityEntry signedInIdentity = getSignedInIdentity();
+        if (signedInIdentity != null) {
+            // Lock password manager session database
+            PasswordManager.getSharedInstance().lockMasterPassword(signedInIdentity.didString);
+        }
+
         dbAdapter.setDIDSessionSignedInIdentity(null);
 
         // Ask the app manager to sign out and redirect user to the right screen

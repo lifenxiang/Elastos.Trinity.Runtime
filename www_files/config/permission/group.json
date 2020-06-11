@@ -54,10 +54,7 @@
             "setCurrentLocale"
         ],
         "DIDSessionManagerPlugin": ["*"],
-        "PasswordManagerPlugin": [
-            "deleteAll",
-            "setVirtualDIDContext"
-        ],
+        "PasswordManagerPlugin": ["*"],
         "TitleBarPlugin": [
             "setNavigationIconVisibility"
         ],

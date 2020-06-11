@@ -234,7 +234,7 @@ class PasswordManagerPlugin : TrinityPlugin {
     }
     
     @objc public func lockMasterPassword(_ command: CDVInvokedUrlCommand) {
-        PasswordManager.getSharedInstance().lockMasterPassword(did: did, appID: appId)
+        PasswordManager.getSharedInstance().lockMasterPassword(did: did)
 
         let result = Dictionary<String, Any>()
         self.success(command, result)

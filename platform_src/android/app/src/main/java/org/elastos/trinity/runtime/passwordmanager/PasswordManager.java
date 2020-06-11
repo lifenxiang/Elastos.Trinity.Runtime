@@ -402,14 +402,8 @@ public class PasswordManager {
      * This API re-locks the passwords database and further requests from applications to this password
      * manager will require user to provide his master password again.
      */
-    public void lockMasterPassword(String did, String appID) throws Exception {
+    public void lockMasterPassword(String did) throws Exception {
         String actualDID = getActualDIDContext(did);
-        String actualAppID = getActualAppID(appID);
-
-        if (!appIsPasswordManager(actualAppID)) {
-            Log.e(LOG_TAG, "Only the password manager application can call this API");
-            return;
-        }
 
         lockDatabase(actualDID);
     }

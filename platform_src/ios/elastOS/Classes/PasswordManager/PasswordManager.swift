@@ -340,15 +340,9 @@ public class PasswordManager {
      * This API re-locks the passwords database and further requests from applications to this password
      * manager will require user to provide his master password again.
      */
-    public func lockMasterPassword(did: String, appID: String) {
+    public func lockMasterPassword(did: String) {
         let actualDID = try! getActualDIDContext(currentDIDContext: did)
-        let actualAppID = getActualAppID(appID)
         
-        if (!appIsPasswordManager(appId: actualAppID)) {
-            print("Only the password manager application can call this API")
-            return
-        }
-
         lockDatabase(did: actualDID)
     }
     
@@ -439,7 +433,7 @@ public class PasswordManager {
     private func appIsPasswordManager(appId: String) -> Bool {
         return appId == PasswordManager.PASSWORD_MANAGER_APP_ID
     }
-
+    
     private func loadDatabase(did: String,
                               onDatabaseLoaded: @escaping ()->Void,
                               onCancel: @escaping ()->Void,
