@@ -239,6 +239,13 @@ class PasswordManagerPlugin : TrinityPlugin {
         let result = Dictionary<String, Any>()
         self.success(command, result)
     }
+    
+    @objc public func deleteAll(_ command: CDVInvokedUrlCommand) {
+        PasswordManager.getSharedInstance().deleteAll(did: did)
+
+        let result = Dictionary<String, Any>()
+        self.success(command, result)
+    }
 
     @objc public func setUnlockMode(_ command: CDVInvokedUrlCommand) {
         guard let unlockModeAsInt = command.arguments[0] as? Int else {

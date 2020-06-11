@@ -200,7 +200,7 @@ public class PasswordManager {
             return
         }
 
-        checkMasterPasswordCreationRequired(did: "", onMasterPasswordCreated: {
+        checkMasterPasswordCreationRequired(did: actualDID, onMasterPasswordCreated: {
             self.loadDatabase(did: actualDID, onDatabaseLoaded: {
                 do {
                     let infos = try self.getAllPasswordInfoReal(did: actualDID)
@@ -350,6 +350,20 @@ public class PasswordManager {
         }
 
         lockDatabase(did: actualDID)
+    }
+    
+    /**
+     * Deletes all password information for the active DID session. The encrypted passwords database
+     * is deleted without any way to recover it.
+     */
+    public func deleteAll(did: String?) {
+        let actualDID = try! getActualDIDContext(currentDIDContext: did)
+
+        // Lock currently opened database
+        lockDatabase(did: actualDID)
+
+        // Delete the permanent storage
+        deleteDatabase(did: actualDID)
     }
 
     /**
@@ -564,6 +578,13 @@ public class PasswordManager {
 
         // Save the master password
         dbInfo.activeMasterPassword = masterPassword;
+    }
+    
+    private func deleteDatabase(did: String) {
+        let dbPath = getDatabaseFilePath(did: did)
+        if FileManager.default.fileExists(atPath: dbPath) {
+            try? FileManager.default.removeItem(atPath: dbPath)
+        }
     }
 
     /**
