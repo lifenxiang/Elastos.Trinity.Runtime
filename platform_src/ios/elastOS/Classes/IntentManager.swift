@@ -598,7 +598,7 @@ class ShareIntentParams {
         }
 
         func payloadAsString() -> String {
-            return payload!.description
+            return payload!.toString()!
         }
 
         func isAlreadyJWT() -> Bool {
