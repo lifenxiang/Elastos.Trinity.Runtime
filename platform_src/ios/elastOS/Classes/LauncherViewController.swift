@@ -30,18 +30,23 @@
 
         self.pluginObjects["CDVIntentAndNavigationFilter"] = self.whitelistFilter;
 
-        for (key, value) in pluginsMap {
-            let name = key as! String;
-            let className = value as! String;
-            AppViewController.originalPluginsMap[name] = className;
+        if (AppViewController.originalPluginsMap.isEmpty) {
+            for (key, value) in pluginsMap {
+                let name = key as! String;
+                let className = value as! String;
+                AppViewController.originalPluginsMap[name] = className;
+            }
         }
 
-        for item in self.startupPluginNames {
-            let name = item as! String;
-            AppViewController.originalStartupPluginNames.append(name);
+        if (AppViewController.originalStartupPluginNames.isEmpty) {
+            for item in self.startupPluginNames {
+                let name = item as! String;
+                AppViewController.originalStartupPluginNames.append(name);
+            }
         }
 
         AppViewController.originalSettings = self.settings;
+        self.settings.setValue(getCustomHostname(did, id), forKey: "hostname");
 
         if(self.wwwFolderName == nil){
             self.wwwFolderName = "www";

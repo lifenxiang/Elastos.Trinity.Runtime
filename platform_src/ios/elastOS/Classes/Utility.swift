@@ -173,6 +173,17 @@ func getAssetPath(_ url: String) -> String {
          return "en"
      }
  }
+ 
+ func getCustomHostname(_ did: String?, _ appId: String) -> String {
+     var hostname = "";
+
+     if (did != nil) {
+        hostname += did!.replacingOccurrences(of: ":", with: ".");
+     }
+     hostname += appId;
+
+    return hostname.lowercased().encodingURL();
+ }
 
 //----------------------------------------------------------------------
  // Extend String to be able to throw simple String Errors

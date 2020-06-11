@@ -27,6 +27,7 @@ import UIKit
 class TrinityViewController : CDVViewController {
     var basePlugin: AppBasePlugin?;
     var id = "";
+    var did: String? = nil;
     var appInfo: AppInfo?;
     var whitelistFilter: WhitelistFilter?;
 
@@ -42,6 +43,7 @@ class TrinityViewController : CDVViewController {
         self.init();
         self.appInfo = appInfo;
         self.id = appInfo.app_id;
+        self.did = AppManager.getShareInstance().getDID();
         self.whitelistFilter = WhitelistFilter(appInfo);
     }
     

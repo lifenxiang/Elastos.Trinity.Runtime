@@ -25,7 +25,7 @@
  class AppViewController : TrinityViewController {
     static var originalPluginsMap = [String: String](minimumCapacity: 30);
     static var originalStartupPluginNames = [String]();
-    static var originalSettings: NSMutableDictionary?;
+    static var originalSettings: NSMutableDictionary? = nil;
 
     var permissionGroup: PermissionGroup?;
 
@@ -50,6 +50,7 @@
         }
 
         self.settings = AppViewController.originalSettings
+        self.settings.setValue(getCustomHostname(did, id), forKey: "hostname");
 
         self.startPage = AppManager.getShareInstance().getStartPath(self.appInfo!);
 
