@@ -79,6 +79,9 @@ public class PasswordManagerPlugin extends TrinityPlugin {
                 case "lockMasterPassword":
                     this.lockMasterPassword(args, callbackContext);
                     break;
+                case "deleteAll":
+                    this.deleteAll(args, callbackContext);
+                    break;
                 case "setUnlockMode":
                     this.setUnlockMode(args, callbackContext);
                     break;
@@ -318,6 +321,14 @@ public class PasswordManagerPlugin extends TrinityPlugin {
 
     private void lockMasterPassword(JSONArray args, CallbackContext callbackContext) throws Exception {
         PasswordManager.getSharedInstance().lockMasterPassword(did, appId);
+
+        JSONObject result = new JSONObject();
+
+        sendSuccess(callbackContext, result);
+    }
+
+    private void deleteAll(JSONArray args, CallbackContext callbackContext) throws Exception {
+        PasswordManager.getSharedInstance().deleteAll(did);
 
         JSONObject result = new JSONObject();
 

@@ -116,6 +116,17 @@ class PasswordManagerImpl implements PasswordManagerPlugin.PasswordManager {
         });
     }
 
+    deleteAll(): Promise<void> {
+        return new Promise((resolve, reject)=>{
+            exec(()=>{
+                resolve();
+            }, (err)=>{
+                console.error("Error while calling PasswordManagerPlugin.deleteAll()", err);
+                reject(this.nativeToTSException(err));
+            }, 'PasswordManagerPlugin', 'deleteAll', []);    
+        });
+    }
+
     setUnlockMode(mode: PasswordManagerPlugin.PasswordUnlockMode) {
         return new Promise((resolve, reject)=>{
             exec(()=>{

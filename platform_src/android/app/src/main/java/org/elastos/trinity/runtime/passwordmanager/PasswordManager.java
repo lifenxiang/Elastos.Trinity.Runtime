@@ -402,7 +402,7 @@ public class PasswordManager {
      * This API re-locks the passwords database and further requests from applications to this password
      * manager will require user to provide his master password again.
      */
-    public void lockMasterPassword(String did, String appID) throws Exception{
+    public void lockMasterPassword(String did, String appID) throws Exception {
         String actualDID = getActualDIDContext(did);
         String actualAppID = getActualAppID(appID);
 
@@ -412,6 +412,20 @@ public class PasswordManager {
         }
 
         lockDatabase(actualDID);
+    }
+
+    /**
+     * Deletes all password information for the active DID session. The encrypted passwords database
+     * is deleted without any way to recover it.
+     */
+    public void deleteAll(String did) throws Exception {
+        String actualDID = getActualDIDContext(did);
+
+        // Lock currently opened database
+        lockDatabase(actualDID);
+
+        // Delete the permanent storage
+        deleteDatabase(actualDID);
     }
 
     /**
@@ -611,6 +625,14 @@ public class PasswordManager {
 
         // Save the master password
         dbInfo.activeMasterPassword = masterPassword;
+    }
+
+    private void deleteDatabase(String did) {
+        String dbPath = getDatabaseFilePath(did);
+        File dbFile = new File(dbPath);
+        if (dbFile.exists()) {
+            dbFile.delete();
+        }
     }
 
     /**

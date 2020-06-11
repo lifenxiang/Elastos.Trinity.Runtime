@@ -55,6 +55,7 @@
         ],
         "DIDSessionManagerPlugin": ["*"],
         "PasswordManagerPlugin": [
+            "deleteAll",
             "setVirtualDIDContext"
         ],
         "TitleBarPlugin": [
@@ -65,7 +66,11 @@
     "did": {
         "DIDSessionManagerPlugin": [
             "getSignedInIdentity",
-            "addIdentityEntry"
+            "addIdentityEntry",
+            "signOut"
+        ],
+        "PasswordManagerPlugin": [
+            "deleteAll"
         ],
         "$user": {}
     },

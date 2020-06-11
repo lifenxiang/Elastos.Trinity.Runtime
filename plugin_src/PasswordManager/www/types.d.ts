@@ -270,6 +270,14 @@ declare namespace PasswordManagerPlugin {
         lockMasterPassword();
 
         /**
+         * RESTRICTED
+         * 
+         * Deletes all password information for the active DID session. The encrypted passwords database
+         * is deleted without any way to recover it.
+         */
+        deleteAll(): Promise<void>;
+
+        /**
          * RESTRICTED 
          * 
          * Sets the unlock strategy for the password info database. By default, once the master password

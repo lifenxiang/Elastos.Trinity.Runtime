@@ -205,7 +205,7 @@ declare namespace TitleBarPlugin {
          */
         addOnItemClickedListener(onItemClicked: (icon: TitleBarIcon | TitleBarMenuItem)=>void)
 
-/**
+        /**
          * Remove a listener.
          *
          * @param onItemClicked Callback called when an item is clicked.
