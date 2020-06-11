@@ -90,7 +90,10 @@ public class NotificationManager {
         // alert.view.alpha = 0.8
         alert.view.layer.cornerRadius = 15
 
-        mainViewController.present(alert, animated: true)
+        // Make sure we run on the UI thread
+        DispatchQueue.main.async {
+            self.mainViewController.present(alert, animated: true)
+        }
 
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + seconds) {
             alert.dismiss(animated: true)

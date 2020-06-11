@@ -86,6 +86,28 @@ class ContactNotifierPlugin : TrinityPlugin {
             self.error(command, "notifierResolveContact", error.localizedDescription)
         }
     }
+    
+    @objc func notifierGetAllContacts(_ command: CDVInvokedUrlCommand) {
+        do {
+            var result = Dictionary<String, Any>()
+            if let contacts = try? getNotifier().getAllContacts() {
+                var contactsJson = Array<Dictionary<String, Any>>()
+                for c in contacts {
+                    contactsJson.append(c.toJSONObject())
+                }
+                result["contacts"] = contactsJson
+            }
+            else {
+                result["contacts"] = nil
+            }
+            
+            self.success(command, result)
+        }
+        catch (let error) {
+            print(error)
+            self.error(command, "notifierGetAllContacts", error.localizedDescription)
+        }
+    }
 
     @objc func notifierRemoveContact(_ command: CDVInvokedUrlCommand) {
         do {

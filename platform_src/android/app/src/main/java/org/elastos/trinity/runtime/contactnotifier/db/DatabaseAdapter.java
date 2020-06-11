@@ -129,6 +129,24 @@ import java.util.Date;
          return null;
      }
 
+     public ArrayList<Contact> getAllContacts(String didSessionDID) {
+         SQLiteDatabase db = helper.getWritableDatabase();
+
+         String where = DatabaseHelper.DID_SESSION_DID + "=?";
+         String[] whereArgs = {didSessionDID};
+
+         ArrayList<Contact> contacts = new ArrayList<>();
+         Cursor cursor = db.query(DatabaseHelper.CONTACTS_TABLE, null, where, whereArgs,null,null,null);
+         if (cursor.moveToNext()) {
+             Contact contact = Contact.fromDatabaseCursor(notifier, cursor);
+             if (contact != null) {
+                 contacts.add(contact);
+             }
+         }
+
+         return contacts;
+     }
+
      public void removeContact(String didSessionDID, String contactDID) {
          SQLiteDatabase db = helper.getWritableDatabase();
 

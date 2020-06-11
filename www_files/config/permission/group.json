@@ -19,7 +19,8 @@
             "notifierAcceptInvitation",
             "notifierSetOnInvitationAcceptedListener",
             "contactSetName",
-            "contactSetAvatar"
+            "contactSetAvatar",
+            "notifierGetAllContacts"
         ],
         "$user": {}
     },

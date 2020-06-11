@@ -43,8 +43,8 @@ public class CNDatabaseAdapter {
     public let receivedDateField = Expression<Int64>(CNDatabaseHelper.RECEIVED_DATE)
     public let invitationIdField = Expression<Int64>(CNDatabaseHelper.INVITATION_ID)
     public let nameField = Expression<String?>(CNDatabaseHelper.NAME)
-    public let avatarContentTypeField = Expression<String>(CNDatabaseHelper.AVATAR_CONTENTTYPE)
-    public let avatarDataField = Expression<String>(CNDatabaseHelper.AVATAR_DATA)
+    public let avatarContentTypeField = Expression<String?>(CNDatabaseHelper.AVATAR_CONTENTTYPE)
+    public let avatarDataField = Expression<String?>(CNDatabaseHelper.AVATAR_DATA)
     
     public init(notifier: ContactNotifier)
     {
@@ -161,6 +161,28 @@ public class CNDatabaseAdapter {
             return nil
         }
      }
+    
+    public func getAllContacts(didSessionDID: String) -> Array<Contact> {
+        do {
+            let db = try helper.getDatabase()
+
+            var contactsList = Array<Contact>()
+            try db.transaction {
+                let query = contacts.select(*).filter(didSessionDIDField == didSessionDID)
+                let contactRows = try! db.prepare(query)
+                for row in contactRows {
+                    let contact = Contact.fromDatabaseRow(notifier: notifier, row: row)
+                    contactsList.append(contact)
+                }
+            }
+            
+            return contactsList
+        }
+        catch (let error) {
+            print(error)
+            return Array<Contact>()
+        }
+    }
 
     public func removeContact(didSessionDID: String, contactDID: String) {
         do {

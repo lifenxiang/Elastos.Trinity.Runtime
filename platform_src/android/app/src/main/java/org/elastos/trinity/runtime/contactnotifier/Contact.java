@@ -36,7 +36,12 @@ public class Contact {
             obj.put("carrierUserID", carrierUserID);
             obj.put("notificationsBlocked", notificationsBlocked);
             obj.put("name", name);
-            obj.put("avatar", avatar.asJsonObject());
+
+            if (avatar != null)
+                obj.put("avatar", avatar.asJsonObject());
+            else
+                obj.put("avatar", null);
+
             return obj;
         }
         catch (JSONException e) {

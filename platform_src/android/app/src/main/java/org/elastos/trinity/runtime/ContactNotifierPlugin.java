@@ -61,6 +61,9 @@ public class ContactNotifierPlugin extends TrinityPlugin {
                 case "notifierRemoveContact":
                     this.notifierRemoveContact(args, callbackContext);
                     break;
+                case "notifierGetAllContacts":
+                    this.notifierGetAllContacts(args, callbackContext);
+                    break;
                 case "notifierSetOnlineStatusListener":
                     this.notifierSetOnlineStatusListener(args, callbackContext);
                     break;
@@ -161,6 +164,30 @@ public class ContactNotifierPlugin extends TrinityPlugin {
         catch (Exception e) {
             e.printStackTrace();
             sendError(callbackContext, "notifierResolveContact", e.getLocalizedMessage());
+        }
+    }
+
+    private void notifierGetAllContacts(JSONArray args, CallbackContext callbackContext) throws Exception {
+        try {
+            ArrayList<Contact> contacts = getNotifier().getAllContacts();
+
+            JSONObject result = new JSONObject();
+            if (contacts != null) {
+                JSONArray contactsJson = new JSONArray();
+                for (Contact c : contacts) {
+                    JSONObject contactJson = c.toJSONObject();
+                    if (contactJson != null)
+                        contactsJson.put(contactJson);
+                }
+                result.put("contacts", contactsJson);
+            }
+            else
+                result.put("contacts", null);
+            sendSuccess(callbackContext, result);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            sendError(callbackContext, "notifierGetAllContacts", e.getLocalizedMessage());
         }
     }
 

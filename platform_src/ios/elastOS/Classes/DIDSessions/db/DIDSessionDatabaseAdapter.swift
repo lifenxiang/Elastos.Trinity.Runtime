@@ -35,7 +35,7 @@ public class DIDSessionDatabaseAdapter {
     public let nameField = Expression<String>(DIDSessionDatabaseHelper.NAME)
     public let signedInField = Expression<Bool>(DIDSessionDatabaseHelper.SIGNEDIN)
     public let avatarContentTypeField = Expression<String?>(DIDSessionDatabaseHelper.AVATAR_CONTENTTYPE)
-    public let avatarDataField = Expression<SQLite.Blob?>(DIDSessionDatabaseHelper.AVATAR_DATA)
+    public let avatarDataField = Expression<String?>(DIDSessionDatabaseHelper.AVATAR_DATA)
     
     public init()
     {

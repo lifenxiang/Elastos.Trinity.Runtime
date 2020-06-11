@@ -95,6 +95,13 @@ public class ContactNotifier {
 
         return dbAdapter!.getContactByDID(didSessionDID: didSessionDID, contactDID: did!)
     }
+    
+    /**
+     * Returns the list of all contacts.
+     */
+    public func getAllContacts() -> Array<Contact>? {
+        return dbAdapter!.getAllContacts(didSessionDID: didSessionDID)
+    }
 
     /**
      * Remove an existing contact. This contact stops seeing user's online status, can't send notification
@@ -529,17 +536,19 @@ public class ContactNotifier {
     }
     
     func sendLocalNotification(relatedRemoteDID: String, key: String, title: String, url: String?, appId: String) {
-        /* TODO WHEN NOTIF PLUGIN IS DONE let testNotif = NotificationRequest()
+        
+        let testNotif = NotificationRequest()
         testNotif.key = key
         testNotif.title = title
         testNotif.emitter = relatedRemoteDID
         testNotif.url = url
+        
         do {
             // NOTE: appid can't be null because the notification manager uses it for several things.
-            // TODO - NOT READY YET NotificationManager.getSharedInstance().sendNotification(testNotif, "system")
+            try NotificationManager.getSharedInstance().sendNotification(notificationRequest: testNotif, appId: appId)
         } catch (let error) {
             print(error)
-        }*/
+        }
     }
     
     /**

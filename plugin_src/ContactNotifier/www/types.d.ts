@@ -196,6 +196,11 @@ declare namespace ContactNotifierPlugin {
         removeContact(did: string);
 
         /**
+         * Returns the list of all contacts.
+         */
+        getAllContacts(): Promise<Contact[]>;
+
+        /**
          * Listen to changes in contacts online status.
          * 
          * @param onStatusChanged Called every time a contact becomes online or offline.

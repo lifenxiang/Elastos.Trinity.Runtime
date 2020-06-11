@@ -112,6 +112,13 @@ public class ContactNotifier {
     }
 
     /**
+     * Returns the list of all contacts.
+     */
+    public ArrayList<Contact> getAllContacts() {
+        return dbAdapter.getAllContacts(didSessionDID);
+    }
+
+    /**
      * Remove an existing contact. This contact stops seeing user's online status, can't send notification
      * any more.
      *

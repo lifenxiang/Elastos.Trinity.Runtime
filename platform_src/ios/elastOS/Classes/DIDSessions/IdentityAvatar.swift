@@ -24,9 +24,9 @@ import SQLite
 
 class IdentityAvatar {
     let contentType: String
-    let base64ImageData: SQLite.Blob
+    let base64ImageData: String
 
-    init(contentType: String, base64ImageData: SQLite.Blob) {
+    init(contentType: String, base64ImageData: String) {
         self.contentType = contentType
         self.base64ImageData = base64ImageData
     }
@@ -43,6 +43,6 @@ class IdentityAvatar {
             return nil
         }
 
-        return IdentityAvatar(contentType: jsonObj["contentType"] as! String, base64ImageData: jsonObj["base64ImageData"] as! SQLite.Blob)
+        return IdentityAvatar(contentType: jsonObj["contentType"] as! String, base64ImageData: jsonObj["base64ImageData"] as! String)
     }
 }

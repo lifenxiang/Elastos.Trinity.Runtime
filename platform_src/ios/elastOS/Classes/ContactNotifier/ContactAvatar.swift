@@ -23,11 +23,11 @@
 import SQLite
 
 public class ContactAvatar {
-    public var contentType: String
-    public var base64ImageData: String;
+    public var contentType: String?
+    public var base64ImageData: String?
     
-    private static let avatarContentTypeField = Expression<String>(CNDatabaseHelper.AVATAR_CONTENTTYPE)
-    private static let avatarDataField = Expression<String>(CNDatabaseHelper.AVATAR_DATA)
+    private static let avatarContentTypeField = Expression<String?>(CNDatabaseHelper.AVATAR_CONTENTTYPE)
+    private static let avatarDataField = Expression<String?>(CNDatabaseHelper.AVATAR_DATA)
     
     private init() {
         self.contentType = ""
@@ -42,7 +42,11 @@ public class ContactAvatar {
     /**
      * Creates a contact avatar object from a CONTACTS_TABLE row.
      */
-    public static func fromDatabaseRow(_ row: Row) -> ContactAvatar {
+    public static func fromDatabaseRow(_ row: Row) -> ContactAvatar? {
+        guard row[avatarContentTypeField] != nil, row[avatarDataField] != nil else {
+            return nil
+        }
+        
         let avatar = ContactAvatar()
         avatar.contentType = row[avatarContentTypeField]
         avatar.base64ImageData = row[avatarDataField]

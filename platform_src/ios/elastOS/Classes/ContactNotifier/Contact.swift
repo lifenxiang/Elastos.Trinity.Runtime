@@ -30,7 +30,7 @@ public class Contact {
     private static let carrierUserIdField = Expression<String>(CNDatabaseHelper.CARRIER_USER_ID)
     private static let notificationsBlockedField = Expression<Bool>(CNDatabaseHelper.NOTIFICATIONS_BLOCKED)
     private static let addedDateField = Expression<Int64>(CNDatabaseHelper.ADDED_DATE)
-    private static let nameField = Expression<String>(CNDatabaseHelper.NAME)
+    private static let nameField = Expression<String?>(CNDatabaseHelper.NAME)
 
     public var did: String = ""
     public var carrierUserID: String = ""
@@ -55,13 +55,20 @@ public class Contact {
         return contact
     }
 
-    public func toJSONObject() -> NSDictionary {
-        let obj = NSMutableDictionary()
+    public func toJSONObject() -> Dictionary<String, Any> {
+        var obj = Dictionary<String, Any>()
         obj["did"] = did
         obj["carrierUserID"] = carrierUserID
         obj["notificationsBlocked"] = notificationsBlocked
         obj["name"] = name
-        obj["avatar"] = avatar!.asJSONObject()
+        
+        if avatar != nil {
+            obj["avatar"] = avatar!.asJSONObject()
+        }
+        else {
+            obj["avatar"] = nil
+        }
+        
         return obj
     }
 

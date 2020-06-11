@@ -138,6 +138,29 @@ class ContactNotifierImpl implements ContactNotifierPlugin.ContactNotifier {
         }, 'ContactNotifierPlugin', 'notifierRemoveContact', [did]);
     }
 
+    getAllContacts(): Promise<ContactNotifierPlugin.Contact[]> {
+        return new Promise((resolve, reject) => {
+            exec((result: { contacts: any[] }) =>{
+                if (result.contacts) {
+                    let contacts: ContactNotifierPlugin.Contact[] = [];
+                    result.contacts.forEach(c => {
+                        let contact = ContactImpl.fromJson(c);
+                        if (contact)
+                            contacts.push(contact);
+                    });
+                    
+                    resolve(contacts);
+                }
+                else {
+                    resolve([]);
+                }
+            }, err =>{
+                console.error("Error while calling ContactNotifierPlugin.getAllContacts()", err);
+                reject(err);
+            }, 'ContactNotifierPlugin', 'notifierGetAllContacts', []);
+        });
+    }
+
     setOnlineStatusListener(onStatusChanged: (contact: ContactNotifierPlugin.Contact, status: ContactNotifierPlugin.OnlineStatus) => void, onError?: (error: string) => void) {
         exec((result: { contact: ContactNotifierPlugin.Contact, status: ContactNotifierPlugin.OnlineStatus}) =>{
             onStatusChanged(result.contact, result.status);
