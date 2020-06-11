@@ -406,3 +406,11 @@ func getAssetPath(_ url: String) -> String {
          return NSLocalizedString(self, tableName: nil, bundle: bundle!, value: "", comment: "")
      }
  }
+
+ /** 20200611 - Remove scroll bounce effect from all scroll views in the app. NOTE: Works well for dapps, but could have side effect if using scroll view at other location, careful. */
+ extension UIScrollView {
+    open override func didMoveToWindow() {
+        super.didMoveToWindow()
+        bounces = false
+    }
+ }
