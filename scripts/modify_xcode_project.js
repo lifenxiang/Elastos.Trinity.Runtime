@@ -90,12 +90,12 @@ module.exports = function(ctx) {
     addSourceFiles(classesPath, classesGroupKey);
 
     //for native apps
-    let walletPath = process.cwd() + "/native_apps/ios/wallet";
-    let walletGroupKey = runtimeProj.pbxCreateGroup('Wallet', walletPath)
-    addSourceFiles(walletPath, walletGroupKey);
+    // let walletPath = process.cwd() + "/native_apps/ios/wallet";
+    // let walletGroupKey = runtimeProj.pbxCreateGroup('Wallet', walletPath)
+    // addSourceFiles(walletPath, walletGroupKey);
 
-    let customGroupKey = runtimeProj.findPBXGroupKeyAndType({ name: 'CustomTemplate' }, 'PBXGroup');
-    runtimeProj.addToPbxGroup(walletGroupKey, customGroupKey);
+    // let customGroupKey = runtimeProj.findPBXGroupKeyAndType({ name: 'CustomTemplate' }, 'PBXGroup');
+    // runtimeProj.addToPbxGroup(walletGroupKey, customGroupKey);
 
     // for Language strings
     let stringsPath = process.cwd() + "/platform_res/ios/elastOS/Strings";

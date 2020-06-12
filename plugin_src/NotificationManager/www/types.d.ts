@@ -59,16 +59,18 @@ declare namespace NotificationManagerPlugin {
         key: string;
         /** Package ID of the sending app. */
         appId: string;
+        /** timestamp of the notification. */
+        sent_date: number;
     }
-    
+
     interface NotificationManager {
         /**
          * Sends a in-app notification. Notifications are usually displayed
-         * by the launcher/home application, in a notifications panel, and they are directly used to 
+         * by the launcher/home application, in a notifications panel, and they are directly used to
          * inform users of something they can potentially interact with.
-         * 
+         *
          * @param request The notification content.
-         * 
+         *
          * @returns A promise that can be awaited and catched in case or error.
          */
         sendNotification(request: NotificationRequest): Promise<void>;
@@ -76,21 +78,21 @@ declare namespace NotificationManagerPlugin {
         /**
          * Registers a callback that will receive all the incoming in-app notifications (sent by this instance
          * of elastOS/Trinity or by a remote contact).
-         * 
+         *
          * @param onNotification Callback passing the received notification info.
          */
         setNotificationListener(onNotification:(notification: Notification)=>void);
 
         /**
          * Returns all notifications previously received and not yet cleared.
-         * 
+         *
          * @returns Unread notifications.
          */
         getNotifications(): Promise<Notification[]>;
 
         /**
          * Removes a received notification from the notifications list permanently.
-         * 
+         *
          * @param notificationId Notification ID
          */
         clearNotification(notificationId: string);

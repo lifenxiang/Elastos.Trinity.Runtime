@@ -241,7 +241,7 @@
  #import <Cordova/CDV.h>
 +#import "TrinityPlugin.h"
 +#import <CommonCrypto/CommonDigest.h>
-+#import "SPVWallet.h"
++//#import "SPVWallet.h"
 
 ===================================================================
 --- origin_platforms/ios/CordovaLib/Classes/Public/CDVPlugin.h	null
