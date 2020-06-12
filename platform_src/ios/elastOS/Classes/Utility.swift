@@ -184,6 +184,15 @@ func getAssetPath(_ url: String) -> String {
 
     return hostname.lowercased().encodingURL();
  }
+ 
+ func getImageFromURL(_ fileUrl: String) -> UIImage? {
+    let url = URL(string: fileUrl)
+    let data = try? Data(contentsOf: url!)
+    if (data == nil) {
+        return nil;
+    }
+    return UIImage(data: data!)
+ }
 
 //----------------------------------------------------------------------
  // Extend String to be able to throw simple String Errors

@@ -35,18 +35,18 @@ class ApiAuthorityAlertController: UIViewController {
     @IBOutlet weak var lblRisk: UILabel!
     @IBOutlet weak var btnDeny: AdvancedButton!
     @IBOutlet weak var btnAccept: AdvancedButton!
-    
+
     var appInfo: AppInfo?
     var plugin: String?
     var api: String?
-    
+
     var onClickedListener: ((_ auth: Int)->Void)?
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         let authInfo = ApiAuthorityManager.getShareInstance().getApiAuthorityInfo(plugin!, api!)!
-        
+
         // Customize colors
         view.layer.cornerRadius = 20
         view.backgroundColor = UIStyling.popupMainBackgroundColor
@@ -64,25 +64,25 @@ class ApiAuthorityAlertController: UIViewController {
         btnAccept.bgColor = UIStyling.popupSecondaryBackgroundColor
         btnAccept.titleColor = UIStyling.popupMainTextColor
         btnAccept.cornerRadius = 8
-        
+
         // i18n
         lblIntroduction.text = "api_perm_title".localized
         lblFeature.text = "api_perm_feature".localized
         lblCapability.text = "api_perm_description".localized
         btnDeny.titleString = "api_perm_deny".localized
         btnAccept.titleString = "api_perm_accept".localized
-        
+
         // Apply data
         lblAppName.text = appInfo!.name
         lblFeatureValue.text = authInfo.getLocalizedTitle()
         lblCapabilitiesValue.text = authInfo.getLocalizedDescription();
-        
+
         if authInfo.dangerLevel == ApiDangerLevel.LOW.rawValue {
             imgRisk.image = UIImage(named: "ic_risk_green")
             lblRisk.text = "api_perm_risk_low".localized
             view.layer.borderColor = UIColor(hex: "#5cd552")?.cgColor
             view.layer.borderWidth = 1
-            
+
         }
         else if authInfo.dangerLevel == ApiDangerLevel.HIGH.rawValue {
             imgRisk.image = UIImage(named: "ic_risk_red")
@@ -96,12 +96,10 @@ class ApiAuthorityAlertController: UIViewController {
             view.layer.borderColor = UIColor(hex: "#fdd034")?.cgColor
             view.layer.borderWidth = 1
         }
-        
-        let iconPaths = AppManager.getShareInstance().getIconPaths(appInfo!)
-        if (iconPaths.count > 0) {
-            let appIconPath = iconPaths[0]
-            let image = UIImage(contentsOfFile: appIconPath)
-            imgIcon.image = image
+
+        let iconUrls = AppManager.getShareInstance().getIconUrls(appInfo!)
+        if (iconUrls.count > 0) {
+            imgIcon.image = getImageFromURL(iconUrls[0]);
         }
     }
 
@@ -110,7 +108,7 @@ class ApiAuthorityAlertController: UIViewController {
         self.plugin = plugin
         self.api = api
     }
-    
+
     public func setOnClickedListener(_ listener: @escaping (_ auth: Int)-> Void) {
         self.onClickedListener = listener
     }
@@ -118,7 +116,7 @@ class ApiAuthorityAlertController: UIViewController {
     @IBAction func denyClicked(_ sender: Any) {
         self.onClickedListener!(AppInfo.AUTHORITY_DENY);
     }
-    
+
     @IBAction func allowClicked(_ sender: Any) {
         self.onClickedListener!(AppInfo.AUTHORITY_ALLOW);
     }

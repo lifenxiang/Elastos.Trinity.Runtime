@@ -413,7 +413,7 @@ class AppManager: NSObject {
             return info.start_url;
         }
     }
-    
+
     func getAppLocalPath(_ info: AppInfo) -> String {
         var path = basePathInfo.appsPath;
         if (!info.share) {
@@ -488,13 +488,10 @@ class AppManager: NSObject {
         return resetPath(url, iconSrc);
     }
 
-    //TODO:: change to getIconUrls
-    func getIconPaths(_ info: AppInfo) -> [String] {
-        let path = getAppPath(info)
+    func getIconUrls(_ info: AppInfo) -> [String] {
         var iconPaths = [String]()
         for i in 0..<info.icons.count {
-            iconPaths.append(path + info.icons[i].src)
-//            iconPaths.append(getIconUrl(info, info.icons[i].src));
+            iconPaths.append(getIconUrl(info, info.icons[i].src));
         }
         return iconPaths
     }
