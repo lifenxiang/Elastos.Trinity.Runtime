@@ -13,8 +13,8 @@ public class UIStyling {
             // DARK MODE
             popupMainTextColor = Color.parseColor("#fdfeff");
             popupInputHintTextColor = Color.parseColor("#fdfeff");
-            popupMainBackgroundColor = Color.parseColor("#72738E");
-            popupSecondaryBackgroundColor = Color.parseColor("#393948");
+            popupMainBackgroundColor = Color.parseColor("#2e2f4e");
+            popupSecondaryBackgroundColor = Color.parseColor("#1c1d34");
         }
         else {
             // LIGHT MODE

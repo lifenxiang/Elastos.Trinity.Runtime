@@ -29,10 +29,6 @@ public class PreferenceManager {
             e.printStackTrace();
         }
         PreferenceManager.preferenceManager = this;
-
-        // Make some services ready
-        boolean darkMode = getBooleanValue("ui.darkmode", false);
-        prepareUIStyling(darkMode);
     }
 
     public static PreferenceManager getShareInstance() {

@@ -25,6 +25,11 @@
     <string name="api_perm_deny">拒绝</string>
     <string name="api_perm_accept">同意</string>
 
+    <string name="url_perm_title">请求URL访问</string>
+    <string name="url_perm_subtitle">这个胶囊想要访问elastOS外部的一个地址。 您同意吗?</string>
+    <string name="url_perm_capsule">胶囊:</string>
+    <string name="url_perm_address">地址:</string>
+
     <string name="intent_choose_title">打开方式:</string>
     <string name="intent_choose_another">其它应用</string>
 

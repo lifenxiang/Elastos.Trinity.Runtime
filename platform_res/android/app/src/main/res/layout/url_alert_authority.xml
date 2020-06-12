@@ -21,7 +21,28 @@
             android:layout_height="60dp"
             android:layout_weight="0"
             android:scaleType="fitCenter"
-            android:src="@drawable/ic_lock" />
+            android:src="@drawable/ic_popup_warning" />
+
+        <TextView
+            android:id="@+id/lblTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="10dp"
+            android:fontFamily="sans-serif-black"
+            android:text="@string/url_perm_title"
+            android:textAlignment="center"
+            android:textSize="24sp" />
+
+        <TextView
+            android:id="@+id/lblSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:fontFamily="sans-serif-light"
+            android:text="@string/url_perm_subtitle"
+            android:textAlignment="center"
+            android:textSize="14sp" />
 
     </LinearLayout>
 
@@ -32,56 +53,50 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <TextView
-            android:id="@+id/lblTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:fontFamily="sans-serif-black"
-            android:text="@string/pwm_create_title"
-            android:textAlignment="center"
-            android:textSize="16sp" />
-
-        <TextView
-            android:id="@+id/lblIntro"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_marginBottom="10dp"
-            android:fontFamily="sans-serif-light"
-            android:text="@string/pwm_create_subtitle"
-            android:textAlignment="center" />
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/lblWrongPassword"
+            <TextView
+                android:id="@+id/lblAppNameTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="@string/url_perm_capsule" />
+
+            <TextView
+                android:id="@+id/lblAppName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-light"
+                android:layout_weight="1"
+                tools:text="Contacts" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-light"
-            android:text="@string/pwm_create_no_match"
-            android:textAlignment="center"
-            android:textColor="#D42222" />
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
 
-        <EditText
-            android:id="@+id/etPassword"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:fontFamily="sans-serif-light"
-            android:hint="@string/pwm_create_enter_passwod"
-            android:inputType="textPassword"
-            android:typeface="normal">
+            <TextView
+                android:id="@+id/lblUrlTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="@string/url_perm_address" />
 
-            <requestFocus />
-        </EditText>
-
-        <EditText
-            android:id="@+id/etPasswordRepeat"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:fontFamily="sans-serif-light"
-            android:hint="@string/pwm_create_repeat_password"
-            android:inputType="textPassword"
-            android:typeface="normal" />
+            <TextView
+                android:id="@+id/lblUrl"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-light"
+                android:layout_weight="1"
+                tools:text="http://node.elephant.app/*" />
+        </LinearLayout>
 
     </LinearLayout>
 
@@ -104,14 +119,14 @@
             app:cardElevation="0dp">
 
             <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btCancel"
+                android:id="@+id/btDeny"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:foreground="?android:attr/selectableItemBackground"
                 android:gravity="center"
                 android:padding="10dp"
-                android:text="@string/pwm_create_cancel"
+                android:text="@string/api_perm_deny"
                 android:textColor="#FFFFFF"
                 android:textSize="18sp">
 
@@ -130,20 +145,19 @@
             app:cardElevation="0dp">
 
             <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btNext"
+                android:id="@+id/btAccept"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:foreground="?android:attr/selectableItemBackground"
                 android:gravity="center"
                 android:padding="10dp"
-                android:text="@string/pwm_create_create"
+                android:text="@string/api_perm_accept"
                 android:textColor="#FFFFFF"
                 android:textSize="18sp">
 
             </androidx.appcompat.widget.AppCompatButton>
         </androidx.cardview.widget.CardView>
-
     </LinearLayout>
 
 </LinearLayout>

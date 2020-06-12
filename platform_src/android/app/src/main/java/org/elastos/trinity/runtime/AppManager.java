@@ -1182,43 +1182,33 @@ public class AppManager {
     }
 
     public void alertUrlAuth(AppInfo info, String url, LockObj lock) {
-        AlertDialog.Builder ab = new AlertDialog.Builder(activity);
-        ab.setTitle("Url authority request");
-        ab.setMessage("App:'" + info.name + "' request url:'" + url + "' access authority.");
-        ab.setIcon(android.R.drawable.ic_dialog_info);
-        ab.setCancelable(false);
-
-        ab.setPositiveButton("Allow", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                try {
-                    setUrlAuthority(info.app_id, url, AppInfo.AUTHORITY_ALLOW);
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-                synchronized (lock) {
-                    lock.authority = AppInfo.AUTHORITY_ALLOW;
-                    lock.notify();
-                }
-            }
-        });
-        ab.setNegativeButton("Refuse", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                try {
-                    setUrlAuthority(info.app_id, url, AppInfo.AUTHORITY_DENY);
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-                synchronized (lock) {
-                    lock.authority = AppInfo.AUTHORITY_DENY;
-                    lock.notify();
-                }
-            }
-        });
-        ab.show();
+        new UrlAuthorityDialog.Builder(activity)
+                .setData(url, info)
+                .setOnAcceptClickedListener(() -> {
+                    try {
+                        setUrlAuthority(info.app_id, url, AppInfo.AUTHORITY_ALLOW);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    synchronized (lock) {
+                        lock.authority = AppInfo.AUTHORITY_ALLOW;
+                        lock.notify();
+                    }
+                })
+                .setOnDenyClickedListener(() -> {
+                    try {
+                        setUrlAuthority(info.app_id, url, AppInfo.AUTHORITY_DENY);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    synchronized (lock) {
+                        lock.authority = AppInfo.AUTHORITY_DENY;
+                        lock.notify();
+                    }
+                })
+                .show();
     }
 
     public String[] getAppIdList() {
