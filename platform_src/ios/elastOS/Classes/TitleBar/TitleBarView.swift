@@ -220,7 +220,7 @@ class TitleBarView: UIView {
         activityHintTexts[.UPLOAD] = nil
         activityHintTexts[.OTHER] = nil
 
-        if PreferenceManager.getShareInstance().getBoolValue("ui.darkmode", true) {
+        if darkModeUsed() {
             _ = setBackgroundColor("#191a2f")
             setForegroundMode(.LIGHT)
         }
@@ -242,6 +242,10 @@ class TitleBarView: UIView {
 
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func darkModeUsed() -> Bool {
+        return PreferenceManager.getShareInstance().getBoolValue("ui.darkmode", true)
     }
 
     /*func setHorizontalGradientBackground(from: String, to: String) {
@@ -641,7 +645,12 @@ class TitleBarView: UIView {
         // Check if an animation should be launched, and which one
         var backgroundColor: String? = nil
         if (activityCounters[.LAUNCH] ?? 0) > 0 {
-            backgroundColor = "#FFFFFF"
+            if darkModeUsed() {
+                backgroundColor = "#FFFFFF"
+            }
+            else {
+                backgroundColor = "#444444"
+            }
             setAnimationHintText(activityHintTexts[.LAUNCH, default: ""])
         }
         else if (activityCounters[.DOWNLOAD] ?? 0) > 0

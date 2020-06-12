@@ -129,7 +129,7 @@ public class TitleBar extends FrameLayout {
         btnInnerRight.setPaddingDp(12);
         btnOuterRight.setPaddingDp(12);
 
-        if (PreferenceManager.getShareInstance().getBooleanValue("ui.darkmode", true)) {
+        if (darkModeUsed()) {
             setBackgroundColor("#191a2f");
             setForegroundMode(TitleBarForegroundMode.LIGHT);
         }
@@ -141,6 +141,10 @@ public class TitleBar extends FrameLayout {
         setAnimationHintText(null);
 
         updateIcons();
+    }
+
+    private boolean darkModeUsed() {
+        return PreferenceManager.getShareInstance().getBooleanValue("ui.darkmode", true);
     }
 
     private void goToLauncher() {
@@ -552,7 +556,10 @@ public class TitleBar extends FrameLayout {
         // Check if an animation should be launched, and which one
         String backgroundColor = null;
         if (activityCounters.get(TitleBarActivityType.LAUNCH) > 0) {
-            backgroundColor = "#FFFFFF";
+            if (darkModeUsed())
+                backgroundColor = "#FFFFFF";
+            else
+                backgroundColor = "#444444";
             setAnimationHintText(activityHintTexts.get(TitleBarActivityType.LAUNCH));
         }
         else if (activityCounters.get(TitleBarActivityType.DOWNLOAD) > 0 || activityCounters.get(TitleBarActivityType.UPLOAD) > 0) {
