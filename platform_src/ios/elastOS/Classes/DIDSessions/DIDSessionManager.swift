@@ -145,17 +145,12 @@ public class DIDSessionManager {
                     let iat = Date()
                     let expire = Calendar.current.date(byAdding: .minute, value: expiresIn, to: iat)!
 
-                    let body = JwtBuilder
-                        .createClaims()
-                        // TODO .claimWithJson(value: jwtPayloadJson.description)
-                        .setIssuer(issuer: signedInIdentity.didString)
+                    let jwtToken = try didDocument.jwtBuilder()
+                        .setIssuer(iss: signedInIdentity.didString)
+                        .setHeader(header)
                         .setIssuedAt(issuedAt: iat)
                         .setExpiration(expiration: expire)
-
-
-                    let jwtToken = try didDocument.jwtBuilder()
-                        .setHeader(header)
-                        .setClaims(body)
+                        .addClaimsWithJson(jsonClaims: jwtPayloadJson.toString()!)
                         .sign(using: genericPasswordInfo!.password!)
                         .compact()
 
