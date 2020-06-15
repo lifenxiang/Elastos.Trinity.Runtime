@@ -68,6 +68,10 @@ public class ContactNotifier {
         catch (DIDResolveException e) {
             e.printStackTrace(); // Will not happen - invalid exception
         }
+        catch (Exception e) {
+            e.printStackTrace();
+            Log.e(LOG_TAG, "Unable to initialize the DID backend. Contact notifier will not work correctly");
+        }
 
         this.context = context;
         this.didSessionDID = didSessionDID;
