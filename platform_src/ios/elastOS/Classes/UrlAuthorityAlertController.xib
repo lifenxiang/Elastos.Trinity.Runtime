@@ -16,11 +16,6 @@
                 <outlet property="imgIcon" destination="GHI-u7-pJX" id="jO3-cs-ruC"/>
                 <outlet property="lblAppName" destination="5ao-UL-RU1" id="gBx-LP-DxW"/>
                 <outlet property="lblAppNameTitle" destination="bZj-pp-MKg" id="kzr-1A-h5k"/>
-                <outlet property="lblCapabilitiesValue" destination="m3e-QR-B1m" id="QPU-j9-9e1"/>
-                <outlet property="lblCapability" destination="o5s-b0-kym" id="Hk6-gd-nIR"/>
-                <outlet property="lblFeature" destination="bZj-pp-MKg" id="m7W-ep-9PD"/>
-                <outlet property="lblFeatureValue" destination="5ao-UL-RU1" id="hp7-mW-AJ4"/>
-                <outlet property="lblIntroduction" destination="qsI-4b-zHh" id="jx5-Da-4R4"/>
                 <outlet property="lblSubtitle" destination="qsI-4b-zHh" id="lXc-aD-jcS"/>
                 <outlet property="lblTitle" destination="4ga-jL-9mV" id="M2O-nU-rzf"/>
                 <outlet property="lblUrl" destination="m3e-QR-B1m" id="X59-hr-wSq"/>
