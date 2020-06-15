@@ -22,3 +22,8 @@
 "api_perm_risk_high" = "潜在危害";
 "api_perm_deny" = "拒绝";
 "api_perm_accept" = "同意";
+
+"url_perm_title" = "请求URL访问";
+"url_perm_subtitle" = "这个胶囊想要访问elastOS外部的一个地址。 您同意吗?";
+"url_perm_capsule" = "胶囊:";
+"url_perm_address" = "地址:";

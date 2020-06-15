@@ -22,3 +22,8 @@
 "api_perm_risk_high" = "Possiblement dangereux";
 "api_perm_deny" = "Refuser";
 "api_perm_accept" = "Autoriser";
+
+"url_perm_title" = "Accès à une URL";
+"url_perm_subtitle" = "Cette capsule souhaite appeler une adresse internet externe à elastOS. Souhaitez-vous l\'autoriser?";
+"url_perm_capsule" = "Capsule:";
+"url_perm_address" = "Adresse:";
