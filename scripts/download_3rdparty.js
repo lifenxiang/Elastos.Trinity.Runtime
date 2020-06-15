@@ -36,7 +36,7 @@ const files_to_download  = [
       "ElastosDIDSDK.framework"
     ],
     "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "ee919ad885165610d2b0fa2091bf92af"
+    "md5": "e59428123ab227cee21772a3f8cf869b"
   },
   {
     "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/v0.1.0/Antlr4.framework.zip",
@@ -205,10 +205,18 @@ module.exports = function(ctx) {
           readline.clearLine(process.stdout, 0);
           console.log("Download finished.");
 
-          fileMatched = fs.existsSync(zipFilePath)
-                        && fs.lstatSync(zipFilePath).isFile()
-                        && await md5File(zipFilePath) == obj.md5
-           files_need_to_update = true;
+          if (fs.existsSync(zipFilePath) && fs.lstatSync(zipFilePath).isFile()) {
+            let downloadFilemd5 = await md5File(zipFilePath)
+            fileMatched = downloadFilemd5 == obj.md5;
+            if (!fileMatched) {
+              console.log("the md5 is " + downloadFilemd5 + " , the expected md5 is " + obj.md5);
+            }
+          }
+          else {
+            fileMatched = false;
+          }
+
+          files_need_to_update = true;
         }
 
         if (!fileMatched) {
