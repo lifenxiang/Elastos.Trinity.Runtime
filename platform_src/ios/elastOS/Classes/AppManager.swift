@@ -21,6 +21,7 @@
   */
 
 import Foundation
+import PopupDialog
 
 class AppPathInfo {
      let appsPath: String;
@@ -1049,24 +1050,24 @@ class AppManager: NSObject {
             self.mainViewController.present(alertController, animated: true, completion: nil)
         }
     }
-
+    
     func runAlertUrlAuth(_ info: AppInfo, _ url: String) {
-        func doAllowHandler(alerAction:UIAlertAction) {
-            try? setUrlAuthority(info.app_id, url, AppInfo.AUTHORITY_ALLOW);
-        }
+        let urlAuthorityController = UrlAuthorityAlertController(nibName: "UrlAuthorityAlertController", bundle: Bundle.main)
 
-        func doRefuseHandler(alerAction:UIAlertAction) {
-            try? setUrlAuthority(info.app_id, url, AppInfo.AUTHORITY_DENY);
-        }
+        urlAuthorityController.setData(url: url, appInfo: info)
 
-        let alertController = UIAlertController(title: "Url authority request",
-                                                message: "App:'" + info.name + "' request url:'" + url + "' access authority.",
-                                                preferredStyle: UIAlertController.Style.alert)
-        let cancelAlertAction = UIAlertAction(title: "Refuse", style: UIAlertAction.Style.cancel, handler: doRefuseHandler)
-        alertController.addAction(cancelAlertAction)
-        let sureAlertAction = UIAlertAction(title: "Allow", style: UIAlertAction.Style.default, handler: doAllowHandler)
-        alertController.addAction(sureAlertAction)
-        self.mainViewController.present(alertController, animated: true, completion: nil)
+        let popup = PopupDialog(viewController: urlAuthorityController, buttonAlignment: .horizontal, transitionStyle: .fadeIn, preferredWidth: 340, tapGestureDismissal: false, panGestureDismissal: false, hideStatusBar: false, completion: nil)
+
+        popup.view.backgroundColor = UIColor.clear // For rounded corners
+        mainViewController.present(popup, animated: false, completion: nil)
+
+        urlAuthorityController.setOnAllowClicked {
+            try? self.setUrlAuthority(info.app_id, url, AppInfo.AUTHORITY_ALLOW);
+        }
+        
+        urlAuthorityController.setOnDenyClicked {
+            try? self.setUrlAuthority(info.app_id, url, AppInfo.AUTHORITY_DENY);
+        }
     }
 
     func getAppIdList() -> [String] {

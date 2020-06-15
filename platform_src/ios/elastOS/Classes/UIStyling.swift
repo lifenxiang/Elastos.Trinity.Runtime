@@ -33,8 +33,8 @@ class UIStyling {
             // DARK MODE
             popupMainTextColor = UIColor.init(hex: "#fdfeff")!
             popupInputHintTextColor = UIColor.init(hex: "#fdfeff")!
-            popupMainBackgroundColor = UIColor.init(hex: "#72738E")!
-            popupSecondaryBackgroundColor = UIColor.init(hex: "#393948")!
+            popupMainBackgroundColor = UIColor.init(hex: "#2e2f4e")!
+            popupSecondaryBackgroundColor = UIColor.init(hex: "#1c1d34")!
         }
         else {
             // LIGHT MODE

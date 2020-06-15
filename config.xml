@@ -4,8 +4,8 @@
     <description>
         A elastos dapps runtime.
     </description>
-    <author email="chendongxiao@elastos.org" href="http://www.elastos.org">
-        Elastos Trinity Team
+    <author email="contact@trinity-tech.io" href="https://www.trinity-tech.io">
+        Trinity Tech Co., Ltd.
     </author>
     <content src="launcher/index.html" />
     <plugin name="cordova-plugin-whitelist" spec="1" />
