@@ -559,23 +559,29 @@ public class ContactNotifier {
         DispatchQueue(label: "CNDIDResolve").async {
             do {
                 let didDocument = try DID(did).resolve(false)
-            
-                Log.d(ContactNotifier.LOG_TAG, "Contact Did document found. Trying to extract name and avatar")
-                var name: String? = nil, avatarHash: String? = nil
-
-                // Try to find a name credential
-                let nameCredential = try didDocument.credential(ofId: "name")
-                if nameCredential != nil {
-                    Log.d(ContactNotifier.LOG_TAG, "Found a name credential")
-                    name = nameCredential?.subject.getPropertyAsString(ofName: "name")
+                
+                if didDocument == nil {
+                    Log.d(ContactNotifier.LOG_TAG, "Empty did document. No additional contact info fond on DID sidechain")
+                    onDIDInfo(nil, nil)
                 }
                 else {
-                    Log.d(ContactNotifier.LOG_TAG, "No name credential found")
+                    Log.d(ContactNotifier.LOG_TAG, "Contact Did document found. Trying to extract name and avatar")
+                    var name: String? = nil, avatarHash: String? = nil
+
+                    // Try to find a name credential
+                    let nameCredential = try didDocument?.credential(ofId: "name")
+                    if nameCredential != nil {
+                        Log.d(ContactNotifier.LOG_TAG, "Found a name credential")
+                        name = nameCredential?.subject.getPropertyAsString(ofName: "name")
+                    }
+                    else {
+                        Log.d(ContactNotifier.LOG_TAG, "No name credential found")
+                    }
+
+                    // TODO: try to find the avatar hash
+
+                    onDIDInfo(name, avatarHash)
                 }
-
-                // TODO: try to find the avatar hash
-
-                onDIDInfo(name, avatarHash)
             }
             catch DIDError.notFoundError {
                 Log.d(ContactNotifier.LOG_TAG, "Empty did document. No additional contact info fond on DID sidechain")

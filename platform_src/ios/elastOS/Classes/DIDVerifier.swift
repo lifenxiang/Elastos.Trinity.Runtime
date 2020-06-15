@@ -31,7 +31,7 @@ class RuntimeDIDAdapter: DIDAdapter {
 }
 
 public class DIDVerifier {
-    private static let mDIDStore: DIDStore? = nil
+    private static var mDIDStore: DIDStore? = nil
 
     public static func initDidStore(dataPath: String) throws {
         let dataDir = dataPath + "/did_stores/" + "DIDVerifier"
@@ -45,7 +45,7 @@ public class DIDVerifier {
             try DIDBackend.initializeInstance(resolverUrl, cacheDir);
 
             let adapter = RuntimeDIDAdapter();
-            let mDIDStore = try DIDStore.open(atPath: dataDir, withType: "filesystem", adapter: adapter);
+            mDIDStore = try DIDStore.open(atPath: dataDir, withType: "filesystem", adapter: adapter);
         } catch {
             print(error)
         }
@@ -75,7 +75,7 @@ public class DIDVerifier {
                     return false
                 }
             }
-            ret = try diddoc.verify(withId: didurl, using: epk_signature, onto: epk_sha_str.data(using: .utf8)!)
+            ret = ((try diddoc?.verify(withId: didurl, using: epk_signature, onto: epk_sha_str.data(using: .utf8)!)) != nil)
         } catch {
             print(error)
         }
