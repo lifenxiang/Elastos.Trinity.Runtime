@@ -36,7 +36,7 @@ const files_to_download  = [
       "ElastosDIDSDK.framework"
     ],
     "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "e862fd53763dd5d3f436c18a79e8237d"
+    "md5": "0ed1ed99b29a9ccff385e573acefe1d8"
   },
   {
     "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/v0.1.0/Antlr4.framework.zip",
