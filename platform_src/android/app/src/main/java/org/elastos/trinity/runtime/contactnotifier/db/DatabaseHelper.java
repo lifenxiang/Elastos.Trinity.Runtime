@@ -71,7 +71,7 @@ import android.util.Log;
                  DID + " varchar(128), " +
                  CARRIER_USER_ID + " varchar(128), " + // Permanent friend user id to talk (notifications) to him
                  NOTIFICATIONS_BLOCKED + " integer(1), " + // Whether this contact can send notifications to current user or not
-                 ADDED_DATE + " date, " +
+                 ADDED_DATE + " TIMESTAMP, " +
                  NAME + " varchar(128), " +
                  AVATAR_CONTENTTYPE + " varchar(32), " +
                  AVATAR_DATA + " text)";
@@ -83,7 +83,7 @@ import android.util.Log;
                  DID_SESSION_DID + " varchar(128), " +
                  DID + " varchar(128), " +
                  CARRIER_ADDRESS + " varchar(128), " +
-                 SENT_DATE + " date)";
+                 SENT_DATE + " TIMESTAMP)";
          db.execSQL(sentInvitationsSQL);
 
          // RECEIVED INVITATIONS
@@ -92,7 +92,7 @@ import android.util.Log;
                  DID_SESSION_DID + " varchar(128), " +
                  DID + " varchar(128), " +
                  CARRIER_USER_ID + " varchar(128), " +
-                 RECEIVED_DATE + " date)";
+                 RECEIVED_DATE + " TIMESTAMP)";
          db.execSQL(receivedInvitationsSQL);
      }
 

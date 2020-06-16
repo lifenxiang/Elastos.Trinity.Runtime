@@ -52,7 +52,7 @@ public class NMDatabaseHelper : SQLiteOpenHelper {
             NMDatabaseHelper.URL + " varchar(128), " +
             NMDatabaseHelper.EMITTER + " varchar(128), " +
             NMDatabaseHelper.APP_ID + " varchar(128), " +
-            NMDatabaseHelper.SENT_DATE + " date)"
+            NMDatabaseHelper.SENT_DATE + " TIMESTAMP)"
         try! db.execute(notificationSQL)
     }
 

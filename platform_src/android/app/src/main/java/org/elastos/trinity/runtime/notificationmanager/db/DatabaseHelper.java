@@ -59,7 +59,7 @@ import android.database.sqlite.SQLiteOpenHelper;
                  URL + " varchar(128), " +
                  EMITTER + " varchar(128), " +
                  APP_ID + " varchar(128), " +
-                 SENT_DATE + " date)";
+                 SENT_DATE + " TIMESTAMP)";
          db.execSQL(notificationSQL);
      }
 

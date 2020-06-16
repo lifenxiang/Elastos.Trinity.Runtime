@@ -63,7 +63,7 @@ public class CNDatabaseHelper : SQLiteOpenHelper {
             CNDatabaseHelper.DID + " varchar(128), " +
             CNDatabaseHelper.CARRIER_USER_ID + " varchar(128), " + // Permanent friend user id to talk (notifications) to him
             CNDatabaseHelper.NOTIFICATIONS_BLOCKED + " integer(1), " + // Whether this contact can send notifications to current user or not
-            CNDatabaseHelper.ADDED_DATE + " date, " +
+            CNDatabaseHelper.ADDED_DATE + " TIMESTAMP, " +
             CNDatabaseHelper.NAME + " varchar(128), " +
             CNDatabaseHelper.AVATAR_CONTENTTYPE + " varchar(32), " +
             CNDatabaseHelper.AVATAR_DATA + " text)"
@@ -76,7 +76,7 @@ public class CNDatabaseHelper : SQLiteOpenHelper {
             CNDatabaseHelper.DID_SESSION_DID + " varchar(128), " +
             CNDatabaseHelper.DID + " varchar(128), " +
             CNDatabaseHelper.CARRIER_ADDRESS + " varchar(128), " +
-            CNDatabaseHelper.SENT_DATE + " date)"
+            CNDatabaseHelper.SENT_DATE + " TIMESTAMP)"
         try! db.execute(sentInvitationsSQL)
         
         // RECEIVED INVITATIONS
@@ -86,7 +86,7 @@ public class CNDatabaseHelper : SQLiteOpenHelper {
             CNDatabaseHelper.DID_SESSION_DID + " varchar(128), " +
             CNDatabaseHelper.DID + " varchar(128), " +
             CNDatabaseHelper.CARRIER_USER_ID + " varchar(128), " +
-            CNDatabaseHelper.RECEIVED_DATE + " date)";
+            CNDatabaseHelper.RECEIVED_DATE + " TIMESTAMP)";
         try! db.execute(receivedInvitationsSQL)
     }
     

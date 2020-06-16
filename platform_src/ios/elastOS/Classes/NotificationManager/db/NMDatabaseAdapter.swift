@@ -65,7 +65,7 @@ public class NMDatabaseAdapter {
                 urlField <- url,
                 emitterField <- emitter,
                 appIdField <- appId,
-                sentDateField <- Int64(Date().timeIntervalSince1970)
+                sentDateField <- Int64(Date().timeIntervalSince1970 * 1000)
             ))
         }
      }
@@ -81,7 +81,7 @@ public class NMDatabaseAdapter {
                         titleField <- title,
                         urlField <- url,
                         emitterField <- emitter,
-                        sentDateField <- Int64(Date().timeIntervalSince1970)
+                        sentDateField <- Int64(Date().timeIntervalSince1970 * 1000)
                     ))
             }
         }
