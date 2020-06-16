@@ -53,10 +53,11 @@ public class NotificationManager {
      * @param appId
      */
     public func sendNotification(notificationRequest: NotificationRequest, appId: String) throws {
-        let notification: Notification = try self.dbAdapter!.addNotification(key: notificationRequest.key!,                                 title: notificationRequest.title!,
-                                          url: notificationRequest.url!,
-                                          emitter:notificationRequest.emitter!,
-                                          appId: appId)
+        let notification: Notification = try self.dbAdapter!.addNotification(key: notificationRequest.key!,
+                                            title: notificationRequest.title!,
+                                            url: notificationRequest.url ?? "",
+                                            emitter:notificationRequest.emitter ?? "",
+                                            appId: appId)
 
         notifyNotification(notification: notification)
 
