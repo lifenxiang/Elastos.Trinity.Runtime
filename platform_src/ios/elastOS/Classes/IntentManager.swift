@@ -129,6 +129,7 @@ class ShareIntentParams {
  class IntentManager {
     static let MAX_INTENT_NUMBER = 20;
     static let JWT_SECRET = "secret";
+    private static let LOG_TAG = "IntentManager"
 
     private var intentList = [String: [IntentInfo]]();
     private var intentContextList = [Int64: IntentInfo]();
@@ -550,6 +551,9 @@ class ShareIntentParams {
                 if let responseString = String(data: data, encoding: .utf8) {
                     print("responseString = \(responseString)")
                 }
+            }
+            else {
+                Log.d(IntentManager.LOG_TAG, "Intent callback url responsed with success (2** http code)")
             }
         })
 

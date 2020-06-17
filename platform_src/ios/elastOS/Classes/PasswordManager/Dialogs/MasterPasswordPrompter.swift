@@ -44,7 +44,7 @@ class MasterPasswordPrompterAlertController: UIViewController {
     private var isPasswordRetry: Bool = false
     private var shouldInitiateBiometry: Bool = false // Whether biometry should be prompted to save password, or just used (previously saved)
     
-    var onPasswordTypedListener: ((_ password: String, _ shouldSavePasswordToBiometric: Bool)->Void)?
+    var onPasswordTypedListener: ((_ password: String?, _ shouldSavePasswordToBiometric: Bool)->Void)?
     var onCancelListener: (()->Void)?
     var onErrorListener: ((_ error: String)->Void)?
     
@@ -154,7 +154,7 @@ class MasterPasswordPrompterAlertController: UIViewController {
         self.onErrorListener = listener
     }
 
-    public func setOnPasswordTypedListener(_ listener: @escaping (_ password: String, _ shouldSavePasswordToBiometric: Bool)->Void) {
+    public func setOnPasswordTypedListener(_ listener: @escaping (_ password: String?, _ shouldSavePasswordToBiometric: Bool)->Void) {
         self.onPasswordTypedListener = listener
     }
 
@@ -172,10 +172,9 @@ class MasterPasswordPrompterAlertController: UIViewController {
         if (swBiometric.isOn && !shouldInitiateBiometry) {
             let fingerPrintAuthHelper = FingerPrintAuthHelper(did: did!, dAppID: PasswordManager.FAKE_PASSWORD_MANAGER_PLUGIN_APP_ID)
             
-            
             fingerPrintAuthHelper.authenticateAndGetPassword(passwordKey: PasswordManager.MASTER_PASSWORD_BIOMETRIC_KEY) { password, error  in
                 if error == nil {
-                    self.onPasswordTypedListener?(password!, shouldSaveToBiometric)
+                    self.onPasswordTypedListener?(password, shouldSaveToBiometric)
                 }
                 else {
                     self.onErrorListener?("Fingerprint plugin error: \(error.debugDescription)")

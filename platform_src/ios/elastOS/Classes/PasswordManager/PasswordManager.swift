@@ -464,13 +464,18 @@ public class PasswordManager {
                 popup.dismiss()
                 
                 do {
+                    // Happens in case the password could not be retrieved
+                    if password == nil {
+                        throw RNCryptor.Error.hmacMismatch
+                    }
+                    
                     try self.loadEncryptedDatabase(did: did, masterPassword: password)
                     if (self.isDatabaseLoaded(did: did)) {
                         // User chose to enable biometric authentication (was not enabled before). So we save the
                         // master password to the biometric crypto space.
                         if (shouldSavePasswordToBiometric) {
                             let fingerPrintAuthHelper = FingerPrintAuthHelper(did: did, dAppID: PasswordManager.FAKE_PASSWORD_MANAGER_PLUGIN_APP_ID)
-                            fingerPrintAuthHelper.authenticateAndSavePassword(passwordKey: PasswordManager.MASTER_PASSWORD_BIOMETRIC_KEY, password: password) { error in
+                            fingerPrintAuthHelper.authenticateAndSavePassword(passwordKey: PasswordManager.MASTER_PASSWORD_BIOMETRIC_KEY, password: password!) { error in
                                 if error == nil {
                                     // Save user's choice to use biometric auth method next time
                                     self.setBiometricAuthEnabled(true)
@@ -585,8 +590,8 @@ public class PasswordManager {
      * Using user's master password, decrypt the passwords list from disk and load it into memory.
      */
     private func loadEncryptedDatabase(did: String, masterPassword: String?) throws {
-        guard let masterPassword = masterPassword, masterPassword != "" else {
-            throw "Empty master password is not allowed"
+        guard let masterPassword = masterPassword else {
+            throw "Master password is undefined"
         }
 
         let dbPath = getDatabaseFilePath(did: did)
