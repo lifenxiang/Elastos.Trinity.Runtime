@@ -14,7 +14,7 @@
 "pwm_create_cancel" = "取消";
 "pwm_create_create" = "创建";
 
-"api_perm_title" = "该胶囊要求使用敏感功能.";
+"api_perm_title" = "该胶囊要求使用敏感功能";
 "api_perm_feature" = "功能:";
 "api_perm_description" = "胶囊通过此功能能做什么?";
 "api_perm_risk_low" = "低风险";
