@@ -55,6 +55,7 @@
     @objc dynamic var callbackId: String? = nil;
     @objc dynamic var callback: ((String, String?, String)->(Void))? = nil;
 
+    @objc dynamic var originalJwtRequest: String? = nil
     @objc dynamic var redirecturl: String?;
     @objc dynamic var callbackurl: String?;
     @objc dynamic var redirectappurl: String?;
@@ -419,9 +420,9 @@ class ShareIntentParams {
         else if (jwtPayload![IntentInfo.CALLBACK_URL] != nil) {
             info.callbackurl = (jwtPayload![IntentInfo.CALLBACK_URL] as! String);
         }
-        info.type = IntentInfo.JWT;
+        info.type = IntentInfo.JWT
+        info.originalJwtRequest = jwt
     }
-
 
     func getParamsByUri(_ params: [String: String], _ info: IntentInfo) {
         for (key, value) in params {
@@ -524,7 +525,8 @@ class ShareIntentParams {
         let url = URL(string: callbackurl)!
         var request = URLRequest(url: url)
         request.httpMethod = "POST";
-        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type");
+        request.setValue("application/json;charset=UTF-8", forHTTPHeaderField: "Content-Type");
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
 
         let parameters: [String: String] = [
             name: value
@@ -541,15 +543,14 @@ class ShareIntentParams {
                     return
             }
 
-            guard (200 ... 299) ~= response.statusCode else {                    // check for http errors
-                print("statusCode should be 2xx, but is \(response.statusCode)")
+            if !((200 ... 299) ~= response.statusCode) {                    // check for http errors
+                print("Error - statusCode should be 2xx, but is \(response.statusCode)")
                 print("response = \(response)")
-                return
+                
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("responseString = \(responseString)")
+                }
             }
-
-            let responseString = String(data: data, encoding: .utf8)
-            print("responseString = \(responseString!)")
-
         })
 
         task.resume()

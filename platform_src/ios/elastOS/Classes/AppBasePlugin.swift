@@ -595,6 +595,7 @@
                 "params": info.params,
                 "from": info.fromId,
                 "intentId": info.intentId,
+                "originalJwtRequest": info.originalJwtRequest
                 ] as [String : Any?]
             let result = CDVPluginResult(status: CDVCommandStatus_OK,
                                          messageAs: ret as [String : Any]);
