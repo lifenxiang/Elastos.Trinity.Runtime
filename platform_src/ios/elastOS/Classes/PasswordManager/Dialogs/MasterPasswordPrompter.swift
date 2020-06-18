@@ -177,7 +177,12 @@ class MasterPasswordPrompterAlertController: UIViewController {
                     self.onPasswordTypedListener?(password, shouldSaveToBiometric)
                 }
                 else {
-                    self.onErrorListener?("Fingerprint plugin error: \(error.debugDescription)")
+                    if (error == FingerprintPluginError.BIOMETRIC_DISMISSED) {
+                        self.onCancelListener?()
+                    }
+                    else {
+                        self.onErrorListener?("Fingerprint plugin error: \(error.debugDescription)")
+                    }
                 }
             }
         }
