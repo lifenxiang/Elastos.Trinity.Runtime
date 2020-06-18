@@ -155,7 +155,11 @@ class PasswordDatabaseInfo {
 
     public func getPasswordInfo(appID: String, key: String) throws -> PasswordInfo? {
         if let appIDContent = try getAppIDContent(appID) {
-            return (try? appIDContent.passwordEntry(key: key)) ?? nil
+            let entry = (try? appIDContent.passwordEntry(key: key)) ?? nil
+            if (entry != nil) {
+                entry?.appID = appID
+            }
+            return entry
         }
         else {
             // No entry for this app ID yet, so we can't find the requested key
@@ -184,6 +188,7 @@ class PasswordDatabaseInfo {
         while let appID = it.next() {
             if let appIDContent = try getAppIDContent(appID) {
                 for entry in appIDContent.passwordEntries {
+                    entry.appID = appID
                     infos.append(entry)
                 }
             }
