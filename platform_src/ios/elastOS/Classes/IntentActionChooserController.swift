@@ -25,63 +25,67 @@ import Foundation
 class IntentActionChooserController: UIViewController {
     // Outlets
     @IBOutlet var listItemsStackView: UIStackView!
-    
+
     // Model
     private var appManager: AppManager? = nil
     private var appInfos: [AppInfo] = []
     private var selectionCallback: ((AppInfo)->Void)?
     private var nativeShareSelectionCallback: (()->Void)?
     private var shareIntentParams: ShareIntentParams?
-    
+
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
+        // i18n
+//        lblTitle.text = "url_perm_title".localized
+//        lblSubtitle.text = "url_perm_subtitle".localized
+
         // Add one line for each app that can be used to handle the intent
         for appInfo in appInfos {
             let appInfoLineItem  = IntentActionChooserItemView(appManager: appManager!, appInfo: appInfo)
             appInfoLineItem.setListener() {
                 self.selectionCallback?(appInfo)
             }
-            
+
             listItemsStackView.addArrangedSubview(appInfoLineItem)
         }
-        
+
         // If provided, add a special item for the native share feature
         if self.shareIntentParams != nil {
-            let shareItem  = IntentActionChooserItemView(icon: UIImage(named: "ic_share_chooser"), title: "Another app")
+            let shareItem  = IntentActionChooserItemView(icon: UIImage(named: "ic_share_chooser"), title: "intent_choose_another".localized)
             shareItem.setListener() {
                 self.nativeShareSelectionCallback?()
             }
-            
+
             listItemsStackView.addArrangedSubview(shareItem)
         }
     }
-    
+
     public func setAppManager(appManager: AppManager) {
         self.appManager = appManager
     }
-    
+
     public func setAppInfos(appInfos: [AppInfo]) {
         self.appInfos = appInfos
     }
-    
+
     public func setListener(_ listener: @escaping (AppInfo) -> Void) {
         self.selectionCallback = listener
     }
-    
+
     public func setNativeShareListener(_ listener: @escaping () -> Void) {
         self.nativeShareSelectionCallback = listener
     }
-    
+
     public func useNativeShare(shareIntentParams: ShareIntentParams?) {
         guard shareIntentParams != nil else {
             return
         }
-        
+
         self.shareIntentParams = shareIntentParams
     }
 }

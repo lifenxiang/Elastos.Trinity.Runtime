@@ -27,3 +27,8 @@
 "url_perm_subtitle" = "Cette capsule souhaite appeler une adresse internet externe à elastOS. Souhaitez-vous l\'autoriser?";
 "url_perm_capsule" = "Capsule:";
 "url_perm_address" = "Adresse:";
+
+"intent_choose_title" = "Continuer cette action avec:";
+"intent_choose_another" = "Autre application";
+
+"app_starting" = "Démarrage";
