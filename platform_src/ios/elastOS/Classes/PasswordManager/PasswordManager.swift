@@ -315,7 +315,7 @@ public class PasswordManager {
                         dbInfo.activeMasterPassword = password
                         
                         // Disable biometric auth to force re-activating it, as the password has changed.
-                        self.setBiometricAuthEnabled(false)
+                        self.setBiometricAuthEnabled(did: actualDID, false)
 
                         onMasterPasswordChanged()
                     }
@@ -381,16 +381,18 @@ public class PasswordManager {
             return
         }
 
-        saveToPrefs(key: PasswordManager.PREF_KEY_UNLOCK_MODE, value: unlockMode.rawValue)
+        saveToPrefs(did: actualDID, key: PasswordManager.PREF_KEY_UNLOCK_MODE, value: unlockMode.rawValue)
 
         // if the mode becomes UNLOCK_EVERY_TIME, we lock the database
-        if (getUnlockMode() != .UNLOCK_EVERY_TIME && unlockMode == PasswordUnlockMode.UNLOCK_EVERY_TIME) {
+        if (getUnlockMode(did: actualDID) != .UNLOCK_EVERY_TIME && unlockMode == PasswordUnlockMode.UNLOCK_EVERY_TIME) {
             lockDatabase(did: actualDID)
         }
     }
 
-    private func getUnlockMode() -> PasswordUnlockMode {
-        let unlockModeAsInt = getPrefsInt(key: PasswordManager.PREF_KEY_UNLOCK_MODE, defaultValue: PasswordUnlockMode.UNLOCK_FOR_A_WHILE.rawValue)
+    private func getUnlockMode(did: String) -> PasswordUnlockMode {
+        let actualDID = try! getActualDIDContext(currentDIDContext: did)
+        
+        let unlockModeAsInt = getPrefsInt(did: actualDID, key: PasswordManager.PREF_KEY_UNLOCK_MODE, defaultValue: PasswordUnlockMode.UNLOCK_FOR_A_WHILE.rawValue)
         return PasswordUnlockMode(rawValue: unlockModeAsInt) ?? PasswordUnlockMode.UNLOCK_FOR_A_WHILE
     }
 
@@ -478,7 +480,7 @@ public class PasswordManager {
                             fingerPrintAuthHelper.authenticateAndSavePassword(passwordKey: PasswordManager.MASTER_PASSWORD_BIOMETRIC_KEY, password: password!) { error in
                                 if error == nil {
                                     // Save user's choice to use biometric auth method next time
-                                    self.setBiometricAuthEnabled(true)
+                                    self.setBiometricAuthEnabled(did: did, true)
                                     
                                     onDatabaseLoaded()
                                 }
@@ -527,7 +529,7 @@ public class PasswordManager {
      * for security).
      */
     private func sessionExpired(did: String) -> Bool {
-        if getUnlockMode() == .UNLOCK_EVERY_TIME {
+        if getUnlockMode(did: did) == .UNLOCK_EVERY_TIME {
             return true
         }
 
@@ -688,32 +690,31 @@ public class PasswordManager {
         }
     }
     
-    private func getUserDefaults() -> UserDefaults {
-        // TODO: bug here? should be sandboxed for each DID ? IMPORTANT: Also resolve the virtual did context here
-        return UserDefaults(suiteName: PasswordManager.SHARED_PREFS_KEY)!
+    private func getUserDefaults(did: String) -> UserDefaults {
+        return UserDefaults(suiteName: PasswordManager.SHARED_PREFS_KEY+did)!
     }
 
-    private func saveToPrefs(key: String, value: Int) {
-        getUserDefaults().set(value, forKey: key)
+    private func saveToPrefs(did: String, key: String, value: Int) {
+        getUserDefaults(did: did).set(value, forKey: key)
     }
     
-    private func saveToPrefs(key: String, value: Bool) {
-        getUserDefaults().set(value, forKey: key)
+    private func saveToPrefs(did: String, key: String, value: Bool) {
+        getUserDefaults(did: did).set(value, forKey: key)
     }
     
-    private func getPrefsInt(key: String, defaultValue: Int) -> Int {
-        if getUserDefaults().object(forKey: key) == nil {
+    private func getPrefsInt(did: String, key: String, defaultValue: Int) -> Int {
+        if getUserDefaults(did: did).object(forKey: key) == nil {
             return defaultValue
         } else {
-            return getUserDefaults().integer(forKey: key)
+            return getUserDefaults(did: did).integer(forKey: key)
         }
     }
     
-    private func getPrefsBool(key: String, defaultValue: Bool) -> Bool {
-        if getUserDefaults().object(forKey: key) == nil {
+    private func getPrefsBool(did: String, key: String, defaultValue: Bool) -> Bool {
+        if getUserDefaults(did: did).object(forKey: key) == nil {
             return defaultValue
         } else {
-            return getUserDefaults().bool(forKey: key)
+            return getUserDefaults(did: did).bool(forKey: key)
         }
     }
 
@@ -762,11 +763,11 @@ public class PasswordManager {
         }
     }
 
-    public func isBiometricAuthEnabled() -> Bool {
-        return getPrefsBool(key: "biometricauth", defaultValue: false)
+    public func isBiometricAuthEnabled(did: String) -> Bool {
+        return getPrefsBool(did: did, key: "biometricauth", defaultValue: false)
     }
 
-    public func setBiometricAuthEnabled(_ useBiometricAuth: Bool) {
-        saveToPrefs(key: "biometricauth", value: useBiometricAuth)
+    public func setBiometricAuthEnabled(did: String, _ useBiometricAuth: Bool) {
+        saveToPrefs(did: did, key: "biometricauth", value: useBiometricAuth)
     }
 }

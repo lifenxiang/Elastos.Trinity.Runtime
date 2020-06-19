@@ -93,10 +93,10 @@ class MasterPasswordPrompterAlertController: UIViewController {
         }
         
         // Biometry
-        swBiometric.isOn = passwordManager!.isBiometricAuthEnabled()
+        swBiometric.isOn = passwordManager!.isBiometricAuthEnabled(did: did!)
         
         // If biometric auth is not enabled, we will follow the flow to initiate it during this prompter session.
-        shouldInitiateBiometry = !passwordManager!.isBiometricAuthEnabled()
+        shouldInitiateBiometry = !passwordManager!.isBiometricAuthEnabled(did: did!)
 
         if (canUseBiometrictAuth()) {
             if (shouldInitiateBiometry) {
@@ -165,7 +165,7 @@ class MasterPasswordPrompterAlertController: UIViewController {
     @IBAction func nextClicked(_ sender: Any) {
         // Disable biometric auth for next times if user doesn't want to use that any more
         if (!swBiometric.isOn) {
-            passwordManager!.setBiometricAuthEnabled(false)
+            passwordManager!.setBiometricAuthEnabled(did: did!, false)
         }
         
         let shouldSaveToBiometric = shouldInitiateBiometry && swBiometric.isOn
