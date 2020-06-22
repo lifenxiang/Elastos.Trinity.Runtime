@@ -107,4 +107,12 @@
         </config-file>
 
     </platform>
+
+    <platform name="electron">
+        <js-module src="src/electron/AppManagerPluginProxy.js" name="AppManagerPluginProxy">
+            <runs />
+        </js-module>
+        <source-file src="src/electron/AppManagerPluginIsolated.js" target-dir="toto"></source-file>
+        <js-module src="src/electron/AppManagerPluginMain.js"></js-module>
+    </platform>
 </plugin>

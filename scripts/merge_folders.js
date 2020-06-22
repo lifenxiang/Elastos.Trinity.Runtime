@@ -22,6 +22,10 @@ const ios_folders_to_copy = [{
   "platform_res/ios":
   "platforms/ios"
 }]
+const electron_folders_to_copy = [{
+  "platform_res/electron":
+  "platforms/electron/www"
+}]
 // no need to configure below
 
 const fs = require('fs'),
@@ -76,6 +80,9 @@ module.exports = function(ctx) {
   if (ctx.opts.platforms.some((val) => val.startsWith("android"))) {
     folders_to_copy = folders_to_copy.concat(android_folders_to_copy);
     files_to_copy = files_to_copy.concat(android_files_to_copy);
+  }
+  if (ctx.opts.platforms.some((val) => val.startsWith("electron"))) {
+    folders_to_copy = folders_to_copy.concat(electron_folders_to_copy);
   }
 
   folders_to_copy.forEach(function(obj) {
