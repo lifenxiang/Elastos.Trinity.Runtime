@@ -1,4 +1,4 @@
-import fs from 'fs';
+import { existsSync, mkdirSync } from 'fs-extra';
 import { app, BrowserWindow } from 'electron';
 
 import { Log } from "./Log";
@@ -26,24 +26,24 @@ class AppPathInfo {
         this.tempPath = baseDir + "/temp/";
         this.databasePath = baseDir + "/database/";
 
-        if (!fs.existsSync(this.appsPath)) {
-            fs.mkdirSync(this.appsPath, { recursive: true });
+        if (!existsSync(this.appsPath)) {
+            mkdirSync(this.appsPath, { recursive: true });
         }
 
-        if (!fs.existsSync(this.dataPath)) {
-            fs.mkdirSync(this.dataPath, { recursive: true });
+        if (!existsSync(this.dataPath)) {
+            mkdirSync(this.dataPath, { recursive: true });
         }
 
-        if (!fs.existsSync(this.configPath)) {
-            fs.mkdirSync(this.configPath, { recursive: true });
+        if (!existsSync(this.configPath)) {
+            mkdirSync(this.configPath, { recursive: true });
         }
 
-        if (!fs.existsSync(this.tempPath)) {
-            fs.mkdirSync(this.tempPath, { recursive: true });
+        if (!existsSync(this.tempPath)) {
+            mkdirSync(this.tempPath, { recursive: true });
         }
 
-        if (!fs.existsSync(this.databasePath)) {
-            fs.mkdirSync(this.databasePath, { recursive: true });
+        if (!existsSync(this.databasePath)) {
+            mkdirSync(this.databasePath, { recursive: true });
         }
     }
 }

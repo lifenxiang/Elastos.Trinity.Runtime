@@ -5,7 +5,7 @@ import fs from 'fs';
 
 const cdvElectronSettings = require('./cdv-electron-settings.json');
 import { AppManager } from './AppManager';
-import { createConnection } from 'typeorm';
+import { createConnection, getConnection } from 'typeorm';
 import { AppInfo } from './AppInfo';
 
 //import { createRxDatabase, addRxPlugin } from 'rxdb';
@@ -65,17 +65,41 @@ export class TrinityRuntime {
         // TODO: MOVE THIS TO THE APP MANAGER ADAPTERS
         // NOTE: We use sqljs with auto-save, instead of sqlite3, to avoid any dependency to native binaries
         // in electron and reduce build/packaging issues.
-       /* await createConnection({
+        console.log("Setup database")
+        /*await createConnection({
             type: "sqlite",
-            location: "manager.db",
-            autoSave: true,
+            database: "manager.db",
             entities: [
                 AppInfo
             ],
             synchronize: true,
             logging: false
+        })*/
+
+        let connection = await createConnection({
+            type: "sqljs",
+            location: app.getAppPath()+"/manager.db",
+            entities: [
+                AppInfo
+            ],
+            autoSave: true,
+            synchronize: true,
+            logging: false
         })
-*/
+
+        /*const repository = connection.getRepository(AppInfo);
+
+        setTimeout(()=>{
+            console.log("before save");
+            let appInfo = new AppInfo();
+            repository.save(appInfo)
+            console.log("after save");
+        }, 3000)*/
+
+        let appInfo = new AppInfo();
+        appInfo.save()
+        
+
         /*const db = await createRxDatabase({
             name: 'heroesdb',
             adapter: 'indexeddb',

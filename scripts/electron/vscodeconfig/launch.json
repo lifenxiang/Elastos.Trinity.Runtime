@@ -9,7 +9,7 @@
       //"runtimeExecutable": "cordova",
       //"args" : ["run", "electron", "--nobuild", "--inspect=5858"],
       "runtimeExecutable": "${workspaceFolder}/Runtime/platform_src/electron/main/node_modules/.bin/electron",
-      "args" : ["www/main.js"],
+      "args" : ["www/"],
       "outputCapture": "std",
       "protocol": "inspector",
       "preLaunchTask": "Cordova prepare"

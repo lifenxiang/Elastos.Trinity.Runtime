@@ -1,5 +1,4 @@
-import { DatabaseEntity } from './DatabaseEntity';
-import { Entity, Column, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryColumn, PrimaryGeneratedColumn, BaseEntity } from 'typeorm';
 
 const AUTHORITY_NOEXIST = -1;
 const AUTHORITY_NOINIT = 0;
@@ -83,7 +82,8 @@ export class IntentFilter {
     }
 }
 
-export class AppInfo extends DatabaseEntity {
+@Entity()
+export class AppInfo extends BaseEntity {
     public static TID = "tid";
     public static APP_TID = "app_tid";
     public static APP_ID = "app_id";
@@ -146,7 +146,7 @@ export class AppInfo extends DatabaseEntity {
     /*public String category;
     public String key_words;*/
     @Column() public start_visible: string;
-    @Column() public share = true;
+    @Column() public share: boolean = true;
 
     public locales = new Array<Locale>();
     public icons = new Array<Icon>();

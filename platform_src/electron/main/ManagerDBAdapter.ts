@@ -19,7 +19,7 @@ export class ManagerDBAdapter {
     }
 
     public addAppInfo(info: AppInfo): boolean {
-        info.save(); // TODO: THIS IS ASYNC!  WAIT FOR IT
+        //info.save(); // TODO: THIS IS ASYNC!  WAIT FOR IT
 
         /* TODO if (info != null) {
             SQLiteDatabase db = helper.getWritableDatabase();
@@ -131,7 +131,8 @@ export class ManagerDBAdapter {
     }
 
     private async getInfos(selectionArgs: FindConditions<AppInfo>): Promise<AppInfo[]> {
-        let infos = await AppInfo.find(selectionArgs);
+        //let infos = await AppInfo.find(selectionArgs);
+        let infos = Array<AppInfo>();
 
         /* DELETE ME String[] columns = {AppInfo.TID, AppInfo.APP_ID, AppInfo.VERSION, AppInfo.VERSION_CODE, AppInfo.NAME, AppInfo.SHORT_NAME,
                 AppInfo.DESCRIPTION, AppInfo.START_URL, AppInfo.START_VISIBLE, AppInfo.TYPE,

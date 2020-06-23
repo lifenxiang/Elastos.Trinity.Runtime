@@ -1,9 +1,10 @@
 const webpack = require("webpack");
 const fs = require("fs")
-const path = require("path")
+const path = require("path");
+const { exec } = require("child_process");
 
 function finalize() {
-    console.log("FINALIZE");
+    console.log("Finalizing");
 
     let mainFileName = "main.js";
     let outputFileDir = `${__dirname}/../../platforms/electron/platform_www/`
@@ -16,12 +17,9 @@ function finalize() {
     let pluginSrcDir = path.join(trinityRootDir, "Runtime/plugin_src");
 
     // Copy the output file to electron www/ for convenience
-    let wwwOutputFilePath = path.join(electronOutputDir, "www", mainFileName);
+    /*let wwwOutputFilePath = path.join(electronOutputDir, "www", mainFileName);
     console.log("Copying cdv-electron-main.js from "+outputFilePath+" to "+wwwOutputFilePath);
-    fs.copyFileSync(outputFilePath, wwwOutputFilePath);
-
-    fs.copyFileSync(platformSrcDir+"/cdv-reserved-scheme.json", wwwOutputDir+"/cdv-reserved-scheme.json");
-    fs.copyFileSync(platformSrcDir+"/cdv-electron-settings.json", wwwOutputDir+"/cdv-electron-settings.json");
+    fs.copyFileSync(outputFilePath, wwwOutputFilePath);*/
 
     // Get vscode config ready to be able to start the trinity electorn project for debug (main process logs/debug)
     // TODO: MOVE THIS VSCODE CONFIG COPY NOT IN THIS TRANSPILE SCRIPT BUT WHEN BUILDING THE PLATFORM ONLY
@@ -34,11 +32,26 @@ function finalize() {
     // TODO: MOVE THIS
     fs.copyFileSync(path.join(platformSrcDir, "index.html"), path.join(platformWwwOutputDir, "index.html"));
 
+    console.log("Copies completed.")
 }
 
 module.exports = () => {
     return new Promise((resolve, reject)=>{
-        finalize();
+        let tsConfig = path.join(`${__dirname}`, "../../platform_src/electron/main/tsconfig.json");
+        let transpileCommand = 'tsc --build '+tsConfig+" --force";
+        console.log("Executing shell command: "+transpileCommand);
+        exec(transpileCommand, (err, stdout, stderr) => {
+            if (err) {
+                console.error(err)
+            }
+            else {
+                console.log("Transpile success.")
+            }
+
+            finalize();
+            resolve();
+        });
+
         return;
         
         let webpackConfig = require("./webpack.main.config");
