@@ -1,19 +1,32 @@
 {
     "compilerOptions": {
-      "noImplicitAny": false,
+      "noImplicitAny": true,
       "declaration": false,
-      "module": "es2015",
+      "module": "commonjs",
       "allowSyntheticDefaultImports": true,
       "moduleResolution": "node",
       "experimentalDecorators": true,
       "importHelpers": true,
       "target": "es5",
-      "lib": [
-        "es2018",
-        "dom"
-      ],
+      "outDir": "../../../platforms/electron/www",
       "allowJs": true,
+      "lib": [
+        "ES2018",
+        "DOM"
+      ],
       "sourceMap": true,
       "preserveConstEnums": true,
-    }
-}
+      "emitDecoratorMetadata": true,
+      "baseUrl": ".",
+      "paths": {
+        "*": ["node_modules/*"]
+      }
+    },
+    "include": [
+      "./**/*"
+    ],
+    "exclude": [
+      "node_modules",
+      "dist"
+    ]
+} 

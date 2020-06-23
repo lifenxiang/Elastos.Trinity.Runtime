@@ -1,18 +1,18 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "name": "Electron Debug Main Process",
-        "type": "node",
-        "request": "launch",
-        "cwd": "${workspaceFolder}/Runtime/platforms/electron",
-        //"runtimeExecutable": "cordova",
-        //"args" : ["run", "electron", "--nobuild", "--inspect=5858"],
-        "runtimeExecutable": "${workspaceFolder}/Runtime/node_modules/.bin/electron",
-        "args" : ["www"],
-        "outputCapture": "std",
-        "protocol": "inspector",
-        "preLaunchTask": "Cordova prepare"
-      }
-    ]
-  }
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Electron Debug Main Process",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/Runtime/platforms/electron",
+      //"runtimeExecutable": "cordova",
+      //"args" : ["run", "electron", "--nobuild", "--inspect=5858"],
+      "runtimeExecutable": "${workspaceFolder}/Runtime/platform_src/electron/main/node_modules/.bin/electron",
+      "args" : ["www/main.js"],
+      "outputCapture": "std",
+      "protocol": "inspector",
+      "preLaunchTask": "Cordova prepare"
+    }
+  ]
+}

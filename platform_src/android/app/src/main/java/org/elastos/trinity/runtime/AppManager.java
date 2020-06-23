@@ -87,7 +87,6 @@ public class AppManager {
     private AppPathInfo basePathInfo = null;
     private AppPathInfo pathInfo = null;
 
-//    private AppInfo didsessionAppInfo = null;
     private Boolean signIning = true;
     private String did = null;
 

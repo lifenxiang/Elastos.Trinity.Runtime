@@ -59,6 +59,7 @@
     "notificationmanager": "file:/Users/bpiette/Documents/Perso/Dev/elastos/Githubs/Elastos.Trinity/Runtime/plugin_src/NotificationManager",
     "passwordmanager": "file:/Users/bpiette/Documents/Perso/Dev/elastos/Githubs/Elastos.Trinity/Runtime/plugin_src/PasswordManager",
     "path": "^0.12.7",
+    "sqlite3": "^4.2.0",
     "titlebarmanager": "file:/Users/bpiette/Documents/Perso/Dev/elastos/Githubs/Elastos.Trinity/Runtime/plugin_src/TitleBarManager",
     "wallet": "file:/Users/bpiette/Documents/Perso/Dev/elastos/Githubs/Elastos.Trinity/Plugins/Wallet",
     "xcode": "^1.1.0",
@@ -114,9 +115,11 @@
   },
   "devDependencies": {
     "electron-builder": "^22.7.0",
+    "electron-rebuild": "^1.11.0",
     "expose-loader": "^0.7.5",
     "ts-loader": "^7.0.5",
     "typescript": "^3.9.5",
-    "webpack": "^4.43.0"
+    "webpack": "^4.43.0",
+    "webpack-filter-warnings-plugin": "^1.2.1"
   }
 }

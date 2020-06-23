@@ -8,6 +8,7 @@ export class TrinityRuntimeHelper {
             let methodFullName = pluginName + "-" + m;
             exposedMethods[m] = async (args) => {
                 let result = await ipcRenderer.invoke(methodFullName, args)
+                console.log("IPC RESULT", result)
                 return result;
             }
         }

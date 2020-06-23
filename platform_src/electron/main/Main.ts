@@ -33,43 +33,7 @@ if (!isFileProtocol) {
 let mainWindow: BrowserWindow;
 
 // Runtime singleton instance
-let runtime = new TrinityRuntime();
-//require("plugin-ben/src/electron/PluginBenMain")
-
-function createWindow () {
-    // Create the browser window.
-    let appIcon = `${__dirname}/launcher/assets/icons/ic_elastos.png`;
-
-    const browserWindowOpts = Object.assign({}, cdvElectronSettings.browserWindow, { 
-        icon: appIcon,
-        title: "elastOS"
-    });
-    mainWindow = new BrowserWindow(browserWindowOpts);
-
-    // Empty root layout
-    const loadUrl = `file://${__dirname}/index.html`
-    mainWindow.loadURL(loadUrl, {});
-    mainWindow.webContents.on('did-finish-load', function () {
-        mainWindow.webContents.send('window-id', mainWindow.id);
-    });
-
-    // Open the DevTools.
-    //mainWindow.webContents.openDevTools();
-
-    // Emitted when the window is closed.
-    mainWindow.on('closed', () => {
-        // Dereference the window object, usually you would store windows
-        // in an array if your app supports multi windows, this is the time
-        // when you should delete the corresponding element.
-        mainWindow = null;
-    });
-
-    runtime.setMainWindow(mainWindow);
-
-    app.whenReady().then(()=>{
-        runtime.startLauncher();
-    })
-}
+let runtime = TrinityRuntime.getSharedInstance();
 
 function configureProtocol () {
     protocol.registerFileProtocol(scheme, (request, cb) => {
@@ -88,7 +52,7 @@ app.on('ready', () => {
         configureProtocol();
     }
 
-    createWindow();
+    runtime.createMainWindow();
 });
 
 // Quit when all windows are closed.
@@ -108,7 +72,7 @@ app.on('activate', () => {
             configureProtocol();
         }
 
-        createWindow();
+        runtime.createMainWindow(); // TODO: check if this eally works as we would like...
     }
 });
 

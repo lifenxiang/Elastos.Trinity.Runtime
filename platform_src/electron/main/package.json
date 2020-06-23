@@ -9,6 +9,11 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^9.0.4"
+    "@types/node": "^12.12.47",
+    "electron": "^9.0.4",
+    "electron-rebuild": "^1.11.0"
+  },
+  "dependencies": {
+    "typeorm": "^0.2.25"
   }
 }

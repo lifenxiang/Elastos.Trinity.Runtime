@@ -1,20 +1,34 @@
-import { ipcRenderer, ipcMain, BrowserView, app, session, RedirectRequest, Request } from "electron";
+import { ipcMain, BrowserView, app, session, Request, Session, BrowserWindow, BrowserWindowConstructorOptions } from "electron";
 import path from 'path';
+import fs from 'fs';
+//import "reflect-metadata"; // Needed by TypeORM at the app root
+
+const cdvElectronSettings = require('./cdv-electron-settings.json');
+import { AppManager } from './AppManager';
+import { createConnection } from 'typeorm';
+import { AppInfo } from './AppInfo';
+
+//import { createRxDatabase, addRxPlugin } from 'rxdb';
+//addRxPlugin(require('pouchdb-adapter-idb'));
+
+
+
+let runtimeInstance: TrinityRuntime = null;
 
 export class TrinityPlugin {
-    appId;
+    appId: string;
 
-    constructor(appId) {
+    constructor(appId: string) {
         this.appId = appId;
     }
 }
 
 export class RunningApp {
-    appId;
-    browserViewID;
-    pluginInstances;
+    appId: string;
+    browserViewID: number;
+    pluginInstances: { [key: string] : TrinityPlugin };
 
-    constructor(appId, browserViewID, runtime) {
+    constructor(appId: string, browserViewID: number, runtime: TrinityRuntime) {
         this.browserViewID = browserViewID;
         this.appId = appId;
 
@@ -29,28 +43,114 @@ export class RunningApp {
     }
 }
 
-export class TrinityRuntime {
-    runningApps;
-    plugins;
-    mainWindow;
+type RegisteredPlugin = {
+    instanceCreationCallback: (appID: string) => TrinityPlugin
+}
 
-    constructor() {
+export class TrinityRuntime {
+    runningApps: { [key:string]: RunningApp };
+    plugins: { [key:string]: RegisteredPlugin };
+    
+    mainWindow: BrowserWindow = null;
+    appManager: AppManager = null;
+
+    private constructor() {
         this.runningApps = {};
         this.plugins = {};
+
+        this.setupDatabase();
     }
 
-    setMainWindow(mainWindow) {
-        this.mainWindow = mainWindow;
+    private async setupDatabase() {
+        // TODO: MOVE THIS TO THE APP MANAGER ADAPTERS
+        // NOTE: We use sqljs with auto-save, instead of sqlite3, to avoid any dependency to native binaries
+        // in electron and reduce build/packaging issues.
+       /* await createConnection({
+            type: "sqlite",
+            location: "manager.db",
+            autoSave: true,
+            entities: [
+                AppInfo
+            ],
+            synchronize: true,
+            logging: false
+        })
+*/
+        /*const db = await createRxDatabase({
+            name: 'heroesdb',
+            adapter: 'indexeddb',
+            password: 'myLongAndStupidPassword' // optional
+        });                                                       // create database
+
+        let mySchema = {
+            "title": "hero schema",
+            "version": 0,
+            "description": "describes a simple hero",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "primary": true
+                },
+                "color": {
+                    "type": "string"
+                },
+                "healthpoints": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "birthyear": {
+                    "type": "number",
+                    "final": true,
+                    "minimum": 1900,
+                    "maximum": 2050
+                },
+                "skills": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "uniqueItems": true,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "damage": {
+                                "type": "number"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": ["color"],
+            "encrypted": ["secret"],
+            "attachments": {
+                "encrypted": true
+            }
+          }
+        await db.collection({name: 'heroes', schema: mySchema});    // create collection
+        db.heroes.insert({ name: 'Bob' });  */
     }
 
-    registerPlugin(pluginName, instanceCreationCallback) {
+    static getSharedInstance(): TrinityRuntime {
+        if (runtimeInstance == null) {
+            runtimeInstance = new TrinityRuntime();
+        }
+        return runtimeInstance
+    }
+
+    registerPlugin(pluginName: string, instanceCreationCallback: (appID: string) => TrinityPlugin) {
         this.plugins[pluginName] = {
             instanceCreationCallback: instanceCreationCallback
         }
     }
 
     // Plugin in main process -> handle IPC calls
-    createIPCDefinitionForMainProcess(pluginName, methodsList) {
+    createIPCDefinitionForMainProcess(pluginName: string, methodsList: string[]) {
         for (let m of methodsList) {
             let fullMethodName = pluginName+"-"+m;
             console.log("Main process is registering an IPC event handler for event "+fullMethodName);
@@ -64,16 +164,25 @@ export class TrinityRuntime {
 
                 // Retrieve related running app based on caller id
                 let runningApp = this.findRunningAppByCallerID(callerBrowserView.id);
-                console.log("Found running app to handle IPC "+fullMethodName, runningApp);
+                if (runningApp) {
+                    console.log("Found running app to handle IPC "+fullMethodName, runningApp);
 
-                let pluginResult = runningApp.pluginInstances[pluginName][m]();
-                console.log("pluginResult", pluginResult);
-                return pluginResult;
+                    let pluginResult = (runningApp.pluginInstances[pluginName] as any)[m]();
+                    console.log("pluginResult", pluginResult);
+                    return pluginResult;
+                }
+                else {
+                    console.error("No running app found to handle this IPC request!");
+                    return null;
+                }
             })
         }
     }
 
-    findRunningAppByCallerID(browserViewCallerID) {
+    findRunningAppByCallerID(browserViewCallerID: number) {
+        //console.debug("Looking for running app with browser view id "+browserViewCallerID);
+        //console.debug("Running apps:", this.runningApps);
+
         for (let appId in this.runningApps) {
             if (this.runningApps[appId].browserViewID == browserViewCallerID)
                 return this.runningApps[appId];
@@ -81,15 +190,92 @@ export class TrinityRuntime {
         return null;
     }
 
+    createMainWindow() {
+        let appIcon = `${__dirname}/launcher/assets/icons/ic_elastos.png`;
+
+        const browserWindowOpts = Object.assign({}, cdvElectronSettings.browserWindow, { 
+            icon: appIcon,
+            title: "elastOS"
+        });
+        this.mainWindow = new BrowserWindow(browserWindowOpts);
+        this.appManager = new AppManager(this.mainWindow);
+
+        // Empty root layout
+        const loadUrl = `file://${__dirname}/index.html`
+        this.mainWindow.loadURL(loadUrl, {});
+        this.mainWindow.webContents.on('did-finish-load', function () {
+            this.mainWindow.webContents.send('window-id', this.mainWindow.id);
+        });
+
+        // Open the DevTools.
+        //mainWindow.webContents.openDevTools();
+
+        // Emitted when the window is closed.
+        /*this.mainWindow.on('closed', () => {
+            // Dereference the window object, usually you would store windows
+            // in an array if your app supports multi windows, this is the time
+            // when you should delete the corresponding element.
+            this.mainWindow = null;
+        });*/
+    }
+
     startLauncher() {
         const partition = 'TODO-TEST-persist:example' // TODO: SANDBOX PER DID/APPID
         const ses = session.fromPartition(partition)
 
-        let wwwFilesPath = `${__dirname}`
         let dappFilesPath = `${__dirname}/launcher`
 
+        this.setupSessionProtocolHandlers(ses, "launcher", dappFilesPath);
+
+        // TODO: bad name : title bar now used as launcher
+        let titleBarView = new BrowserView({
+            webPreferences: {
+                nodeIntegration: false, // is default value after Electron v5
+                contextIsolation: true, // protect against prototype pollution
+                enableRemoteModule: false, // turn off remote
+                preload: path.join(app.getAppPath(), 'dapp_preload.js'),
+                partition: partition
+            }
+        })
+        let titleBarHeight = 500
+        this.mainWindow.addBrowserView(titleBarView)
+        titleBarView.setBounds({ x: 0, y: 0, width: 1200, height: titleBarHeight })
+
+        let appId = "launcher";
+        let runningApp = new RunningApp(appId, titleBarView.id, this);
+        this.runningApps[appId] = runningApp;
+        console.log("runningApps:", this.runningApps)
+        console.log("STARTED APP: ", runningApp)
+
+        console.log("Loading launcher url")
+        titleBarView.webContents.loadURL('trinityapp://index.html')
+        titleBarView.webContents.openDevTools();
+    }
+
+    startApp(appId: string) {
+        let appView = new BrowserView()
+        this.mainWindow.addBrowserView(appView)
+        appView.setBounds({ x: 0, y: 500, width: 400, height: 400 })
+        appView.webContents.loadFile(`file://${__dirname}/index.html`, {
+        })
+//        appView.webContents.loadURL(`file://${__dirname}/index.html`)    
+
+        let runningApp = new RunningApp(appId, appView.id, this);
+        this.runningApps[appId] = runningApp;
+        console.log("STARTED APP: ", runningApp)
+    }
+
+    stopApp(appId: string) {
+        let runningApp = this.runningApps[appId];
+        let browserView = BrowserView.fromId(runningApp.browserViewID)
+        this.mainWindow.removeBrowserView(browserView)
+    }
+
+    private setupSessionProtocolHandlers(ses: Session, appId: string, dappFilesPath: string) {
+        let wwwFilesPath = `${__dirname}`
+
         ses.protocol.registerFileProtocol("trinityapp", (request: Request, callback: (filePath: string)=>void) => {
-            console.log("Handle FILE trinityapp:", request);
+            //console.log("Handle FILE trinityapp:", request);
 
             // Ex: request.url = trinityapp://index.html/
             let redirectedFilePath: string;
@@ -101,7 +287,7 @@ export class TrinityRuntime {
                     redirectedFilePath = dappFilesPath + redirectedFilePath;
             }
 
-            console.log("Redirecting to file path: "+redirectedFilePath);
+            //console.log("Redirecting to file path: "+redirectedFilePath);
             callback(redirectedFilePath)
         }, (err)=>{
             if (err)
@@ -109,7 +295,7 @@ export class TrinityRuntime {
         });
 
         ses.protocol.interceptFileProtocol("asset", (request: Request, callback: (filePath: string)=>void) => {
-            console.log("Intercepting ASSET request:", request.url);
+            //console.log("Intercepting ASSET request:", request.url);
 
             let allowedUrls = [
                 "asset://www/cordova.js",
@@ -130,53 +316,17 @@ export class TrinityRuntime {
                 console.error("Asset intercept error:", err);
         });
 
-        // TODO: bad name : title bar now used as launcher
-        let titleBarView = new BrowserView({
-            webPreferences: {
-                nodeIntegration: false, // is default value after Electron v5
-                contextIsolation: true, // protect against prototype pollution
-                enableRemoteModule: false, // turn off remote
-                preload: path.join(app.getAppPath(), 'dapp_preload.js'),
-                partition: partition
-            }
-        })
-        let titleBarHeight = 500
-        this.mainWindow.addBrowserView(titleBarView)
-        titleBarView.setBounds({ x: 0, y: 0, width: 1200, height: titleBarHeight })
-        console.log("Loading launcher url")
-        titleBarView.webContents.loadURL('trinityapp://index.html')
-        titleBarView.webContents.openDevTools();
+        ses.protocol.interceptFileProtocol("icon", (request: Request, callback: (filePath: string)=>void) => {
+            console.log("Intercepting ICON request:", request.url);
 
-        /*ses.webRequest.onBeforeRequest({
-            urls:[]
-        }, (details, callback) => {
-            console.log("onBeforeRequest "+details.url)
+            let parsedUrl = new URL(request.url);
+            console.log("parsedUrl", parsedUrl)
+
             callback(null)
-        });*/
-
-        let appId = "launcher";
-        let runningApp = new RunningApp(appId, titleBarView.id, this);
-        this.runningApps[appId] = runningApp;
-        console.log("STARTED APP: ", runningApp)
-    }
-
-    startApp(appId) {
-        let appView = new BrowserView()
-        this.mainWindow.addBrowserView(appView)
-        appView.setBounds({ x: 0, y: 500, width: 400, height: 400 })
-        appView.webContents.loadFile(`file://${__dirname}/index.html`, {
-        })
-//        appView.webContents.loadURL(`file://${__dirname}/index.html`)    
-
-        let runningApp = new RunningApp(appId, appView.id, this);
-        this.runningApps[appId] = runningApp;
-        console.log("STARTED APP: ", runningApp)
-    }
-
-    stopApp(appId) {
-        let runningApp = this.runningApps[appId];
-        let browserView = BrowserView.fromId(runningApp.browserViewId)
-        this.mainWindow.removeBrowserView(browserView)
+        }, (err)=>{
+            if (err)
+                console.error("Icon intercept error:", err);
+        });
     }
 
     // TODO: Apply all of this android method to interceptFileProtocol()
@@ -217,17 +367,7 @@ export class TrinityRuntime {
     }
 }
 
-export class TrinityRuntimeHelper {
-    // Plugin "preload" context -> expose apis that send IPS calls to main process
-    static createIPCDefinitionToMainProcess(pluginName, methodsList) {
-        let exposedMethods = {}
-        for (let m of methodsList) {
-            let methodFullName = pluginName + "-" + m;
-            exposedMethods[m] = async (args) => {
-                let result = await ipcRenderer.invoke(methodFullName, args)
-                return result;
-            }
-        }
-        return exposedMethods
-    }
-}
+// Embed all plugins main process files
+
+// TODO: FIND A WAY TO MAKE THIS DYNAMIC AND CLEAN
+require("./plugins_main/AppManagerPluginMain")
