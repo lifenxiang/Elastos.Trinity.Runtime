@@ -150,17 +150,17 @@ func getAssetPath(_ url: String) -> String {
                                      message: msg,
                                      preferredStyle: UIAlertController.Style.alert)
      if (cancel) {
-         let cancelAlertAction = UIAlertAction(title: "Cancel", style:
+         let cancelAlertAction = UIAlertAction(title: "cancel".localized, style:
              UIAlertAction.Style.cancel, handler: doCancelHandler)
          alertController.addAction(cancelAlertAction)
      }
-     let sureAlertAction = UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: doOKHandler)
+     let sureAlertAction = UIAlertAction(title: "ok".localized, style: UIAlertAction.Style.default, handler: doOKHandler)
      alertController.addAction(sureAlertAction)
 
     DispatchQueue.main.async { AppManager.getShareInstance().mainViewController.present(alertController, animated: true, completion: nil)
     }
  }
- 
+
  func getCurrentLanguage() -> String {
      let preferredLang = NSLocale.preferredLanguages.first!
 
@@ -173,7 +173,7 @@ func getAssetPath(_ url: String) -> String {
          return "en"
      }
  }
- 
+
  func getCustomHostname(_ did: String?, _ appId: String) -> String {
      var hostname = "";
 
@@ -184,7 +184,7 @@ func getAssetPath(_ url: String) -> String {
 
     return hostname.lowercased().encodingURL();
  }
- 
+
  func getImageFromURL(_ fileUrl: String) -> UIImage? {
     let url = URL(string: fileUrl)
     let data = try? Data(contentsOf: url!)
@@ -249,7 +249,7 @@ func getAssetPath(_ url: String) -> String {
         }
     }
  }
- 
+
  extension Bool {
     func toString() -> String {
         return self.description;

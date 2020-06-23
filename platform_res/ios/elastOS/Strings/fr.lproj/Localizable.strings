@@ -31,4 +31,7 @@
 "intent_choose_title" = "Continuer cette action avec:";
 "intent_choose_another" = "Autre application";
 
+"ok" = "OK";
+"cancel" = "Annuler";
+
 "app_starting" = "Démarrage";

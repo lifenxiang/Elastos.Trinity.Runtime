@@ -42,7 +42,7 @@
     @objc static let API = 0;
     @objc static let JWT = 1;
     @objc static let URL = 2;
-    
+
     @objc static let REDIRECT_URL = "redirecturl";
     @objc static let CALLBACK_URL = "callbackurl";
     @objc static let REDIRECT_APP_URL = "redirectappurl";
@@ -62,7 +62,7 @@
     @objc dynamic var aud: String?;
     @objc dynamic var req: String?;
     @objc dynamic var type = API;
-    
+
     var isDoingResponse = false;
 
     init(_ action: String, _ params: String?, _ fromId: String, _ toId: String?,
@@ -256,13 +256,13 @@ class ShareIntentParams {
             }
         }
     }
-    
+
     public func setDoingResponse(_ intentId: Int64 ) throws {
         let info = intentContextList[intentId];
         if (info == nil) {
             throw AppError.error(String(intentId) + " isn't exist!");
         }
-        
+
         info!.isDoingResponse = true;
     }
 
@@ -300,7 +300,7 @@ class ShareIntentParams {
         }
 
         let popup = PopupDialog(viewController: vc)
-        let cancelButton = CancelButton(title: "Cancel") {}
+        let cancelButton = CancelButton(title: "cancel".localized) {}
         popup.addButtons([cancelButton])
 
         vc.setListener() { selectedAppInfo in
@@ -547,7 +547,7 @@ class ShareIntentParams {
             if !((200 ... 299) ~= response.statusCode) {                    // check for http errors
                 print("Error - statusCode should be 2xx, but is \(response.statusCode)")
                 print("response = \(response)")
-                
+
                 if let responseString = String(data: data, encoding: .utf8) {
                     print("responseString = \(responseString)")
                 }
@@ -567,7 +567,7 @@ class ShareIntentParams {
         }
         return URL(string: url + param + result.encodingQuery())!;
     }
-    
+
     /**
      * Helper class to deal with app intent result types that can be either JSON objects with raw data,
      * or JSON objects with "jwt" special field.
@@ -622,7 +622,7 @@ class ShareIntentParams {
         if (viewController != nil) {
             try self.appManager.start(info!.fromId)
         }
-        
+
         // The result object can be either a standard json object, or a {jwt:JWT} object.
         let intentResult = try IntentResult(rawResult: result)
 
@@ -648,7 +648,7 @@ class ShareIntentParams {
                 if (info!.type == IntentInfo.JWT) {
                     // Request intent was a JWT payload. We send the response as a JWT payload too
                     var jwt = try createUnsignedJWTResponse(info!, result);
-                    
+
                     if (intentResult.isAlreadyJWT()) {
                         jwt = intentResult.jwt
                         //System.out.println("DEBUG DELETE THIS - JWT TOKEN = "+jwt);
@@ -657,7 +657,7 @@ class ShareIntentParams {
                         // App did not return a JWT, so we return an unsigned JWT instead
                         jwt = try createUnsignedJWTResponse(info!, result)
                     }
-                    
+
                     if (IntentManager.checkTrinityScheme(urlString!)) {
                         urlString = urlString! + "/" + jwt!;
                         try sendIntentByUri(URL(string: urlString!)!, info!.fromId);

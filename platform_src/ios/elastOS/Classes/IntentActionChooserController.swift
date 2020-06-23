@@ -25,6 +25,7 @@ import Foundation
 class IntentActionChooserController: UIViewController {
     // Outlets
     @IBOutlet var listItemsStackView: UIStackView!
+    @IBOutlet weak var lblTitle: UILabel!
 
     // Model
     private var appManager: AppManager? = nil
@@ -41,8 +42,7 @@ class IntentActionChooserController: UIViewController {
         super.viewDidLoad()
 
         // i18n
-//        lblTitle.text = "url_perm_title".localized
-//        lblSubtitle.text = "url_perm_subtitle".localized
+       lblTitle.text = "intent_choose_title".localized
 
         // Add one line for each app that can be used to handle the intent
         for appInfo in appInfos {

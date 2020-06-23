@@ -166,7 +166,7 @@
 
         self.commandDelegate.send(result, callbackId: command.callbackId)
     }
-    
+
     func sendCallback(_ command: CDVInvokedUrlCommand, _ status: CDVCommandStatus, _ keepCallback:Bool, _ retAsString: String?) {
         var result: CDVPluginResult? = nil;
         if (status != CDVCommandStatus_NO_RESULT) {
@@ -547,7 +547,7 @@
 //        let action = command.arguments[0] as? String ?? "";
         let result = command.arguments[1] as? String ?? "";
         let intentId = command.arguments[2] as? Int64 ?? -1
-        
+
         do {
             try IntentManager.getShareInstance().setDoingResponse(intentId);
         } catch AppError.error(let err) {
@@ -555,9 +555,9 @@
         } catch let error {
             self.error(command, error.localizedDescription);
         }
-        
+
         self.sendCallback(command, CDVCommandStatus_NO_RESULT, true, nil);
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(100), execute: {
             do {
                 try IntentManager.getShareInstance().sendIntentResponse(result, intentId, self.appId!);
@@ -605,7 +605,7 @@
         else if (self.intentListener != nil) {
             DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(100), execute: {
                 self.intentListener!(info.action, info.params, info.fromId, info.intentId);
-            })  
+            })
         }
     }
 
@@ -769,11 +769,11 @@
                                         message: msg,
                                         preferredStyle: UIAlertController.Style.alert)
         if (cancel) {
-            let cancelAlertAction = UIAlertAction(title: "Cancel", style:
+            let cancelAlertAction = UIAlertAction(title: "cancel".localized, style:
                 UIAlertAction.Style.cancel, handler: doCancelHandler)
             alertController.addAction(cancelAlertAction)
         }
-        let sureAlertAction = UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: doOKHandler)
+        let sureAlertAction = UIAlertAction(title: "ok".localized, style: UIAlertAction.Style.default, handler: doOKHandler)
         alertController.addAction(sureAlertAction)
 
         DispatchQueue.main.async {

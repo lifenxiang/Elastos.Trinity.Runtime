@@ -31,4 +31,7 @@
 "intent_choose_title" = "打开方式:";
 "intent_choose_another" = "其它应用";
 
+"ok" = "确定";
+"cancel" = "取消";
+
 "app_starting" = "正在启动";
