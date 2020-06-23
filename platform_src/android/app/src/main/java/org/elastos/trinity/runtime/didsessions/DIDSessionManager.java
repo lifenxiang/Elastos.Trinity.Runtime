@@ -131,7 +131,7 @@ public class DIDSessionManager {
                         // Initialize the DID store
                         DIDBackend.initialize(resolver, cacheDir);
                         String dataDir = activity.getFilesDir() + "/data/did/useridentities/" + signedInIdentity.didStoreId;
-                        DIDStore didStore = DIDStore.open("filesystem", dataDir, (payload, memo, confirms, callback) -> {});
+                        DIDStore didStore = DIDStore.open("filesystem", dataDir, (payload, memo) -> {});
 
                         // Load the did document
                         DIDDocument didDocument = didStore.loadDid(signedInIdentity.didString);
