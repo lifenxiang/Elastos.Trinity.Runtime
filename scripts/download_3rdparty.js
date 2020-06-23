@@ -36,7 +36,7 @@ const files_to_download  = [
       "ElastosDIDSDK.framework"
     ],
     "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "a96c279a257b83310424789b0a9b85ef"
+    "md5": "044ab20bdf7f0d203d2aeecf51a6bdfa"
   },
   {
     "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/v0.1.0/Antlr4.framework.zip",
@@ -45,7 +45,7 @@ const files_to_download  = [
       "Antlr4.framework"
     ],
     "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "3adaf2344ba460b1b46c449d8598f0cb"
+    "md5": "4eefd62d23aac4b206b67ea6e1d36edb"
   },
   {
     "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/v0.1.0/PromiseKit.framework.zip",

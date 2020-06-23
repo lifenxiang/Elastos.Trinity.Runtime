@@ -108,7 +108,7 @@ public class DIDSessionManager {
 
                 do {
                     class AuthDIDAdapter : DIDAdapter {
-                        func createIdTransaction(_ payload: String, _ memo: String?, _ confirms: Int, _ callback: @escaping TransactionCallback) {
+                        func createIdTransaction(_ payload: String, _ memo: String?) {
                         }
                     }
                     
