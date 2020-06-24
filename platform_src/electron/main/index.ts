@@ -92,5 +92,16 @@ protocol.registerSchemesAsPrivileged([
             supportFetchAPI: true,
             corsEnabled: true*/
         }
+    },
+    {
+        scheme: "icon",
+        privileges: {
+            standard: true,
+            /*secure: true, 
+            bypassCSP: true,
+            allowServiceWorkers: true,
+            supportFetchAPI: true,
+            corsEnabled: true*/
+        }
     }
 ])

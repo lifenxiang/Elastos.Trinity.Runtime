@@ -7,27 +7,34 @@ export class MergeDBAdapter {
     baseDBAdapter: ManagerDBAdapter = null;
     userDBAdapter: ManagerDBAdapter = null;
 
-    public constructor(window: BrowserWindow) {
+    private constructor(window: BrowserWindow) {
         this.window = window;
-        this.baseDBAdapter = new ManagerDBAdapter(window);
     }
 
-    public setUserDBAdapter(path: string) {
+    public static async create(window: BrowserWindow): Promise<MergeDBAdapter> {
+        let adapter = new MergeDBAdapter(window)
+        adapter.baseDBAdapter = await ManagerDBAdapter.create(window);
+        return adapter;
+    }
+
+    public async setUserDBAdapter(path: string) {
         if (path != null) {
-            this.userDBAdapter = new ManagerDBAdapter(this.window, path);
+            this.userDBAdapter = await ManagerDBAdapter.create(this.window, path);
         }
         else {
             this.userDBAdapter = null;
         }
     }
 
-    public addAppInfo(info: AppInfo, isShare: boolean): boolean {
+    public async addAppInfo(info: AppInfo, isShare: boolean): Promise<boolean> {
         if (info != null) {
-            if (isShare || info.built_in || this.userDBAdapter == null) {
-                return this.baseDBAdapter.addAppInfo(info);
+            if (isShare || info.isBuiltIn || this.userDBAdapter == null) {
+                console.log("Adding app info to BASE DB")
+                return await this.baseDBAdapter.addAppInfo(info);
             }
             else {
-                return this.userDBAdapter.addAppInfo(info);
+                console.log("Adding app info to USER DB")
+                return await this.userDBAdapter.addAppInfo(info);
             }
         }
         else {
@@ -35,13 +42,13 @@ export class MergeDBAdapter {
         }
     }
 
-    public getAppInfo(id: string): AppInfo {
+    public async getAppInfo(id: string): Promise<AppInfo> {
         let info: AppInfo = null;
         if (this.userDBAdapter != null) {
-            info = this.userDBAdapter.getAppInfo(id);
+            info = await this.userDBAdapter.getAppInfo(id);
         }
         if (info == null) {
-            info = this.baseDBAdapter.getAppInfo(id);
+            info = await this.baseDBAdapter.getAppInfo(id);
             if (info != null && this.userDBAdapter != null) {
                 this.userDBAdapter.getAppAuthInfo(info);
             }
@@ -58,6 +65,7 @@ export class MergeDBAdapter {
         if (this.userDBAdapter != null) {
             infos = await this.userDBAdapter.getAppInfos();
         }
+        console.log("getAppInfos after USER db:", infos.length);
 
         for (let info of infos) {
             info.share = false;
@@ -65,6 +73,7 @@ export class MergeDBAdapter {
         }
 
         let baseInfos = await this.baseDBAdapter.getAppInfos();
+        console.log("getAppInfos after BASE db:", baseInfos.length);
         for (let baseInfo of baseInfos) {
             let needAdd = true;
             for (let info of infos) {
@@ -76,7 +85,7 @@ export class MergeDBAdapter {
             if (needAdd) {
                 list.push(baseInfo);
                 if (this.userDBAdapter != null) {
-                    this.userDBAdapter.getAppAuthInfo(baseInfo);
+                    await this.userDBAdapter.getAppAuthInfo(baseInfo);
                 }
             }
         }
@@ -84,15 +93,15 @@ export class MergeDBAdapter {
         return list;
     }
 
-    public getLauncherInfo(): AppInfo {
+    public async getLauncherInfo(): Promise<AppInfo> {
         return this.baseDBAdapter.getLauncherInfo();
     }
 
-    /*public int changeBuiltInToNormal(String appId) {
-        return baseDBAdapter.changeBuiltInToNormal(appId);
+    public changeBuiltInToNormal(appId: string): number {
+        return this.baseDBAdapter.changeBuiltInToNormal(appId);
     }
 
-    public long updatePluginAuth(long tid, String plugin, int authority) {
+    /*public long updatePluginAuth(long tid, String plugin, int authority) {
         if (userDBAdapter != null) {
             return userDBAdapter.updatePluginAuth(tid, plugin, authority);
         }
@@ -117,18 +126,18 @@ export class MergeDBAdapter {
         else {
             return 0;
         }
-    }
+    }*/
 
-    public int removeAppInfo(AppInfo info, Boolean isShare) {
-        if (userDBAdapter != null && !isShare) {
-            return userDBAdapter.removeAppInfo(info);
+    public removeAppInfo(info: AppInfo, isShare: boolean): number {
+        if (this.userDBAdapter != null && !isShare) {
+            return this.userDBAdapter.removeAppInfo(info);
         }
         else {
-            return baseDBAdapter.removeAppInfo(info);
+            return this.baseDBAdapter.removeAppInfo(info);
         }
     }
 
-    public String[] getIntentFilter(String action) {
+    /*public String[] getIntentFilter(String action) {
         ArrayList<String> list = new ArrayList<String>();
         String[] ids = null;
         if (userDBAdapter != null) {

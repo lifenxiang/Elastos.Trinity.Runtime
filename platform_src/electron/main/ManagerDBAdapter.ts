@@ -1,16 +1,45 @@
-import { AppInfo } from "./AppInfo"; 
-import { FindConditions, Not } from 'typeorm';
+import { app, BrowserWindow } from "electron";
+import { join as pathJoin } from "path";
+
+import { AppInfo, Icon } from "./AppInfo"; 
+import { FindConditions, Not, Connection, createConnection } from 'typeorm';
 import { AppManager } from './AppManager';
+import { Log } from './Log';
+import { notImplemented } from './Utility';
 
 export class ManagerDBAdapter {
+    private static LOG_TAG = "ManagerDBAdapter";
+
     // TODO ManagerDBHelper helper;
     context: any;
+    connection: Connection;
 
-    public constructor(context: any, dbPath: string = "")
+    private constructor(context: any, dbPath: string = "")
     {
         // TODO helper = new ManagerDBHelper(context, dbPath);
-        // TODO SQLiteDatabase db = helper.getWritableDatabase();
         this.context = context;
+    }
+
+    public static async create(window: BrowserWindow, dbRootPath: string = app.getAppPath()): Promise<ManagerDBAdapter> {
+        let adapter = new ManagerDBAdapter(window, dbRootPath);
+        await adapter.init(dbRootPath);
+        return adapter;
+    }
+
+    private async init(dbRootPath: string) {
+        Log.d(ManagerDBAdapter.LOG_TAG, "Creating DB connection: "+dbRootPath);
+        this.connection = await createConnection({
+            type: "sqljs",
+            name: pathJoin(dbRootPath, "manager.db"), // Use full path as a unique connection name to ensure multiple connections capability, not "default" connection
+            location: pathJoin(dbRootPath, "manager.db"),
+            entities: [
+                AppInfo,
+                Icon
+            ],
+            autoSave: true,
+            synchronize: true,
+            logging: false
+        })
     }
 
     public clean() {
@@ -18,51 +47,29 @@ export class ManagerDBAdapter {
         // TODO helper.onUpgrade(db, 0, 1);
     }
 
-    public addAppInfo(info: AppInfo): boolean {
-        //info.save(); // TODO: THIS IS ASYNC!  WAIT FOR IT
+    public async addAppInfo(info: AppInfo): Promise<boolean> {
+        if (info == null)
+            return false;
 
-        /* TODO if (info != null) {
-            SQLiteDatabase db = helper.getWritableDatabase();
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(AppInfo.APP_ID, info.app_id);
-            contentValues.put(AppInfo.VERSION, info.version);
-            contentValues.put(AppInfo.VERSION_CODE, info.version_code);
-            contentValues.put(AppInfo.NAME, info.name);
-            contentValues.put(AppInfo.SHORT_NAME, info.short_name);
-            contentValues.put(AppInfo.DESCRIPTION, info.description);
-            contentValues.put(AppInfo.START_URL, info.start_url);
-            contentValues.put(AppInfo.START_VISIBLE, info.start_visible);
-            contentValues.put(AppInfo.TYPE, info.type);
-            contentValues.put(AppInfo.AUTHOR_NAME, info.author_name);
-            contentValues.put(AppInfo.AUTHOR_EMAIL, info.author_email);
-            contentValues.put(AppInfo.DEFAULT_LOCAL, info.default_locale);
-            contentValues.put(AppInfo.BACKGROUND_COLOR, info.background_color);
-            contentValues.put(AppInfo.THEME_DISPLAY, info.theme_display);
-            contentValues.put(AppInfo.THEME_COLOR, info.theme_color);
-            contentValues.put(AppInfo.THEME_FONT_NAME, info.theme_font_name);
-            contentValues.put(AppInfo.THEME_FONT_COLOR, info.theme_font_color);
-            contentValues.put(AppInfo.INSTALL_TIME, info.install_time);
-            contentValues.put(AppInfo.BUILT_IN, info.built_in);
-            contentValues.put(AppInfo.REMOTE, info.remote);
-            contentValues.put(AppInfo.LAUNCHER, info.launcher);
-            contentValues.put(AppInfo.CATEGORY, info.category);
-            contentValues.put(AppInfo.KEY_WORDS, info.key_words);
-            long tid = db.insert(ManagerDBHelper.APP_TABLE, null, contentValues);
+        try {
+            let appsRepository = this.connection.getRepository(AppInfo);
+            let savedAppInfo = await appsRepository.save(info);
 
-            if (tid == -1) {
-                return false;
+            console.log("Adding "+info.icons.length+" icons");
+            let iconsRepository = this.connection.getRepository(Icon);
+            for (let icon of info.icons) {
+                icon.app_tid = savedAppInfo.tid;
+                await iconsRepository.save(icon);
             }
-            info.tid = tid;
+        }
+        catch (e) {
+            // DB error
+            return false;
+        }
 
-            for (AppInfo.Icon icon : info.icons) {
-                contentValues = new ContentValues();
-                contentValues.put(AppInfo.APP_TID, tid);
-                contentValues.put(AppInfo.SRC, icon.src);
-                contentValues.put(AppInfo.SIZES, icon.sizes);
-                contentValues.put(AppInfo.TYPE, icon.type);
-                db.insert(ManagerDBHelper.ICONS_TABLE, null, contentValues);
-            }
-
+        notImplemented("NOT FINISHED - addAppInfo")
+        
+        /* TODO 
             for (AppInfo.PluginAuth pluginAuth : info.plugins) {
                 contentValues = new ContentValues();
                 contentValues.put(AppInfo.APP_TID, tid);
@@ -131,8 +138,21 @@ export class ManagerDBAdapter {
     }
 
     private async getInfos(selectionArgs: FindConditions<AppInfo>): Promise<AppInfo[]> {
-        //let infos = await AppInfo.find(selectionArgs);
-        let infos = Array<AppInfo>();
+        let appsRepository = this.connection.getRepository(AppInfo);
+        let infos = await appsRepository.find(selectionArgs)
+
+        let iconsRepository = this.connection.getRepository(Icon);
+        for (let info of infos) {
+            let icons = await iconsRepository.find({
+                app_tid: info.tid
+            });
+            for (let icon of icons) {
+                info.addIcon(icon);
+            }
+        }
+        console.log("getInfos after add icons", infos)
+
+        notImplemented("NOT FINISHED - getInfos")
 
         /* DELETE ME String[] columns = {AppInfo.TID, AppInfo.APP_ID, AppInfo.VERSION, AppInfo.VERSION_CODE, AppInfo.NAME, AppInfo.SHORT_NAME,
                 AppInfo.DESCRIPTION, AppInfo.START_URL, AppInfo.START_VISIBLE, AppInfo.TYPE,
@@ -144,37 +164,6 @@ export class ManagerDBAdapter {
         AppInfo infos[] = new AppInfo[cursor.getCount()];
         int count = 0;
         while (cursor.moveToNext()) {*/
-            /* DELETE ME AppInfo info = new AppInfo();
-            info.tid = cursor.getInt(cursor.getColumnIndex(AppInfo.TID));
-            info.app_id = cursor.getString(cursor.getColumnIndex(AppInfo.APP_ID));
-            info.version = cursor.getString(cursor.getColumnIndex(AppInfo.VERSION));
-            info.version_code = cursor.getInt(cursor.getColumnIndex(AppInfo.VERSION_CODE));
-            info.name = cursor.getString(cursor.getColumnIndex(AppInfo.NAME));
-            info.short_name = cursor.getString(cursor.getColumnIndex(AppInfo.SHORT_NAME));
-            info.description = cursor.getString(cursor.getColumnIndex(AppInfo.DESCRIPTION));
-            info.start_url = cursor.getString(cursor.getColumnIndex(AppInfo.START_URL));
-            info.start_visible = cursor.getString(cursor.getColumnIndex(AppInfo.START_VISIBLE));
-            info.type = cursor.getString(cursor.getColumnIndex(AppInfo.TYPE));
-            info.author_name = cursor.getString(cursor.getColumnIndex(AppInfo.AUTHOR_NAME));
-            info.author_email = cursor.getString(cursor.getColumnIndex(AppInfo.AUTHOR_EMAIL));
-            info.default_locale = cursor.getString(cursor.getColumnIndex(AppInfo.DEFAULT_LOCAL));
-            info.background_color = cursor.getString(cursor.getColumnIndex(AppInfo.BACKGROUND_COLOR));
-            info.theme_display = cursor.getString(cursor.getColumnIndex(AppInfo.THEME_DISPLAY));
-            info.theme_font_name = cursor.getString(cursor.getColumnIndex(AppInfo.THEME_FONT_NAME));
-            info.theme_font_color = cursor.getString(cursor.getColumnIndex(AppInfo.THEME_FONT_COLOR));
-            info.theme_color = cursor.getString(cursor.getColumnIndex(AppInfo.THEME_COLOR));
-
-            info.install_time = cursor.getLong(cursor.getColumnIndex(AppInfo.INSTALL_TIME));
-            info.built_in = cursor.getInt(cursor.getColumnIndex(AppInfo.BUILT_IN));
-            info.remote = cursor.getInt(cursor.getColumnIndex(AppInfo.REMOTE));
-            info.launcher = cursor.getInt(cursor.getColumnIndex(AppInfo.LAUNCHER));
-
-            info.category = cursor.getString(cursor.getColumnIndex(AppInfo.CATEGORY));
-            info.key_words = cursor.getString(cursor.getColumnIndex(AppInfo.KEY_WORDS));
-
-            infos[count++] = info;
-*/
-
             /* TODO String[] args1 = {String.valueOf(info.tid)};
 
             String[] columns1 = {AppInfo.SRC, AppInfo.SIZES, AppInfo.TYPE};
@@ -229,21 +218,22 @@ export class ManagerDBAdapter {
         return infos;
     }
 
-    public getAppInfo(id: string): AppInfo {
-        /* TODO String selection = AppInfo.APP_ID + "=? AND " + AppInfo.LAUNCHER + "=0";
-        String[] args = {String.valueOf(id)};
-        AppInfo infos[] = getInfos(selection, args);
+    public async getAppInfo(id: string): Promise<AppInfo> {
+        let infos = await this.getInfos({
+            app_id: id,
+            isLauncher: false
+        });
+
         if (infos.length > 0) {
             return infos[0];
         }
         else {
             return null;
-        }*/
-
-        return null; // TMP
+        }
     }
 
     public getAppAuthInfo(info: AppInfo) {
+        notImplemented("getAppAuthInfo")
         /* TODO SQLiteDatabase db = helper.getWritableDatabase();
         String[] args1 = {String.valueOf(info.tid)};
         String[] columns2 = {AppInfo.PLUGIN, AppInfo.AUTHORITY};
@@ -273,30 +263,33 @@ export class ManagerDBAdapter {
         return appInfos;
     }
 
-    public getLauncherInfo(): AppInfo {
-        /*String selection = AppInfo.LAUNCHER + "=1";
-        AppInfo infos[] = getInfos(selection, null);
+    public async getLauncherInfo(): Promise<AppInfo> {
+        let infos = await this.getInfos({
+            isLauncher: true
+        });
+
         if (infos.length > 0) {
             return infos[0];
         }
         else {
             return null;
-        }*/
-
-        return null; // TMP
+        }
     }
 
-    /*public int changeBuiltInToNormal(String appId) {
-        SQLiteDatabase db = helper.getWritableDatabase();
+    public changeBuiltInToNormal(appId: string): number {
+        notImplemented("changeBuiltInToNormal");
+        /*SQLiteDatabase db = helper.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(AppInfo.BUILT_IN, 0);
         String where = AppInfo.APP_ID + "=?";
         String[] whereArgs= {appId};
         int count = db.update(ManagerDBHelper.APP_TABLE, contentValues, where, whereArgs );
-        return count;
+        return count;*/
+
+        return 1; // TMP
     }
 
-    public long updatePluginAuth(long tid, String plugin, int authority) {
+    /*public long updatePluginAuth(long tid, String plugin, int authority) {
         SQLiteDatabase db = helper.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(AppInfo.AUTHORITY, authority);
@@ -345,10 +338,11 @@ export class ManagerDBAdapter {
             db.insert(ManagerDBHelper.AUTH_INTENT_TABLE, null, contentValues);
         }
         return count;
-    }
+    }*/
 
-    public int removeAppInfo(AppInfo info) {
-        SQLiteDatabase db = helper.getWritableDatabase();
+    public removeAppInfo(info: AppInfo): number {
+        notImplemented("removeAppInfo")
+        /*SQLiteDatabase db = helper.getWritableDatabase();
         String where = AppInfo.APP_TID + "=?";
         String[] whereArgs = {String.valueOf(info.tid)};
         int count = db.delete(ManagerDBHelper.AUTH_URL_TABLE, where, whereArgs);
@@ -364,10 +358,12 @@ export class ManagerDBAdapter {
         db.delete(ManagerDBHelper.SETTING_TABLE, where, args);
         where = AppInfo.TID + "=?";
         count = db.delete(ManagerDBHelper.APP_TABLE, where, whereArgs);
-        return count;
+        return count;*/
+
+        return 0; // TMP
     }
 
-    public String[] getIntentFilter(String action) {
+    /*public String[] getIntentFilter(String action) {
         SQLiteDatabase db = helper.getWritableDatabase();
         String[] args = {action};
         String[] columns = {AppInfo.APP_ID};

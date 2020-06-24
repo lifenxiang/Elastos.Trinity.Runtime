@@ -1,5 +1,5 @@
 export class Utility {
-    public static getJsonFromFile(loadedJsonFile: any): Map<string, any> {
+    public static getJsonFromFile(loadedJsonFile: any): any {
         // Useless - more straight forward in JS than in Java. Just kept here to keep code similar among
         // platforms.
         return loadedJsonFile;
@@ -40,4 +40,8 @@ export class Utility {
 
         return Uri.encode(hostname.toLowerCase());
     }*/
+}
+
+export function notImplemented(method: string) {
+    console.log("NOT IMPLEMENTED: "+method);
 }

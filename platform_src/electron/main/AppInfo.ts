@@ -1,10 +1,4 @@
-import { Entity, Column, PrimaryColumn, PrimaryGeneratedColumn, BaseEntity } from 'typeorm';
-
-const AUTHORITY_NOEXIST = -1;
-const AUTHORITY_NOINIT = 0;
-const AUTHORITY_ASK = 1;
-const AUTHORITY_ALLOW = 2;
-const AUTHORITY_DENY = 3;
+import { Entity, Column, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
 
 export class Locale {
     public language = "";
@@ -22,12 +16,16 @@ export class Locale {
     }
 }
 
+@Entity()
 export class Icon {
-    public src = "";
-    public sizes = "";
-    public type = "";
+    @PrimaryGeneratedColumn() public tid: string;
+    @Column() app_tid: string;
+    @Column({ nullable: true }) public src: string = "";
+    @Column({ nullable: true }) public sizes: string = "";
+    @Column({ nullable: true }) public type: string = "";
 
-    constructor(src: string, sizes: string, type: string) {
+    constructor(tid: string, src: string, sizes: string, type: string) {
+        this.tid = tid;
         this.src = src;
         this.sizes = sizes;
         this.type = type;
@@ -36,7 +34,7 @@ export class Icon {
 
 export class PluginAuth {
     public plugin = "";
-    public authority = AUTHORITY_NOINIT;
+    public authority = AppInfo.AUTHORITY_NOINIT;
 
     constructor(plugin: string, authority: number) {
         this.plugin = plugin;
@@ -46,7 +44,7 @@ export class PluginAuth {
 
 export class UrlAuth {
     public url: string;
-    public authority = AUTHORITY_NOINIT;
+    public authority = AppInfo.AUTHORITY_NOINIT;
 
     constructor(url: string, authority: number) {
         this.url = url;
@@ -83,7 +81,13 @@ export class IntentFilter {
 }
 
 @Entity()
-export class AppInfo extends BaseEntity {
+export class AppInfo {
+    public static AUTHORITY_NOEXIST = -1;
+    public static AUTHORITY_NOINIT = 0;
+    public static AUTHORITY_ASK = 1;
+    public static AUTHORITY_ALLOW = 2;
+    public static AUTHORITY_DENY = 3;
+
     public static TID = "tid";
     public static APP_TID = "app_tid";
     public static APP_ID = "app_id";
@@ -93,60 +97,59 @@ export class AppInfo extends BaseEntity {
     public static SHORT_NAME = "short_name";
     public static DESCRIPTION = "description";
     public static START_URL = "start_url";
-    /*public static final String AUTHOR_NAME = "author_name";
-    public static final String AUTHOR_EMAIL = "author_email";
-    public static final String DEFAULT_LOCAL = "default_locale";
-    public static final String BACKGROUND_COLOR = "background_color";
-    public static final String THEME_DISPLAY = "theme_display";
-    public static final String THEME_COLOR = "theme_color";
-    public static final String THEME_FONT_NAME = "theme_font_name";
-    public static final String THEME_FONT_COLOR = "theme_font_color";
-    public static final String INSTALL_TIME = "install_time";
-    public static final String BUILT_IN = "built_in";
-    public static final String REMOTE = "remote";
-    public static final String CATEGORY = "category";
-    public static final String KEY_WORDS = "key_words";
-    public static final String LAUNCHER = "launcher";
-    public static final String LANGUAGE = "language";
-    public static final String ACTION = "act";
-    public static final String START_VISIBLE = "start_visible";
-*/
+    public static AUTHOR_NAME = "author_name";
+    public static AUTHOR_EMAIL = "author_email";
+    public static DEFAULT_LOCAL = "default_locale";
+    public static BACKGROUND_COLOR = "background_color";
+    public static THEME_DISPLAY = "theme_display";
+    public static THEME_COLOR = "theme_color";
+    public static THEME_FONT_NAME = "theme_font_name";
+    public static THEME_FONT_COLOR = "theme_font_color";
+    public static INSTALL_TIME = "install_time";
+    public static BUILT_IN = "built_in";
+    public static REMOTE = "remote";
+    public static CATEGORY = "category";
+    public static KEY_WORDS = "key_words";
+    public static LAUNCHER = "launcher";
+    public static LANGUAGE = "language";
+    public static ACTION = "act";
+    public static START_VISIBLE = "start_visible";
+
     public static SRC = "src";
     public static SIZES = "sizes";
     public static TYPE = "type";
 
-/*
-    public static final String PLUGIN = "plugin";
-    public static final String URL = "url";
-    public static final String API = "api";
-    public static final String AUTHORITY = "authority";*/
+    public static PLUGIN = "plugin";
+    public static URL = "url";
+    public static API = "api";
+    public static AUTHORITY = "authority";
 
     @PrimaryGeneratedColumn() public tid: string;
     @Column() public app_id: string;
     @Column() public version: string;
-    @Column() public version_code: number;
+    @Column({ nullable: true }) public version_code: number;
     @Column() public name: string;
-    @Column() public short_name: string;
-    @Column() public description: string;
+    @Column({ nullable: true }) public short_name: string;
+    @Column({ nullable: true }) public description: string;
     @Column() public start_url: string;
+    @Column({ nullable: true }) public start_visible: string;
     @Column() public type: string;
-    @Column() public author_name: string;
-    @Column() public author_email: string;
-    @Column() public default_locale: string;
-    @Column() public remote: number;
+    @Column({ nullable: true }) public author_name: string;
+    @Column({ nullable: true }) public author_email: string;
+    @Column({ nullable: true }) public default_locale: string;
+    @Column({ nullable: true }) public isRemote: boolean;
     
-    /* TODO public String background_color;
-    public String theme_display;
+    @Column({ nullable: true }) public background_color: string;
+    /* TODO public String theme_display;
     public String theme_color;
     public String theme_font_name;
-    public String theme_font_color;
-    public long   install_time;*/
-    @Column() public built_in: boolean;
-    @Column() public isLauncher: boolean;
-    /*public String category;
-    public String key_words;*/
-    @Column() public start_visible: string;
-    @Column() public share: boolean = true;
+    public String theme_font_color;*/
+    @Column({ nullable: true }) public install_time: number;
+    @Column({ nullable: true }) public isBuiltIn: boolean;
+    @Column({ nullable: true }) public isLauncher: boolean;
+    @Column({ nullable: true }) public category: string;
+    @Column({ nullable: true }) public key_words: string;
+    public share: boolean = true;
 
     public locales = new Array<Locale>();
     public icons = new Array<Icon>();
@@ -157,8 +160,8 @@ export class AppInfo extends BaseEntity {
     public frameworks = new Array<Framework>();
     public platforms = new Array<Platform>();
 
-     public addIcon(src: string, sizes: string, type: string) {
-         this.icons.push(new Icon(src, sizes, type));
+     public addIcon(icon: Icon) {
+         this.icons.push(icon);
      }
 
      public addPlugin(plugin: string, authority: number) {

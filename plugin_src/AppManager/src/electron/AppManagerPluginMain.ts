@@ -1,9 +1,13 @@
 const { ipcMain, BrowserView } = require("electron")
 //var addon = require('bindings')('hello');
 
-import { TrinityRuntime, TrinityPlugin } from "../Runtime"
+import { TrinityRuntime } from "../Runtime";
+import { TrinityPlugin } from "../TrinityPlugin";
+import { AppInfo } from '../AppInfo';
 
 class AppManagerPlugin extends TrinityPlugin {
+    isChangeIconPath = false;
+
     constructor(appId: string) {
         super(appId)
     }
@@ -11,47 +15,52 @@ class AppManagerPlugin extends TrinityPlugin {
     getAppInfos(args: any) {
         console.log("getAppInfos - caller appId="+this.appId)
 
-        let fakeAppInfos = {
-            "org.elastos.trinity.dapp.did": {
-                id: "org.elastos.trinity.dapp.did",
-                version: "1.0",
-                versionCode: 1,
-                name: "DID app",
-                shortName: "DID app",
-                description: "This is a really cool app",
-                icons: [
-                    {
-                        src: "icon://org.elastos.trinity.dapp.did/0",
-                        size: "512x512",
-                        type: "image/png"
-                    }
-                ]
-            },
-            "org.elastos.trinity.dapp.qrcodescanner": {
-                id: "org.elastos.trinity.dapp.qrcodescanner",
-                version: "2.0",
-                versionCode: 12,
-                name: "Scanner app",
-                shortName: "Scanner app",
-                description: "This is a really cool other app",
-                icons: [
-                    {
-                        src: "icon://org.elastos.trinity.dapp.qrcodescanner/0",
-                        size: "512x512",
-                        type: "image/png"
-                    }
-                ]
-            }
+        let infosMap = this.appManager.getAppInfos();
+        this.isChangeIconPath = true;
+
+        let infos: any = {};
+        let keys: string[] = [];
+        infosMap.forEach((info, key)=>{
+            infos[key] = Object.assign({}, info); // Create an object copy to not modify the original
+            keys.push(key);
+        })
+
+        // Customize a few fields from infos, such as icons
+        for (let key of Object.keys(infos)) {
+            infos[key]["icons"] = this.jsonAppIcons(infos[key])
         }
+        // TODO: urls, etc. See android implementation
+        
         return {
-            infos: fakeAppInfos,
-            list: Object.keys(fakeAppInfos)
+            infos: infos,
+            list: keys
         };
     }
 
     getPreference(args: any) {
         console.log("getPreference")
         return "";
+    }
+
+    private jsonAppIcons(info: AppInfo): any[] {
+        let reworkedIcons = new Array<any>();
+
+        for (let i = 0; i < info.icons.length; i++) {
+            let icon = info.icons[i];
+            let src = icon.src;
+            if (this.isChangeIconPath) {
+                src = "icon://" + info.app_id + "/" + i;
+            }
+
+            let reworkedIcon = {
+                src: src,
+                size: icon.sizes,
+                type: icon.type
+            }
+            
+            reworkedIcons.push(reworkedIcon);
+        }
+        return reworkedIcons;
     }
 }
 

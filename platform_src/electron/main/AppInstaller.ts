@@ -1,10 +1,25 @@
-import { AppInfo} from "./AppInfo";
-import { Utility } from "./Utility";
+import { join as pathJoin } from "path";
+import { renameSync, statSync } from "fs-extra";
+import { app } from "electron";
+
+import { AppInfo, Icon} from "./AppInfo";
+import { Utility, notImplemented } from "./Utility";
 import { Log } from "./Log";
 import { AppManager } from "./AppManager";
 import { MergeDBAdapter } from "./MergeDBAdapter";
+import { existsSync, readdirSync, mkdirSync, fstat, copyFileSync } from 'fs';
 
 export class AppInstaller {
+    pluginWhitelist = [
+        "device",
+        "networkstatus",
+        "splashscreen",
+    ];
+
+    urlWhitelist = [
+        "http://www.elastos.org/*"
+    ];
+
     private appPath: string = null;
     private tempPath: string = null;
     private dbAdapter: MergeDBAdapter = null;
@@ -21,34 +36,397 @@ export class AppInstaller {
         return true;
     }
 
-    public copyAssetsFolder(src: string, dest: string) {
-        /* TODO AssetManager manager = context.getAssets();
-        String fileNames[] = manager.list(src);
+    /*
+    private boolean unpackZip(InputStream srcZip, String destPath, boolean verifyDigest) throws Exception {
+        ZipInputStream zis;
+        MessageDigest md = null;
+        TreeMap<String, String> digest_map = null;
+        String filelist_sha = "";
 
-        if (fileNames.length > 0) {
-            File file = new File(dest);
-            if (file.exists()) {
-                deleteAllFiles(file);
+        try
+        {
+            if (verifyDigest) {
+                md = MessageDigest.getInstance("SHA-256");
+                digest_map = new TreeMap<String, String>();
             }
-            file.mkdirs();
-            for (String fileName : fileNames) {
-                copyAssetsFolder(src + "/" + fileName, dest + "/" + fileName);
+            String filepath;
+            zis = new ZipInputStream(new BufferedInputStream(srcZip));
+            ZipEntry ze;
+            byte[] buffer = new byte[1024];
+            int count;
+
+            while ((ze = zis.getNextEntry()) != null) {
+                String entry_name = ze.getName();
+                filepath = destPath + entry_name;
+
+                if (ze.isDirectory()) {
+                    File fmd = new File(filepath);
+                    fmd.mkdirs();
+                }
+                else {
+                    File file = new File(filepath);
+                    file.getParentFile().mkdirs();
+
+                    FileOutputStream fout = new FileOutputStream(file);
+
+                    if (verifyDigest && !entry_name.startsWith("EPK-SIGN/")) {
+                        md.reset();
+                    }
+                    while ((count = zis.read(buffer)) != -1) {
+                        if (verifyDigest) {
+                            if (!entry_name.startsWith("EPK-SIGN/")) {
+                                md.update(buffer, 0, count);
+                            } else if (entry_name.equals("EPK-SIGN/FILELIST.SHA")) {
+                                filelist_sha = new String(buffer, 0, count);
+                            }
+                        }
+                        fout.write(buffer, 0, count);
+                    }
+                    if (verifyDigest && !entry_name.startsWith("EPK-SIGN/")) {
+                        byte[] digest = md.digest();
+                        StringBuilder sb = new StringBuilder(2 * digest.length);
+                        for (byte b : digest) {
+                            sb.append("0123456789abcdef".charAt((b & 0xF0) >> 4));
+                            sb.append("0123456789abcdef".charAt((b & 0x0F)));
+                        }
+                        String hex = sb.toString();
+                        digest_map.put(entry_name, hex);
+                    }
+
+                    fout.close();
+                }
+                zis.closeEntry();
+            }
+
+            zis.close();
+
+            if (verifyDigest) {
+                StringBuilder filelist_inf = new StringBuilder();
+                md.reset();
+                for (String file : digest_map.keySet()) {
+                    filelist_inf.append(digest_map.get(file) + " " + file + "\n");
+                }
+                md.update(filelist_inf.toString().getBytes("UTF-8"));
+
+                byte[] digest = md.digest();
+                StringBuilder sb = new StringBuilder(2 * digest.length);
+                for (byte b : digest) {
+                    sb.append("0123456789abcdef".charAt((b & 0xF0) >> 4));
+                    sb.append("0123456789abcdef".charAt((b & 0x0F)));
+                }
+                String hex = sb.toString();
+                if (!hex.equals(filelist_sha)) {
+                    // Verify digest failed!
+                    throw new Exception("Failed to verify EPK digest!");
+                }
+            }
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+            return false;
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean downloadDAppPackage(String url, String destFile) throws Exception {
+        BufferedInputStream in = new BufferedInputStream(new URL(url).openStream());
+        FileOutputStream fileOutputStream = new FileOutputStream(destFile);
+        byte dataBuffer[] = new byte[1024];
+        int bytesRead;
+        while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+            fileOutputStream.write(dataBuffer, 0, bytesRead);
+        }
+        return true;
+    }
+
+    private void deleteDAppPackage(String packagePath) {
+        if (packagePath != null && !packagePath.isEmpty()) {
+            File file = new File(packagePath);
+            file.delete();
+        }
+    }
+    */
+
+    public copyAssetsFolder(relativeSrcPath: string, dest: string) {   
+        //console.log("copyAssetsFolder: "+relativeSrcPath+" ||| "+dest);
+
+        let fullSrcPath = pathJoin(app.getAppPath(), relativeSrcPath);
+        let srcInfo = statSync(fullSrcPath);
+
+        if (srcInfo.isDirectory()) {
+            let fileNames = readdirSync(fullSrcPath);
+
+            if (fileNames.length > 0) {
+                if (existsSync(dest)) {
+                    this.deleteAllFiles(dest);
+                }
+                mkdirSync(dest, {recursive: true});
+                for (let fileName of fileNames) {
+                    this.copyAssetsFolder(relativeSrcPath + "/" + fileName, dest + "/" + fileName);
+                }
             }
         }
         else {
-            InputStream in = manager.open(src);
-            OutputStream out = new FileOutputStream(dest);
+            copyFileSync(pathJoin(app.getAppPath(), relativeSrcPath), dest)
+        }
+    }
 
-            byte[] buffer = new byte[1024];
+    /*
+    private static String convertStreamToString(InputStream is) throws Exception {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        StringBuilder sb = new StringBuilder();
+        final int buffer_size = 1024;
+        char[] cstr = new char[buffer_size];
+        int read_count;
+        while ((read_count = reader.read(cstr, 0, buffer_size)) != -1) {
+            sb.append(cstr, 0, read_count);
+        }
+        reader.close();
+        return sb.toString();
+    }
 
-            int length;
+    private static String getStringFromFile(String filePath) {
+        try {
+            File fl = new File(filePath);
+            FileInputStream fin = null;
+            fin = new FileInputStream(fl);
+            String ret = convertStreamToString(fin);
+            fin.close();
+            return ret;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
-            while ((length = in.read(buffer)) > 0) {
-                out.write(buffer, 0, length);
+    private void updateAppInfo(AppInfo info, AppInfo oldInfo) {
+        for (AppInfo.PluginAuth auth : info.plugins) {
+            for (AppInfo.PluginAuth oldAuth : oldInfo.plugins) {
+                if (auth.plugin.equals(oldAuth.plugin)) {
+                    auth.authority = oldAuth.authority;
+                }
             }
-            in.close();
-            out.close();
-        }*/
+        }
+
+        for (AppInfo.UrlAuth auth : info.urls) {
+            for (AppInfo.UrlAuth oldAuth : oldInfo.urls) {
+                if (auth.url.equals(oldAuth.url)) {
+                    auth.authority = oldAuth.authority;
+                }
+            }
+        }
+
+        info.built_in = oldInfo.built_in;
+        info.launcher = oldInfo.launcher;
+    }*/
+
+    public renameFolder(fromPath: string, path: string, name: string) {
+        let to = pathJoin(path, name);
+        if (existsSync(to)) {
+            this.deleteAllFiles(to);
+            to = pathJoin(path, name);
+        }
+
+        renameSync(fromPath, to);
+    }
+
+    /*private void sendInstallingMessage(String action, String appId, String url) throws Exception {
+        AppManager.getShareInstance().sendLauncherMessage(AppManager.MSG_TYPE_INSTALLING,
+                "{\"action\":\"" + action + "\", \"id\":\"" + appId + "\" , \"url\":\"" + url + "\"}", "system");
+    }
+
+    public AppInfo getInfoFromUrl(String url) throws Exception {
+        InputStream inputStream = null;
+        AppInfo info = null;
+
+        if (url.startsWith("asset://")) {
+            AssetManager manager = context.getAssets();
+            String substr = url.substring(9);
+            inputStream = manager.open(substr);
+        }
+        else if (url.startsWith("content://")) {
+            Uri uri = Uri.parse(url);
+            inputStream = context.getContentResolver().openInputStream(uri);
+        }
+        else {
+            if (url.startsWith("file://")) {
+                url = url.substring(7);
+            }
+            inputStream = new FileInputStream(url);
+        }
+
+        String temp = "tmp_" + random.nextInt();
+        String path = tempPath + temp + "/";
+
+        File fmd = new File(path);
+        if (fmd.exists()) {
+            deleteAllFiles(fmd);
+        }
+        fmd.mkdirs();
+
+        if (!unpackZip(inputStream, path, false)) {
+            throw new Exception("Failed to unpack EPK!");
+        }
+
+        info = getInfoByManifest(path, 0);
+        deleteAllFiles(fmd);
+
+        if (info == null || info.app_id == null) {
+            throw new Exception("Get app info error!");
+        }
+
+        return info;
+    }
+
+    public AppInfo install(String url, boolean update) throws Exception {
+        Log.d("AppInstaller", "Install url="+url+" update="+update);
+        InputStream inputStream = null;
+        AppInfo info = null;
+        String downloadPkgPath = null;
+        String originUrl = url;
+
+        sendInstallingMessage("start", "", originUrl);
+
+        if (url.startsWith("asset://")) {
+            AssetManager manager = context.getAssets();
+            String substr = url.substring(9);
+            inputStream = manager.open(substr);
+        }
+        else if (url.startsWith("content://")) {
+            Uri uri = Uri.parse(url);
+            inputStream = context.getContentResolver().openInputStream(uri);
+        }
+        else if (url.startsWith("http://") || url.startsWith("https://")) {
+            downloadPkgPath = appPath + "tmp_" + random.nextInt() + ".epk";
+            if (downloadDAppPackage(url, downloadPkgPath)) {
+                inputStream = new FileInputStream(downloadPkgPath);
+            }
+        }
+        else {
+            if (url.startsWith("file://")) {
+                url = url.substring(7);
+            }
+            inputStream = new FileInputStream(url);
+        }
+
+        String temp = "tmp_" + random.nextInt();
+        String path = appPath + temp + "/";
+
+        File fmd = new File(path);
+        if (fmd.exists()) {
+            deleteAllFiles(fmd);
+        }
+        fmd.mkdirs();
+
+        boolean verifyDigest = PreferenceManager.getShareInstance().getDeveloperInstallVerify();
+        if (!unpackZip(inputStream, path, verifyDigest)) {
+            deleteDAppPackage(downloadPkgPath);
+            throw new Exception("Failed to unpack EPK!");
+        }
+
+        sendInstallingMessage("unpacked", "", originUrl);
+
+        if (verifyDigest) {
+            // Verify the signature of the EPK
+
+            String did_url = getStringFromFile(path + "EPK-SIGN/SIGN.DIDURL");
+            String public_key = getStringFromFile(path + "EPK-SIGN/SIGN.PUB");
+            String payload = getStringFromFile(path + "EPK-SIGN/FILELIST.SHA");
+            String signed_payload = getStringFromFile(path + "EPK-SIGN/FILELIST.SIGN");
+
+            if (did_url != null && public_key != null && payload != null && signed_payload != null &&
+                    DIDVerifier.verify(did_url, public_key, payload, signed_payload)) {
+                // Successfully verify the DID signature.
+                Log.d("AppInstaller", "The EPK was signed by (DID URL): " + did_url);
+            }
+            else {
+                // Failed to verify the DID signature.
+                deleteDAppPackage(downloadPkgPath);
+                throw new Exception("Failed to verify EPK DID signature!");
+            }
+
+            Log.d("AppInstaller", "The EPK was signed by (Public Key): " + public_key);
+            sendInstallingMessage("verified", "", originUrl);
+        }
+
+        info = getInfoByManifest(path, 0);
+        File from = new File(appPath, temp);
+        if (info == null || info.app_id == null) {
+            deleteAllFiles(from);
+            deleteDAppPackage(downloadPkgPath);
+            throw new Exception("Get app info error!");
+        }
+
+        AppManager appManager = AppManager.getShareInstance();
+        AppInfo oldInfo = appManager.getAppInfo(info.app_id);
+        if (oldInfo != null) {
+            if (update) {
+                Log.d("AppInstaller", "install() - uninstalling "+info.app_id+" - update = true");
+                if (oldInfo.launcher != 1 && !appManager.isDIDSession(oldInfo.app_id)) {
+                    AppManager.getShareInstance().unInstall(info.app_id, true);
+                    sendInstallingMessage("uninstalled_old", info.app_id, originUrl);
+                }
+            }
+            else {
+                Log.d("AppInstaller", "install() - update = false - deleting all files");
+                deleteAllFiles(from);
+                deleteDAppPackage(downloadPkgPath);
+                throw new Exception("App '" + info.app_id + "' already existed!");
+            }
+            updateAppInfo(info, oldInfo);
+        }
+        else {
+            Log.d("AppInstaller", "install() - No old info - nothing to uninstall or delete");
+            info.built_in = 0;
+        }
+
+        if (oldInfo != null && oldInfo.launcher == 1) {
+            renameFolder(from, appPath, AppManager.LAUNCHER);
+        }
+        else if (oldInfo != null && appManager.isDIDSession(oldInfo.app_id)) {
+            renameFolder(from, appPath, AppManager.DIDSESSION);
+        }
+        else {
+            renameFolder(from, appPath, info.app_id);
+            dbAdapter.addAppInfo(info, true);
+        }
+        deleteDAppPackage(downloadPkgPath);
+        sendInstallingMessage("finish", info.app_id, originUrl);
+
+        return info;
+    }*/
+
+    public deleteAllFiles(root: string): boolean {
+        console.log("NOT IMPLEMENTED - deleteAllFiles")
+        /*if (!root.exists()) {
+            return false;
+        }
+
+        Log.d("AppInstaller", "Delete all files at "+root.getAbsolutePath());
+
+        File files[] = root.listFiles();
+        if (files != null) {
+            for (File f : files) {
+                if (f.isFile() && f.exists()) {
+                    f.delete();
+                }
+                else {
+                    deleteAllFiles(f);
+                }
+            }
+        }
+
+        root.delete();
+*/
+        return true;
     }
 
     public unInstall(info: AppInfo, update: boolean) {
@@ -75,6 +453,45 @@ export class AppInstaller {
             root = new File(appManager.getTempPath(info.app_id));
             this.deleteAllFiles(root);
         }*/
+    }
+
+    private isAllowPlugin(name: string): boolean {
+        let pluginName = name.toLowerCase();
+        for (let item of this.pluginWhitelist) {
+            if (item == pluginName) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private isAllowUrl(url: string): boolean {
+        url = url.toLowerCase();
+        for (let item of this.urlWhitelist) {
+            if (item == url) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public getInfoByManifest(path: string, isLauncher: boolean): AppInfo {
+        let manifestPath = pathJoin(path, "manifest.json");
+        if (!existsSync(manifestPath)) {
+            path = path + "assets/";
+            manifestPath = path + "manifest.json";
+            if (!existsSync(manifestPath)) {
+                throw new Error("File 'manifest.json' doesn't exist!");
+            }
+        }
+        let input = require(manifestPath);
+        let info = this.parseManifest(input, isLauncher);
+        manifestPath = path + "manifest.i18n";
+        if (existsSync(manifestPath)) {
+            input = require(manifestPath);
+            this.parseManifestLocale(input, info);
+        }
+        return info;
     }
 
     private getMustStrValue(json: any, name: string): string{
@@ -105,10 +522,10 @@ export class AppInstaller {
         appInfo.name = this.getMustStrValue(json, AppInfo.NAME);
         appInfo.start_url = this.getMustStrValue(json, AppInfo.START_URL);
         if (appInfo.start_url.indexOf("://") != -1) {
-            appInfo.remote = 1;
+            appInfo.isRemote = true;
         }
         else {
-            appInfo.remote = 0;
+            appInfo.isRemote = false;
         }
 
         if (!isLauncher) {
@@ -116,89 +533,89 @@ export class AppInstaller {
                 let array = json["icons"] as any[];
                 for (let i = 0; i < array.length; i++) {
                     let icon = array[i];
-                    let src = icon.getString(AppInfo.SRC);
-                    let sizes = icon.getString(AppInfo.SIZES);
-                    let type = icon.getString(AppInfo.TYPE);
-                    appInfo.addIcon(src, sizes, type);
+                    let src = icon[AppInfo.SRC];
+                    let sizes = icon[AppInfo.SIZES];
+                    let type = icon[AppInfo.TYPE];
+                    appInfo.addIcon(new Icon(null, src, sizes, type));
                 }
             } else {
                 throw new Error("Parse Manifest.json error: 'icons' no exist!");
             }
         }
 
-        //Optional
-        /* TODO if (json.has(AppInfo.START_VISIBLE)) {
-            appInfo.start_visible = json.getString(AppInfo.START_VISIBLE);
+        // Optional
+        if (AppInfo.START_VISIBLE in json) {
+            appInfo.start_visible = json[AppInfo.START_VISIBLE] as string;
         }
         else {
             appInfo.start_visible = "show";
         }
 
-        if (json.has(AppInfo.SHORT_NAME)) {
-            appInfo.short_name = json.getString(AppInfo.SHORT_NAME);
+        if (AppInfo.SHORT_NAME in json) {
+            appInfo.short_name = json[AppInfo.SHORT_NAME] as string;
         }
 
-        if (json.has(AppInfo.DESCRIPTION)) {
-            appInfo.description = json.getString(AppInfo.DESCRIPTION);
+        if (AppInfo.DESCRIPTION in json) {
+            appInfo.description = json[AppInfo.DESCRIPTION] as string;
         }
 
-        if (json.has(AppInfo.DEFAULT_LOCAL)) {
-            appInfo.default_locale = json.getString(AppInfo.DEFAULT_LOCAL);
+        if (AppInfo.DEFAULT_LOCAL in json) {
+            appInfo.default_locale = json[AppInfo.DEFAULT_LOCAL] as string;
         }
         else {
             appInfo.default_locale = "en";
         }
 
-        if (json.has(AppInfo.TYPE)) {
-            appInfo.type = json.getString(AppInfo.TYPE);
+        if (AppInfo.TYPE in json) {
+            appInfo.type = json[AppInfo.TYPE] as string;
         }
         else {
             appInfo.type = "app";
         }
 
-        if (json.has("author")) {
-            JSONObject author = json.getJSONObject("author");
-            if (author.has("name")) {
-                appInfo.author_name = author.getString("name");
+        if ("author" in json) {
+            let author = json["author"];
+            if ("name" in author) {
+                appInfo.author_name = author["name"] as string;
             }
-            if (author.has("email")) {
-                appInfo.author_email = author.getString("email");
+            if ("email" in author) {
+                appInfo.author_email = author["email"] as string;
             }
         }
 
-        if (json.has(AppInfo.CATEGORY)) {
-            appInfo.category = json.getString(AppInfo.CATEGORY);
+        if (AppInfo.CATEGORY in json) {
+            appInfo.category = json[AppInfo.CATEGORY] as string;
         }
         else {
             appInfo.category = "other";
         }
 
-        if (json.has(AppInfo.KEY_WORDS)) {
-            appInfo.key_words = json.getString(AppInfo.KEY_WORDS);
+        if (AppInfo.KEY_WORDS in json) {
+            appInfo.key_words = json[AppInfo.KEY_WORDS] as string;
         }
         else {
             appInfo.key_words = "";
         }
 
-        if (json.has("plugins")) {
-            JSONArray array = json.getJSONArray("plugins");
-            for (int i = 0; i < array.length(); i++) {
-                String plugin = array.getString(i);
-                int authority = AppInfo.AUTHORITY_NOINIT;
-                if (isAllowPlugin(plugin)) {
+        if ("plugins" in json) {
+            let array = json["plugins"] as Array<string>;
+            for (let i = 0; i < array.length; i++) {
+                let plugin = array[i] as string;
+                let authority = AppInfo.AUTHORITY_NOINIT;
+                if (this.isAllowPlugin(plugin)) {
                     authority = AppInfo.AUTHORITY_ALLOW;
                 }
                 appInfo.addPlugin(plugin, authority);
             }
         }
 
-        if (json.has("urls")) {
-            JSONArray array = json.getJSONArray("urls");
-            for (int i = 0; i < array.length(); i++) {
-                String url = array.getString(i);
+        if ("urls" in json) {
+            let array = json["urls"] as Array<string>;
+            for (let i = 0; i < array.length; i++) {
+                let url = array[i] as string;
                 if (!url.toLowerCase().startsWith("file:///*")) {
-                    int authority = AppInfo.AUTHORITY_NOINIT;
-                    if (isAllowUrl(url)) {
+                    let authority = AppInfo.AUTHORITY_NOINIT;
+                    if (this.isAllowUrl(url)) {
                         authority = AppInfo.AUTHORITY_ALLOW;
                     }
                     appInfo.addUrl(url, authority);
@@ -206,19 +623,20 @@ export class AppInstaller {
             }
         }
 
-        if (json.has("intents")) {
-            JSONArray array = json.getJSONArray("intents");
-            for (int i = 0; i < array.length(); i++) {
-                String intent = array.getString(i);
-                int authority = AppInfo.AUTHORITY_ALLOW;
+        if ("intents" in json) {
+            let array = json["intents"];
+            for (let i = 0; i < array.length; i++) {
+                let intent = array[i] as string;
+                let authority = AppInfo.AUTHORITY_ALLOW;
                 appInfo.addIntent(intent, authority);
             }
         }
 
-        if (json.has("framework")) {
-            JSONArray array = json.getJSONArray("framework");
-            for (int i = 0; i < array.length(); i++) {
-                String framework = array.getString(i);
+        if ("framework" in json) {
+            let array = json["framework"] as Array<string>;
+            for (let i = 0; i < array.length; i++) {
+                notImplemented("parseManifest - framework")
+                /* TODO String framework = array.getString(i);
                 String[] element = framework.split("@");
 
                 if (element.length == 1) {
@@ -226,11 +644,12 @@ export class AppInstaller {
                 }
                 else if (element.length > 1) {
                     appInfo.addFramework(element[0], element[1]);
-                }
+                }*/
             }
         }
 
-        if (json.has("platform")) {
+        notImplemented("parseManifest - platform")
+        /* TODO if (json.has("platform")) {
             JSONArray array = json.getJSONArray("platform");
             for (int i = 0; i < array.length(); i++) {
                 String platform = array.getString(i);
@@ -242,13 +661,14 @@ export class AppInstaller {
                     appInfo.addPlatform(element[0], element[1]);
                 }
             }
+        }*/
+
+        if (AppInfo.BACKGROUND_COLOR in json) {
+            appInfo.background_color = json[AppInfo.BACKGROUND_COLOR] as string;
         }
 
-        if (json.has(AppInfo.BACKGROUND_COLOR)) {
-            appInfo.background_color = json.getString(AppInfo.BACKGROUND_COLOR);
-        }
-
-        if (json.has("theme")) {
+        notImplemented("parseManifest - theme")
+        /* TODO if (json.has("theme")) {
             JSONObject theme = json.getJSONObject("theme");
             if (theme.has(AppInfo.THEME_DISPLAY)) {
                 appInfo.theme_display = theme.getString(AppInfo.THEME_DISPLAY);
@@ -262,22 +682,46 @@ export class AppInstaller {
             if (theme.has(AppInfo.THEME_FONT_COLOR)) {
                 appInfo.theme_font_color = theme.getString(AppInfo.THEME_FONT_COLOR);
             }
-        }
+        }*/ 
 
-
-        if (json.has("intent_filters")) {
-            JSONArray array = json.getJSONArray("intent_filters");
-            for (int i = 0; i < array.length(); i++) {
-                JSONObject jobj = array.getJSONObject(i);
-                if (jobj.has("action")) {
-                    appInfo.addIntentFilter(jobj.getString("action"));
+        if ("intent_filters" in json) {
+            let array = json["intent_filters"];
+            for (let i = 0; i < array.length; i++) {
+                let jobj = array[i];
+                if ("action" in jobj) {
+                    appInfo.addIntentFilter(jobj["action"] as string);
                 }
             }
         }
 
-        appInfo.install_time = System.currentTimeMillis() / 1000;*/
+        appInfo.install_time = Math.round(new Date().getTime()/1000);
         appInfo.isLauncher = isLauncher;
 
         return appInfo;
+    }
+
+    public parseManifestLocale(inputStream: Object, info: AppInfo) {
+        let jsonObject = Utility.getJsonFromFile(inputStream);
+
+        let exist: boolean = false;
+        for (let key of Object.keys(jsonObject)) {
+            let language = jsonObject.get(key) as string;
+            let locale = jsonObject.get(language);
+
+            let name = this.getMustStrValue(locale, AppInfo.NAME);
+            let short_name = this.getMustStrValue(locale, AppInfo.SHORT_NAME);
+            let description = this.getMustStrValue(locale, AppInfo.DESCRIPTION);
+            let author_name = this.getMustStrValue(locale, AppInfo.AUTHOR_NAME);
+
+            info.addLocale(language, name, short_name, description, author_name);
+
+            if (language == info.default_locale) {
+                exist = true;
+            }
+        }
+
+        if (!exist) {
+            info.addLocale(info.default_locale, info.name, info.short_name, info.description, info.author_name);
+        }
     }
 }
