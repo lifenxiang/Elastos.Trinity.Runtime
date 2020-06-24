@@ -17,6 +17,10 @@
         "org.elastos.trinity.dapp.settings",
         "org.elastos.trinity.dapp.dappstore"
     ],
+    "intent.authority.whitelist": [
+        "org.elastos.trinity.dapp.settings",
+        "org.elastos.trinity.dapp.did"
+    ],
     "whitelist.urls": [
         "https://sentry.io/*"
     ],

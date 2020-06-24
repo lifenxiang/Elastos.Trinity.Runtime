@@ -22,11 +22,6 @@
 
 package org.elastos.trinity.runtime;
 
-import android.net.Uri;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.MessageQueue;
-
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.Whitelist;
 
@@ -95,13 +90,17 @@ public class AppWhitelistPlugin extends CordovaPlugin {
         }
     }
 
-    private Boolean isInUrlWhitelist() {
+    private Boolean isUrlWhitelist() {
         return ConfigManager.getShareInstance().stringArrayContains("url.authority.whitelist", appInfo.app_id);
+    }
+
+    private Boolean isIntentWhitelist() {
+        return ConfigManager.getShareInstance().stringArrayContains("intent.authority.whitelist", appInfo.app_id);
     }
 
     @Override
     public Boolean shouldAllowNavigation(String url) {
-        if (isInUrlWhitelist()) {
+        if (isUrlWhitelist()) {
             return true;
         }
         else if (allowedNavigations.isUrlWhiteListed(url)) {
@@ -115,7 +114,7 @@ public class AppWhitelistPlugin extends CordovaPlugin {
 
     @Override
     public Boolean shouldAllowRequest(String url) {
-        if (isInUrlWhitelist()) {
+        if (isUrlWhitelist()) {
             return true;
         }
         else if (Boolean.TRUE == shouldAllowNavigation(url)) {
@@ -132,7 +131,10 @@ public class AppWhitelistPlugin extends CordovaPlugin {
 //        if (IntentManager.checkTrinityScheme(url)) {
 //            return true;
 //        }
-        if (allowedIntents.isUrlWhiteListed(url)) {
+        if (isIntentWhitelist()) {
+            return true;
+        }
+        else if (allowedIntents.isUrlWhiteListed(url)) {
             return true;
         }
         else if (allowedAppIntents.isUrlAllowAuthority(url)) {
