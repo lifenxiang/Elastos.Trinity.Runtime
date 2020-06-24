@@ -337,8 +337,8 @@ public class AppBasePlugin extends TrinityPlugin {
         ret.put("themeFontName", info.theme_font_name);
         ret.put("themeFontColor", info.theme_font_color);
         ret.put("installTime", info.install_time);
-        ret.put("builtIn", info.built_in);
-        ret.put("remote", info.remote);
+        ret.put("builtIn", (info.built_in == 1)?true:false);
+        ret.put("remote", (info.remote == 1)?true:false);
         ret.put("appPath", appUrl);
         ret.put("dataPath", dataUrl);
         ret.put("locales", jsonAppLocales(info));
