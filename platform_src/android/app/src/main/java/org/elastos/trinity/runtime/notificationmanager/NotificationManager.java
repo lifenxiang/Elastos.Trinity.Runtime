@@ -10,6 +10,7 @@ import org.elastos.trinity.runtime.WebViewActivity;
 import org.elastos.trinity.runtime.notificationmanager.db.DatabaseAdapter;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 
 public class NotificationManager {
@@ -17,8 +18,9 @@ public class NotificationManager {
 
     private WebViewActivity activity;
     DatabaseAdapter dbAdapter;
+    String didSessionDID;
 
-    private static NotificationManager instance;
+    private static HashMap<String, NotificationManager> instances = new HashMap<>(); // Sandbox DIDs - One did session = one instance
 
     private ArrayList<NotificationListener> onNotificationListeners = new ArrayList<>();
 
@@ -26,19 +28,22 @@ public class NotificationManager {
         void onNotification(Notification notification);
     }
 
-    public NotificationManager() {
+    public NotificationManager(String didSessionDID) {
         this.activity = AppManager.getShareInstance().activity;
         this.dbAdapter = new DatabaseAdapter(this, activity.getBaseContext());
+        this.didSessionDID = didSessionDID;
 
         Log.i(LOG_TAG, "Creating NotificationManager ");
-
     }
 
-    public static NotificationManager getSharedInstance() {
-        if (NotificationManager.instance == null) {
-            NotificationManager.instance = new NotificationManager();
+    public static NotificationManager getSharedInstance(String did) {
+        if (instances.containsKey(did))
+            return instances.get(did);
+        else {
+            NotificationManager instance = new NotificationManager(did);
+            instances.put(did, instance);
+            return instance;
         }
-        return NotificationManager.instance;
     }
 
     /**
@@ -47,14 +52,14 @@ public class NotificationManager {
      * @param notificationId Notification ID to remove
      */
     public void clearNotification(String notificationId) {
-        dbAdapter.clearNotification(notificationId);
+        dbAdapter.clearNotification(didSessionDID, notificationId);
     }
 
     /**
      * Get all notifications.
      */
     public ArrayList<Notification> getNotifications() {
-        return dbAdapter.getNotifications();
+        return dbAdapter.getNotifications(didSessionDID);
     }
 
     /**
@@ -63,7 +68,7 @@ public class NotificationManager {
      * @param appId
      */
     public void sendNotification(NotificationRequest notificationRequest, String appId) {
-        Notification notification = dbAdapter.addNotification(notificationRequest.key, notificationRequest.title,
+        Notification notification = dbAdapter.addNotification(didSessionDID, notificationRequest.key, notificationRequest.title,
                                     notificationRequest.url, notificationRequest.emitter, appId);
         notifyNotification(notification);
 

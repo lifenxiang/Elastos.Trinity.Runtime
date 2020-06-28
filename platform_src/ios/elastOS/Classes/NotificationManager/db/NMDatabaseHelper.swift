@@ -23,7 +23,9 @@
 import SQLite
 
 public class NMDatabaseHelper : SQLiteOpenHelper {
-    private static let DATABASE_VERSION = 1
+    private static let DATABASE_VERSION = 2
+
+    private static let LOG_TAG = "NotificationDBHelper"
 
     // Tables
     private static let DATABASE_NAME = "notificationmanager.db"
@@ -31,6 +33,7 @@ public class NMDatabaseHelper : SQLiteOpenHelper {
 
     // Tables fields
     public static let NOTIFICATION_ID = "notificationid"
+    public static let DID_SESSION_DID = "didsessiondid"
     public static let KEY = "notificationkey"
     public static let TITLE = "title";
     public static let URL = "url"
@@ -47,6 +50,7 @@ public class NMDatabaseHelper : SQLiteOpenHelper {
         // notification
         let notificationSQL = "create table " +
             NMDatabaseHelper.NOTIFICATION_TABLE + "(" + NMDatabaseHelper.NOTIFICATION_ID + " integer primary key autoincrement, " +
+            NMDatabaseHelper.DID_SESSION_DID + " varchar(128), " +
             NMDatabaseHelper.KEY + " varchar(128), " +
             NMDatabaseHelper.TITLE + " varchar(128), " +
             NMDatabaseHelper.URL + " varchar(128), " +
@@ -57,6 +61,23 @@ public class NMDatabaseHelper : SQLiteOpenHelper {
     }
 
     public override func onUpgrade(db: Connection, oldVersion: Int, newVersion: Int) {
+        // Use the if (old < N) format to make sure users get all upgrades even if they
+        // directly upgrade from vN to v(N+5)
+        if (oldVersion < 2) {
+            Log.d(NMDatabaseHelper.LOG_TAG, "Upgrading database to v2");
+            upgradeToV2(db: db);
+        }
+    }
+
+    // 20200601 - Added contact name and avatar
+    private func upgradeToV2(db: Connection) {
+        do {
+            var strSQL = "ALTER TABLE " + NMDatabaseHelper.NOTIFICATION_TABLE + " ADD COLUMN " + NMDatabaseHelper.DID_SESSION_DID + " varchar(128); "
+            try db.execute(strSQL)
+        }
+        catch (let error) {
+            print(error)
+        }
     }
 
     public override func onDowngrade(db: Connection, oldVersion: Int, newVersion: Int) {

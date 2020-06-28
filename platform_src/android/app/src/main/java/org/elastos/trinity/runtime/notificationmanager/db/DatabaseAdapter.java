@@ -45,22 +45,23 @@ import java.util.Date;
         this.context = context;
     }
 
-     public Notification addNotification(String key, String title, String url, String emitter, String appId) {
+     public Notification addNotification(String didSessionDID, String key, String title, String url, String emitter, String appId) {
          // Overwrite previous notification if it has the same key and appId
-         boolean needUpdate = this.isNotificationExist(key, appId);
+         boolean needUpdate = this.isNotificationExist(didSessionDID, key, appId);
          if (needUpdate) {
-             this.updateNotification(key, title, url, emitter, appId);
+             this.updateNotification(didSessionDID, key, title, url, emitter, appId);
          } else {
-             this.insertNotification(key, title, url, emitter, appId);
+             this.insertNotification(didSessionDID, key, title, url, emitter, appId);
          }
 
-         return getNotificationByKeyAndAppId(key, appId);
+         return getNotificationByKeyAndAppId(didSessionDID, key, appId);
      }
 
-     public void insertNotification(String key, String title, String url, String emitter, String appId) {
+     public void insertNotification(String didSessionDID, String key, String title, String url, String emitter, String appId) {
          SQLiteDatabase db = helper.getWritableDatabase();
 
          ContentValues contentValues = new ContentValues();
+         contentValues.put(DatabaseHelper.DID_SESSION_DID, didSessionDID);
          contentValues.put(DatabaseHelper.KEY, key);
          contentValues.put(DatabaseHelper.TITLE, title);
          contentValues.put(DatabaseHelper.URL, url);
@@ -71,11 +72,11 @@ import java.util.Date;
          db.insertOrThrow(DatabaseHelper.NOTIFICATION_TABLE, null, contentValues);
      }
 
-     public void updateNotification(String key, String title, String url, String emitter, String appId) {
+     public void updateNotification(String didSessionDID, String key, String title, String url, String emitter, String appId) {
          SQLiteDatabase db = helper.getWritableDatabase();
 
-         String where = DatabaseHelper.KEY + "=? AND " + DatabaseHelper.APP_ID + "=?";
-         String[] whereArgs = {key, appId};
+         String where = DatabaseHelper.DID_SESSION_DID + "=? AND " + DatabaseHelper.KEY + "=? AND " + DatabaseHelper.APP_ID + "=?";
+         String[] whereArgs = {didSessionDID, key, appId};
          ContentValues contentValues = new ContentValues();
          contentValues.put(DatabaseHelper.TITLE, title);
          contentValues.put(DatabaseHelper.URL, url);
@@ -85,11 +86,11 @@ import java.util.Date;
          db.update(DatabaseHelper.NOTIFICATION_TABLE, contentValues, where, whereArgs );
      }
 
-     public Notification getNotificationByKeyAndAppId(String key, String appId) {
+     public Notification getNotificationByKeyAndAppId(String didSessionDID, String key, String appId) {
          SQLiteDatabase db = helper.getWritableDatabase();
 
-         String where = DatabaseHelper.KEY + "=? AND " + DatabaseHelper.APP_ID + "=?";
-         String[] whereArgs = {key, appId};
+         String where = DatabaseHelper.DID_SESSION_DID + "=? AND " + DatabaseHelper.KEY + "=? AND " + DatabaseHelper.APP_ID + "=?";
+         String[] whereArgs = {didSessionDID, key, appId};
          String[] columns = {DatabaseHelper.NOTIFICATION_ID, DatabaseHelper.KEY,
                  DatabaseHelper.TITLE, DatabaseHelper.APP_ID, DatabaseHelper.URL,
                  DatabaseHelper.EMITTER, DatabaseHelper.SENT_DATE};
@@ -102,11 +103,11 @@ import java.util.Date;
          return null;
      }
 
-     private boolean isNotificationExist(String key, String appId) {
+     private boolean isNotificationExist(String didSessionDID, String key, String appId) {
          SQLiteDatabase db = helper.getWritableDatabase();
 
-         String where = DatabaseHelper.KEY + "=? AND " + DatabaseHelper.APP_ID + "=?";
-         String[] whereArgs = {key, appId};
+         String where = DatabaseHelper.DID_SESSION_DID + "=? AND " + DatabaseHelper.KEY + "=? AND " + DatabaseHelper.APP_ID + "=?";
+         String[] whereArgs = {didSessionDID, key, appId};
          String[] columns = {DatabaseHelper.NOTIFICATION_ID};
 
          Cursor cursor = db.query(DatabaseHelper.NOTIFICATION_TABLE, columns, where, whereArgs,null,null,null);
@@ -117,23 +118,22 @@ import java.util.Date;
          return false;
      }
 
-     public void clearNotification(String notificationId) {
+     public void clearNotification(String didSessionDID, String notificationId) {
          SQLiteDatabase db = helper.getWritableDatabase();
 
-         String where = DatabaseHelper.NOTIFICATION_ID + " =?";
+         String where = DatabaseHelper.DID_SESSION_DID + "=? AND " + DatabaseHelper.NOTIFICATION_ID + " =?";
          String[] whereArgs = {notificationId};
          db.delete(DatabaseHelper.NOTIFICATION_TABLE, where, whereArgs);
      }
 
-     public ArrayList<Notification> getNotifications() {
+     public ArrayList<Notification> getNotifications(String didSessionDID) {
          SQLiteDatabase db = helper.getWritableDatabase();
 
-         String[] columns = {DatabaseHelper.NOTIFICATION_ID, DatabaseHelper.KEY,
-                            DatabaseHelper.TITLE, DatabaseHelper.APP_ID, DatabaseHelper.URL,
-                            DatabaseHelper.EMITTER, DatabaseHelper.SENT_DATE};
+         String where = DatabaseHelper.DID_SESSION_DID + "=?";
+         String[] whereArgs = {didSessionDID};
 
          ArrayList<Notification> notifications = new ArrayList<>();
-         Cursor cursor = db.query(DatabaseHelper.NOTIFICATION_TABLE, columns, null, null,null,null,DatabaseHelper.SENT_DATE + " DESC");
+         Cursor cursor = db.query(DatabaseHelper.NOTIFICATION_TABLE, null, where, whereArgs,null,null,DatabaseHelper.SENT_DATE + " DESC");
          while (cursor.moveToNext()) {
              Notification notification = Notification.fromDatabaseCursor(notifier, cursor);
              notifications.add(notification);

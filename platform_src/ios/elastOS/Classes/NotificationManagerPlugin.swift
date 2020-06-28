@@ -57,7 +57,7 @@ class NotificationManagerPlugin : TrinityPlugin {
     }
 
     private func getNotifier() throws -> NotificationManager {
-        return try NotificationManager.getSharedInstance()
+        return try NotificationManager.getSharedInstance(did: did)
     }
 
     @objc func clearNotification(_ command: CDVInvokedUrlCommand) {

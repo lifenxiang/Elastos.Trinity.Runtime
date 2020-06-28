@@ -545,7 +545,7 @@ public class ContactNotifier {
         
         do {
             // NOTE: appid can't be null because the notification manager uses it for several things.
-            try NotificationManager.getSharedInstance().sendNotification(notificationRequest: testNotif, appId: appId)
+            try NotificationManager.getSharedInstance(did: self.didSessionDID).sendNotification(notificationRequest: testNotif, appId: appId)
         } catch (let error) {
             print(error)
         }
