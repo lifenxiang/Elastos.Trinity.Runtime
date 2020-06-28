@@ -1,6 +1,9 @@
 import { AppManager } from './AppManager';
 import { AppInfo } from './AppInfo';
 
+export type SuccessCallback = (args?: any)=>void;
+export type ErrorCallback = (args?: any)=>void;
+
 export class TrinityPlugin {
     public dataPath: string = null;
     public appPath: string = null;
@@ -8,9 +11,8 @@ export class TrinityPlugin {
     public configPath: string = null;
     private appInfo: AppInfo = null;
     public appManager: AppManager = null;
-    protected appId: String;
-    protected did: String;
-
+    protected appId: string;
+    protected did: string;
 
     constructor(appId: string) {
         this.appId = appId;

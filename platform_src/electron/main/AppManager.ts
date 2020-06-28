@@ -8,9 +8,11 @@ import { AppInfo } from "./AppInfo";
 import { MergeDBAdapter } from "./MergeDBAdapter";
 import { PreferenceManager } from "./PreferenceManager";
 import { IdentityEntry } from "./didsessions/IdentityEntry";
-import { LessThan } from 'typeorm';
-import { TrinityPlugin } from './TrinityPlugin';
+import { TrinityPlugin, SuccessCallback, ErrorCallback } from './TrinityPlugin';
 import { TrinityRuntime } from './Runtime';
+import { TitleBar } from './TitleBar';
+import { notImplemented } from './Utility';
+import { AppManagerPlugin } from './plugins_main/AppManagerPluginMain';
 
 class AppPathInfo {
     public appsPath: string = null;
@@ -57,11 +59,13 @@ export class RunningApp {
     browserViewID: number;
     runtime: TrinityRuntime;
     pluginInstances: { [key: string] : TrinityPlugin };
+    titleBar: TitleBar;
 
-    private constructor(appInfo: AppInfo, browserViewID: number, runtime: TrinityRuntime) {
+    private constructor(appInfo: AppInfo, browserViewID: number, runtime: TrinityRuntime, titleBar: TitleBar) {
         this.browserViewID = browserViewID;
         this.appInfo = appInfo;
         this.runtime = runtime;
+        this.titleBar = titleBar;
     }
 
     private async createPluginInstances() {
@@ -77,9 +81,10 @@ export class RunningApp {
         }
     }
 
-    public static async create(appInfo: AppInfo, browserViewID: number, runtime: TrinityRuntime): Promise<RunningApp> {
-        let app = new RunningApp(appInfo, browserViewID, runtime);
+    public static async create(appInfo: AppInfo, browserViewID: number, runtime: TrinityRuntime, titleBar: TitleBar): Promise<RunningApp> {
+        let app = new RunningApp(appInfo, browserViewID, runtime, titleBar);
         await app.createPluginInstances();
+        titleBar.setRunningApp(app);
         return app;
     }
 }
@@ -527,15 +532,15 @@ export class AppManager {
             this.visibles.set(id, true);
         }
     }
-/*
-    public Boolean getAppVisible(String id) {
-        Boolean ret = visibles.get(id);
+
+    public getAppVisible(id: string): boolean {
+        let ret = this.visibles.get(id);
         if (ret == null) {
             return true;
         }
         return ret;
     }
-
+/*
     public AppInfo getLauncherInfo() {
         if (launcherInfo == null) {
             launcherInfo = dbAdapter.getLauncherInfo();
@@ -558,7 +563,7 @@ export class AppManager {
 
     private async refreshInfos() {
         this.appList = await this.dbAdapter.getAppInfos();
-        console.log("refreshInfos: got "+this.appList.length+" app infos", this.appList);
+        //console.log("refreshInfos: got "+this.appList.length+" app infos", this.appList);
         this.appInfos = new Map();
         for (let i = 0; i < this.appList.length; i++) {
             this.appInfos.set(this.appList[i].app_id, this.appList[i]);
@@ -585,18 +590,18 @@ export class AppManager {
         return this.appInfos;
     }
 
-    /*public String getStartPath(AppInfo info) {
+    public getStartPath(info: AppInfo): string {
         if (info == null) {
             return null;
         }
 
-        if (info.remote == 0) {
-            return getAppUrl(info) + info.start_url;
+        if (!info.isRemote) {
+            return this.getAppUrl(info) + info.start_url;
         }
         else {
             return info.start_url;
         }
-    }*/
+    }
 
     private getAppLocalPath(info: AppInfo): string {
         let path = this.basePathInfo.appsPath;
@@ -743,9 +748,10 @@ export class AppManager {
         }
         return null;
     }
-
-    public void switchContent(WebViewFragment fragment, String id) {
-        FragmentManager manager = activity.getSupportFragmentManager();
+*/
+    public switchContent(fragment: any, id: string) {
+        notImplemented("switchContent");
+        /*FragmentManager manager = activity.getSupportFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
         if ((curFragment != null) && (curFragment != fragment)) {
             transaction.hide(curFragment);
@@ -767,11 +773,14 @@ export class AppManager {
         runningList.remove(id);
         runningList.add(0, id);
         lastList.remove(id);
-        lastList.add(0, id);
+        lastList.add(0, id);*/
     }
 
-    private void hideFragment(WebViewFragment fragment, String id) {
-        FragmentManager manager = activity.getSupportFragmentManager();
+    private hideFragment(fragment: any, id: string) {
+        // TODO - No way to deal with browser views Z-ordering for now - find a solution.
+        notImplemented("hideFragment")
+
+        /*FragmentManager manager = activity.getSupportFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
         if (!fragment.isAdded()) {
             transaction.add(R.id.content, fragment, id);
@@ -780,9 +789,9 @@ export class AppManager {
         transaction.commit();
 
         runningList.add(0, id);
-        lastList.add(1, id);
+        lastList.add(1, id);*/
     }
-
+/*
     Boolean isCurrentFragment(WebViewFragment fragment) {
         return (fragment == curFragment);
     }
@@ -803,7 +812,7 @@ export class AppManager {
     }
 */
 
-    private findRunningAppByCallerID(browserViewCallerID: number) {
+    public findRunningAppByCallerID(browserViewCallerID: number) {
         //console.debug("Looking for running app with browser view id "+browserViewCallerID);
         //console.debug("Running apps:", this.runningApps);
 
@@ -814,7 +823,7 @@ export class AppManager {
         return null;
     }
 
-    public handleIPCCall(event: Electron.IpcMainInvokeEvent, pluginName: string, methodName: string, fullMethodName: string, args: any) {
+    public handleIPCCall(event: Electron.IpcMainInvokeEvent, pluginName: string, methodName: string, fullMethodName: string, success: SuccessCallback, error: ErrorCallback, args: any) {
         console.log("handle "+fullMethodName, args);
     
         let callerWebContents = event.sender;
@@ -827,13 +836,12 @@ export class AppManager {
         if (runningApp) {
             console.log("Found running app to handle IPC "+fullMethodName);
 
-            let pluginResult = (runningApp.pluginInstances[pluginName] as any)[methodName]();
-            console.log("IPC plugin result: ", pluginResult);
-            return pluginResult;
+            (runningApp.pluginInstances[pluginName] as any)[methodName](success, error, args);
         }
         else {
-            console.error("No running app found to handle this IPC request!");
-            return null;
+            let msg = "No running app found to handle this IPC request!";
+            console.error();
+            error(msg);
         }
     }
 
@@ -842,10 +850,6 @@ export class AppManager {
 
         ses.protocol.registerFileProtocol("trinityapp", async (request: Request, callback: (filePath: string)=>void) => {
             //console.log("Handle FILE trinityapp:", request);
-
-            if (request.url.indexOf("logo.png")>=0) {
-                console.log("TMP DEBUG")
-            }
 
             // Ex: request.url = trinityapp://index.html/
             let redirectedFilePath: string;
@@ -965,10 +969,10 @@ export class AppManager {
     }
 
     private async createAppForLaunch(appInfo: AppInfo) {
-        const partition = 'TODO-TEST-persist:example' // TODO: SANDBOX PER DID/APPID
+        const partition = 'TODO-TEST-persist:example'+appInfo.app_id // TODO: SANDBOX PER DID/APPID
         const ses = session.fromPartition(partition)
 
-        let dappFilesPath = this.basePathInfo.appsPath + appInfo.app_id;
+        let dappFilesPath = this.getAppLocalPath(appInfo);
 
         this.setupSessionProtocolHandlers(ses, appInfo.app_id, dappFilesPath);
 
@@ -982,16 +986,18 @@ export class AppManager {
             }
         })
         this.window.addBrowserView(appView)
-        appView.setBounds({ x: 0, y: 0, width: 1200, height: 500 })
+        appView.setBounds({ x: 0, y: 64, width: 500, height: 800 })
 
-        let runningApp = await RunningApp.create(appInfo, appView.id, this.runtime);
+        // Create a title bar model to contol the shared title bar view
+        let runningApp = await RunningApp.create(appInfo, appView.id, this.runtime, new TitleBar(this.runtime.titleBarView));
         this.runningApps[appInfo.app_id] = runningApp;
         //console.log("runningApps:", this.runningApps)
-        console.log("STARTED APP: ", runningApp)
+        Log.d(AppManager.LOG_TAG, "Started app "+appInfo.app_id+" with browser view id "+ runningApp.browserViewID);
 
-        console.log("Loading dapp url")
         appView.webContents.loadURL('trinityapp://index.html')
-        appView.webContents.openDevTools();
+        //appView.webContents.openDevTools({mode: "detach"});
+
+        runningApp.titleBar.setVisible();
     }
 
     public async start(id: string) {
@@ -1000,31 +1006,28 @@ export class AppManager {
             throw new Error("No such app ("+id+")!");
         }
 
-        console.log("NOT IMPLEMENTED - start")
-
-        await this.createAppForLaunch(info); // TODO: FINISH WHAT IS BELOW
-
-        /* TODO WebViewFragment fragment = getFragmentById(id);
-        if (fragment == null) {
-            fragment = WebViewFragment.newInstance(id);
-            if (!isLauncher(id)) {
-                sendRefreshList("started", info, false);
+        let runningApp = this.runningApps[id];
+        if (runningApp == null) {
+            await this.createAppForLaunch(info);
+            if (!this.isLauncher(id)) {
+                this.sendRefreshList("started", info, false);
             }
 
-            if (!getAppVisible(id)) {
-                showActivityIndicator(true);
-                hideFragment(fragment, id);
+            if (!this.getAppVisible(id)) {
+                this.showActivityIndicator(true);
+                this.hideFragment(runningApp, id);
             }
         }
 
-        if (getAppVisible(id)) {
-            switchContent(fragment, id);
-            showActivityIndicator(false);
-        }*/
+        if (this.getAppVisible(id)) {
+            this.switchContent(runningApp, id);
+            this.showActivityIndicator(false);
+        }
     }
 
-  /*  private void showActivityIndicator(boolean show) {
-        activity.runOnUiThread((Runnable) () -> {
+    private showActivityIndicator(show: boolean) {
+        notImplemented("showActivityIndicator");
+        /*activity.runOnUiThread((Runnable) () -> {
             if (curFragment.titlebar != null) {
                 if (show) {
                     curFragment.titlebar.showActivityIndicator(TitleBarActivityType.LAUNCH, activity.getResources().getString(R.string.app_starting));
@@ -1032,8 +1035,8 @@ export class AppManager {
                     curFragment.titlebar.hideActivityIndicator(TitleBarActivityType.LAUNCH);
                 }
             }
-        });
-    }*/
+        });*/
+    }
 
     public async close(id: string) {
         if (this.isLauncher(id)) {
@@ -1045,16 +1048,15 @@ export class AppManager {
             throw new Error("No such app!");
         }
 
-        this.setAppVisible(id, info.start_visible);
-
-        console.log("NOT IMPLEMENTED - close")
-
-        /* TODO FragmentManager manager = activity.getSupportFragmentManager();
-        WebViewFragment fragment = getFragmentById(id);
-        if (fragment == null) {
+        if (!this.runningApps[id]) {
             return;
         }
 
+        this.setAppVisible(id, info.start_visible);
+
+        console.log("PARTIALLY IMPLEMENTED - close")
+
+        /* TODO
         IntentManager.getShareInstance().removeAppFromIntentList(id);
 
         if (fragment == curFragment) {
@@ -1070,14 +1072,14 @@ export class AppManager {
                 switchContent(fragment2, id2);
             }
         }
+        */
 
-        FragmentTransaction transaction = manager.beginTransaction();
-        transaction.remove(fragment);
-        transaction.commit();
-        lastList.remove(id);
-        runningList.remove(id);
+        this.window.removeBrowserView(BrowserView.fromId(this.runningApps[id].browserViewID));
+        this.lastList.splice(this.lastList.indexOf(id), 1);
+        this.runningList.splice(this.lastList.indexOf(id), 1);
+        delete this.runningApps[id];
 
-        sendRefreshList("closed", info, false);*/
+        this.sendRefreshList("closed", info, false);
     }
 
     public async loadLauncher() {
@@ -1136,10 +1138,11 @@ export class AppManager {
 
     public boolean isLauncherReady() {
         return launcherReady;
-    }
+    }*/
 
-    public void setLauncherReady() {
-        launcherReady = true;
+    public setLauncherReady() {
+        notImplemented("setLauncherReady");
+        /*launcherReady = true;
 
         for (int i = 0; i < installUriList.size(); i++) {
             InstallInfo info = installUriList.get(i);
@@ -1149,9 +1152,9 @@ export class AppManager {
         for (int i = 0; i < intentUriList.size(); i++) {
             Uri uri = intentUriList.get(i);
             IntentManager.getShareInstance().doIntentByUri(uri);
-        }
+        }*/
     }
-*/
+
     public sendLauncherMessage(type: number, msg: string, fromId: string) {
         this.sendMessage(AppManager.LAUNCHER, type, msg, fromId);
     }
@@ -1190,15 +1193,15 @@ export class AppManager {
     public sendMessage(toId: string, type: number, msg: string, fromId: string) {
         if (this.signIning) return;
 
-        console.log("NOT IMPLEMENTED - sendMessage")
-
-        /* TODO WebViewFragment fragment = getFragmentById(toId);
-        if (fragment != null) {
-            fragment.basePlugin.onReceive(msg, type, fromId);
+        let runningApp = this.runningApps[toId];
+        if (runningApp) {
+            console.log("Sending message to app id "+runningApp.appInfo.app_id, msg, fromId);
+            let appManagerPlugin = runningApp.pluginInstances["AppManager"] as AppManagerPlugin
+            appManagerPlugin.onReceive(msg, type, fromId);
         }
-        else if (!isLauncher(toId)){
-            throw new Exception(toId + " isn't running!");
-        }*/
+        else {
+            throw new Error(toId + " isn't running!");
+        }
     }
 
     /*public void broadcastMessage(int type, String msg, String fromId) {

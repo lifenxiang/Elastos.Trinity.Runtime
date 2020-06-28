@@ -1,11 +1,11 @@
 {
     "scheme": "file",
     "browserWindow": {
-        "height": 600,
+        "height": 864,
         "webPreferences":{
             "devTools": true,
             "nodeIntegration": false
         },
-        "width": 1200
+        "width": 500
     }
 }

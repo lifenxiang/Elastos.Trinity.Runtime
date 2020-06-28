@@ -2,17 +2,27 @@ const { ipcMain, BrowserView } = require("electron")
 //var addon = require('bindings')('hello');
 
 import { TrinityRuntime } from "../Runtime";
-import { TrinityPlugin } from "../TrinityPlugin";
+import { TrinityPlugin, SuccessCallback, ErrorCallback } from "../TrinityPlugin";
 import { AppInfo } from '../AppInfo';
+import { AppManager } from '../AppManager';
+import { Log } from '../Log';
 
-class AppManagerPlugin extends TrinityPlugin {
+type MessageContext = {
+    success: SuccessCallback;
+    error: ErrorCallback;
+}
+
+export class AppManagerPlugin extends TrinityPlugin {
+    private static LOG_TAG = "AppManagerPlugin";
+
     isChangeIconPath = false;
-
+    mMessageContext: MessageContext = null;
+    
     constructor(appId: string) {
         super(appId)
     }
     
-    getAppInfos(args: any) {
+    getAppInfos(success: SuccessCallback, error: ErrorCallback, args: any) {
         console.log("getAppInfos - caller appId="+this.appId)
 
         let infosMap = this.appManager.getAppInfos();
@@ -21,25 +31,115 @@ class AppManagerPlugin extends TrinityPlugin {
         let infos: any = {};
         let keys: string[] = [];
         infosMap.forEach((info, key)=>{
-            infos[key] = Object.assign({}, info); // Create an object copy to not modify the original
+            infos[key] = this.jsonAppInfo(info);
             keys.push(key);
         })
 
-        // Customize a few fields from infos, such as icons
-        for (let key of Object.keys(infos)) {
-            infos[key]["icons"] = this.jsonAppIcons(infos[key])
-        }
-        // TODO: urls, etc. See android implementation
-        
-        return {
+        success({
             infos: infos,
             list: keys
-        };
+        });
     }
 
-    getPreference(args: any) {
+    getPreference(success: SuccessCallback, error: ErrorCallback, args: any) {
         console.log("getPreference")
-        return "";
+        success("");
+    }
+
+    setListener(success: SuccessCallback, error: ErrorCallback, args: any) {
+        this.mMessageContext = {
+            success: success,
+            error: error
+        };
+
+        if (this.appManager.isLauncher(this.appId)) {
+            this.appManager.setLauncherReady();
+        }
+    }
+
+    public onReceive(msg: string, type: number, from: string) {
+        if (this.mMessageContext == null)
+            return;
+        
+        this.mMessageContext.success({
+            message: msg,
+            type: type,
+            from: from
+        });
+    }
+
+    protected setVisible(success: SuccessCallback, error: ErrorCallback, args: any) {
+        let visible = args[0] as string;
+
+        if (visible == null || visible != "hide") {
+            visible = "show";
+        }
+
+        this.appManager.setAppVisible(this.appId, visible);
+        if (visible == "show") {
+            this.appManager.start(this.appId);
+        }
+        else {
+            this.appManager.loadLauncher();
+        }
+        this.appManager.sendLauncherMessage(AppManager.MSG_TYPE_INTERNAL,
+                "{\"visible\": \"" + visible + "\"}", this.appId);
+        success("ok");
+    }
+
+    start(success: SuccessCallback, error: ErrorCallback, args: any) {
+        let id = args[0];
+
+        if (id == null || id == "") {
+            throw new Error("Invalid id.");
+        }
+        else if (this.appManager.isLauncher(id)) {
+            throw new Error("Can't start launcher! Please use launcher().");
+        }
+        else if (this.appManager.isDIDSession(id)) {
+            throw new Error("Can't start did session!");
+        }
+        else {
+            this.appManager.start(id);
+            return "ok";
+        }
+    }
+
+    protected jsonAppInfo(info: AppInfo): any {
+        let appUrl = this.appManager.getAppUrl(info);
+        let dataUrl = this.appManager.getDataUrl(info.app_id);
+        let ret = {
+            "id": info.app_id,
+            "version": info.version,
+            "versionCode": info.version_code,
+            "name": info.name,
+            "shortName": info.short_name,
+            "description": info.description,
+            "startUrl": this.appManager.getStartPath(info),
+            "startVisible": info.start_visible,
+            "icons": this.jsonAppIcons(info),
+            "authorName": info.author_name,
+            "authorEmail": info.author_email,
+            "defaultLocale": info.default_locale,
+            "category": info.category,
+            "keyWords": info.key_words,
+            // TODO "plugins": this.jsonAppPlugins(info.plugins),
+            // TODO "urls": this.jsonAppUrls(info.urls),
+            "backgroundColor": info.background_color,
+            /* TODO "themeDisplay": info.theme_display,
+            "themeColor": info.theme_color,
+            "themeFontName": info.theme_font_name,
+            "themeFontColor": info.theme_font_color,*/
+            "installTime": info.install_time,
+            "builtIn": info.isBuiltIn? 1 : 0,
+            "remote": info.isRemote? 1 : 0,
+            "appPath": appUrl,
+            "dataPath": dataUrl,
+            /* TODO "locales": this.jsonAppLocales(info),
+            "frameworks": this.jsonAppFrameworks(info),
+            "platforms": this.jsonAppPlatforms(info),*/
+        }
+        return ret;
     }
 
     private jsonAppIcons(info: AppInfo): any[] {
@@ -70,5 +170,8 @@ TrinityRuntime.getSharedInstance().registerPlugin("AppManager", (appId: string)=
 
 TrinityRuntime.getSharedInstance().createIPCDefinitionForMainProcess("AppManager", [
     "getAppInfos",
-    "getPreference"
+    "getPreference",
+    "setListener",
+    "start",
+    "setVisible"
 ])

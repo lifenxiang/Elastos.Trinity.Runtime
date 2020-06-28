@@ -150,8 +150,7 @@ export class ManagerDBAdapter {
                 info.addIcon(icon);
             }
         }
-        console.log("getInfos after add icons", infos)
-
+        
         notImplemented("NOT FINISHED - getInfos")
 
         /* DELETE ME String[] columns = {AppInfo.TID, AppInfo.APP_ID, AppInfo.VERSION, AppInfo.VERSION_CODE, AppInfo.NAME, AppInfo.SHORT_NAME,

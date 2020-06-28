@@ -1,0 +1,21 @@
+<ion-content [fullscreen]="true">
+  <ion-grid class="ion-no-padding">
+    <ion-row>
+      <ion-col class="icon-container" size="1.5">
+        <ion-img class="icon" src="assets/icon/ic_elastos_home.png" (click)="outerLeftClicked()"></ion-img>
+      </ion-col>
+      <ion-col class="icon-container" size="1.5">
+        <ion-img class="icon" src="assets/icon/ic_back.png" (click)="innerLeftClicked()"></ion-img>
+      </ion-col>
+      <ion-col class="icon-container" size="6">
+        <h2 class="title">{{ state.title }}</h2>
+      </ion-col>
+      <ion-col class="icon-container" size="1.5">
+        <ion-img class="icon" src="assets/icon/ic_running.png"></ion-img>
+      </ion-col>
+      <ion-col class="icon-container" size="1.5">
+        <ion-img class="icon" src="assets/icon/ic_scan.png"></ion-img>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+</ion-content>

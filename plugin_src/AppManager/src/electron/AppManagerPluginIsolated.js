@@ -7,6 +7,9 @@ contextBridge.exposeInMainWorld(
     'appManagerImpl',
     TrinityRenderer.TrinityRuntimeHelper.createIPCDefinitionToMainProcess("AppManager", [
         "getPreference",
-        "getAppInfos"
+        "getAppInfos",
+        "start",
+        "setListener",
+        "setVisible",
     ])
   )

@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { app, BrowserWindow, BrowserView, protocol }  from 'electron';
+import { app, BrowserWindow, BrowserView, protocol, ipcMain }  from 'electron';
 const cdvElectronSettings = require('./cdv-electron-settings.json');
 const reservedScheme = require('./cdv-reserved-scheme.json');
 import { TrinityRuntime } from './Runtime';
