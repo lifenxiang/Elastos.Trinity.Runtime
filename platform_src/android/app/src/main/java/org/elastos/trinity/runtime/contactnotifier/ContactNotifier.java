@@ -59,7 +59,7 @@ public class ContactNotifier {
         void onStatusChanged(Contact contact, OnlineStatus status);
     }
 
-    private ContactNotifier(Context context, String didSessionDID) throws CarrierException {
+    private ContactNotifier(Context context, String didSessionDID) throws Exception {
         // Initialize the DID back end as we will need it. Though it's not clean to call the DID plugin
         // Directly for this. Need to create a DID class inside runtime.
         try {
@@ -83,7 +83,7 @@ public class ContactNotifier {
         listenToCarrierHelperEvents();
     }
 
-    public static ContactNotifier getSharedInstance(Context context, String did) throws CarrierException {
+    public static ContactNotifier getSharedInstance(Context context, String did) throws Exception {
         if (instances.containsKey(did))
             return instances.get(did);
         else {

@@ -10,9 +10,15 @@ import org.elastos.carrier.FriendInfo;
 import org.elastos.carrier.PresenceStatus;
 import org.elastos.carrier.UserInfo;
 import org.elastos.carrier.exceptions.CarrierException;
+import org.elastos.did.DIDBackend;
+import org.elastos.did.DIDDocument;
+import org.elastos.did.DIDStore;
+import org.elastos.trinity.runtime.PreferenceManager;
 import org.elastos.trinity.runtime.contactnotifier.ContactNotifier;
 import org.elastos.trinity.runtime.contactnotifier.OnlineStatusMode;
 import org.elastos.trinity.runtime.contactnotifier.RemoteNotificationRequest;
+import org.elastos.trinity.runtime.didsessions.DIDSessionManager;
+import org.elastos.trinity.runtime.didsessions.IdentityEntry;
 import org.elastos.trinity.runtime.notificationmanager.NotificationManager;
 import org.elastos.trinity.runtime.notificationmanager.NotificationRequest;
 import org.json.JSONException;
@@ -23,6 +29,8 @@ import java.util.Date;
 import java.util.Iterator;
 
 public class CarrierHelper {
+    private static final String LOG_TAG = "CNCarrierHelper";
+
     String didSessionDID;
     private ContactNotifier notifier;
     private Context context;
@@ -42,7 +50,7 @@ public class CarrierHelper {
         void onFriendAdded(FriendInfo info);
     }
 
-    public CarrierHelper(ContactNotifier notifier, String didSessionDID, Context context) throws CarrierException {
+    public CarrierHelper(ContactNotifier notifier, String didSessionDID, Context context) throws Exception {
         this.notifier = notifier;
         this.context = context;
         this.didSessionDID = didSessionDID;
@@ -50,7 +58,38 @@ public class CarrierHelper {
         initialize();
     }
 
-    private void initialize() throws CarrierException {
+    private String getDerivedDIDPrivateKey() throws Exception {
+        // Retrieve the signed in identity info
+        IdentityEntry signedInIdentity = DIDSessionManager.getSharedInstance().getSignedInIdentity();
+        if (signedInIdentity != null) {
+            // Initialize a DID context to load the signed in user's DID Document. This is needed in order to get a
+            // private key derived from the DID.
+            String cacheDir = context.getFilesDir() + "/data/did/.cache.did.elastos";
+            String resolver = PreferenceManager.getShareInstance().getDIDResolver();
+
+            // Initialize the DID store
+            DIDBackend.initialize(resolver, cacheDir);
+            String dataDir = context.getFilesDir() + "/data/did/useridentities/" + signedInIdentity.didStoreId;
+            DIDStore didStore = DIDStore.open("filesystem", dataDir, (payload, memo) -> {});
+
+            // Load the did document
+            DIDDocument didDocument = didStore.loadDid(signedInIdentity.didString);
+            if (didDocument == null) {
+                return null;
+            } else {
+                // TODO: call did document derive() to get the extended private key then extract the private key
+                return "";
+            }
+        }
+        else {
+            return null;
+        }
+    }
+
+    private void initialize() throws Exception {
+        String didDerivedPrivateKey = getDerivedDIDPrivateKey();
+        // TODO: use this private key in carrier options, after the carrier plugin upgrade
+
         // Initial setup
         Carrier.Options options = new DefaultCarrierOptions(context.getFilesDir().getAbsolutePath()+"/contactnotifier/"+didSessionDID);
 

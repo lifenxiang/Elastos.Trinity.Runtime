@@ -130,7 +130,7 @@ public class ContactNotifierPlugin extends TrinityPlugin {
         callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, method+": "+message));
     }
 
-    private ContactNotifier getNotifier() throws CarrierException {
+    private ContactNotifier getNotifier() throws Exception {
         return ContactNotifier.getSharedInstance(cordova.getContext(), did);
     }
 

@@ -210,7 +210,7 @@ public class AppManager {
 
         try {
             ContactNotifier.getSharedInstance(activity, did);
-        } catch (CarrierException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
