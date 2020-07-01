@@ -171,7 +171,7 @@ public class TitleBar extends FrameLayout {
 
     private void closeApp() {
         try {
-            appManager.close(appId);
+            appManager.close(appId, AppManager.STARTUP_APP, null);
         }
         catch (Exception e) {
             e.printStackTrace();

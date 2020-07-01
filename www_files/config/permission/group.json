@@ -101,7 +101,11 @@
             "getSettings",
             "setSetting",
             "getPreference",
-            "getPreferences"
+            "getPreferences",
+            "getStartupMode",
+            "startBackgroundService",
+            "stopBackgroundService",
+            "getRunningServiceList"
         ],
         "PasswordManagerPlugin": [
             "setPasswordInfo",

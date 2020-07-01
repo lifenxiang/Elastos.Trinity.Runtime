@@ -738,8 +738,28 @@ public class AppInstaller {
             for (int i = 0; i < array.length(); i++) {
                 JSONObject jobj = array.getJSONObject(i);
                 if (jobj.has("action")) {
-                    appInfo.addIntentFilter(jobj.getString("action"));
+                    String action = jobj.getString("action");
+                    String startupMode = "app";
+                    if (jobj.has("startup_mode")) {
+                        startupMode = jobj.getString("startup_mode");
+                        if (!AppManager.isStartupMode(startupMode)) {
+                            throw new Exception("intent_filters startup_mode '" + startupMode + "' is invalid!");
+                        }
+                    }
+                    String serviceName = null;
+                    if (startupMode.equals("service") && jobj.has("service_name")) {
+                        serviceName = jobj.getString("service_name");
+                    }
+                    appInfo.addIntentFilter(action, startupMode, serviceName);
                 }
+            }
+        }
+
+        if (json.has("startup_service")) {
+            JSONArray array = json.getJSONArray("startup_service");
+            for (int i = 0; i < array.length(); i++) {
+                String name = array.getString(i);
+                appInfo.addStartService(name);
             }
         }
 

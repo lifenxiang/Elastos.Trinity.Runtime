@@ -35,7 +35,6 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -156,6 +155,34 @@ public class AppBasePlugin extends TrinityPlugin {
                 case "broadcastMessage":
                     this.broadcastMessage(args, callbackContext);
                     break;
+
+                case "getStartupMode":
+                    this.getStartupMode(callbackContext);
+                    break;
+                case "startBackgroundService":
+                    this.startBackgroundService(args, callbackContext);
+                    break;
+                case "stopBackgroundService":
+                    this.stopBackgroundService(args, callbackContext);
+                    break;
+                case "getRunningServiceList":
+                    this.getRunningServiceList(callbackContext);
+                    break;
+                case "startAppBackgroundService":
+                    this.startAppBackgroundService(args, callbackContext);
+                    break;
+                case "stopAppBackgroundService":
+                    this.stopAppBackgroundService(args, callbackContext);
+                    break;
+                case "stopAllBackgroundService":
+                    this.stopAllBackgroundService(callbackContext);
+                    break;
+                case "getAllRunningServiceList":
+                    this.getAllRunningServiceList(callbackContext);
+                    break;
+
+
+
                 default:
                     return false;
             }
@@ -174,12 +201,17 @@ public class AppBasePlugin extends TrinityPlugin {
 
     protected void launcher(CallbackContext callbackContext) throws Exception {
         appManager.loadLauncher();
-        AppManager.getShareInstance().sendLauncherMessageMinimize(this.appId);
+        AppManager.getShareInstance().sendLauncherMessageMinimize(getModeId());
         callbackContext.success("ok");
     }
 
-    protected void start(JSONArray args, CallbackContext callbackContext) throws Exception {
+    private void startByMode(JSONArray args, CallbackContext callbackContext,
+                             String mode) throws Exception {
         String id = args.getString(0);
+        String service = null;
+        if (mode.equals(AppManager.STARTUP_SERVICE)) {
+            service = args.getString(1);
+        }
 
         if (id == null || id.equals("")) {
             callbackContext.error("Invalid id.");
@@ -191,18 +223,27 @@ public class AppBasePlugin extends TrinityPlugin {
             callbackContext.error("Can't start did session!");
         }
         else {
-            appManager.start(id);
+            appManager.start(id, mode, service);
             callbackContext.success("ok");
         }
     }
 
+    protected void start(JSONArray args, CallbackContext callbackContext) throws Exception {
+        startByMode(args, callbackContext, AppManager.STARTUP_APP);
+    }
+
     protected void close(JSONArray args, CallbackContext callbackContext) throws Exception {
-        appManager.close(this.appId);
+        appManager.close(this.appId, AppManager.STARTUP_APP, null);
         callbackContext.success("ok");
     }
 
     protected void setVisible(JSONArray args, CallbackContext callbackContext) throws Exception {
         String visible = args.getString(0);
+
+        if (!startupMode.equals(AppManager.STARTUP_APP)) {
+            callbackContext.error("'" + startupMode + "' mode can't setVisible.");
+            return;
+        }
 
         if (visible == null || !visible.equals("hide")) {
             visible = "show";
@@ -210,7 +251,7 @@ public class AppBasePlugin extends TrinityPlugin {
 
         appManager.setAppVisible(appId, visible);
         if (visible.equals("show")) {
-            appManager.start(this.appId);
+            appManager.start(this.appId, AppManager.STARTUP_APP, null);
         }
         else {
             appManager.loadLauncher();
@@ -226,7 +267,7 @@ public class AppBasePlugin extends TrinityPlugin {
         if (appId == null || appId.equals("")) {
             callbackContext.error("Invalid id.");
         }
-        appManager.close(appId);
+        appManager.close(appId, AppManager.STARTUP_APP, null);
         callbackContext.success("ok");
     }
 
@@ -392,7 +433,18 @@ public class AppBasePlugin extends TrinityPlugin {
         String toId = args.getString(0);
         Integer type = args.getInt(1);
         String msg = args.getString(2);
-        appManager.sendMessage(toId, type, msg, this.appId);
+
+        if (toId.startsWith("#")) {
+            if (toId.startsWith("#service:") || AppManager.isStartupMode(toId.substring(1))) {
+                toId = appId + toId;
+            }
+            else {
+                callbackContext.error("It is invalid startup mode!");
+                return;
+            }
+        }
+
+        appManager.sendMessage(toId, type, msg, getModeId());
         callbackContext.success("ok");
     }
 
@@ -438,7 +490,7 @@ public class AppBasePlugin extends TrinityPlugin {
             }
         }
 
-        IntentInfo info = new IntentInfo(action, params, this.appId, toId, currentTime, callbackContext);
+        IntentInfo info = new IntentInfo(action, params, getModeId(), toId, currentTime, callbackContext);
 
         IntentManager.getShareInstance().doIntent(info);
         PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
@@ -451,7 +503,7 @@ public class AppBasePlugin extends TrinityPlugin {
 
         try {
             if (checkIntentScheme(url)) {
-                IntentManager.getShareInstance().sendIntentByUri(Uri.parse(url), this.appId);
+                IntentManager.getShareInstance().sendIntentByUri(Uri.parse(url), getModeId());
                 callbackContext.success("ok");
             }
             else if (shouldOpenExternalIntentUrl(url)) {
@@ -472,7 +524,7 @@ public class AppBasePlugin extends TrinityPlugin {
         String result = args.getString(1);
         long intentId = args.getLong(2);
 
-        IntentManager.getShareInstance().sendIntentResponse(this, result, intentId, this.appId);
+        IntentManager.getShareInstance().sendIntentResponse(this, result, intentId, getModeId());
         callbackContext.success("ok");
     }
 
@@ -481,11 +533,11 @@ public class AppBasePlugin extends TrinityPlugin {
         PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
         pluginResult.setKeepCallback(true);
         callbackContext.sendPluginResult(pluginResult);
-        IntentManager.getShareInstance().setIntentReady(this.appId);
+        IntentManager.getShareInstance().setIntentReady(getModeId());
     }
 
     protected void hasPendingIntent(CallbackContext callbackContext) throws Exception {
-        Boolean ret = IntentManager.getShareInstance().getIntentCount(this.appId) != 0;
+        Boolean ret = IntentManager.getShareInstance().getIntentCount(getModeId()) != 0;
         callbackContext.success(ret.toString());
     }
 
@@ -522,7 +574,7 @@ public class AppBasePlugin extends TrinityPlugin {
             else {
                 obj.put("result", "null");
             }
-            obj.put("from", info.fromId);
+            obj.put("from", info.toId);
             PluginResult result = new PluginResult(PluginResult.Status.OK, obj);
             result.setKeepCallback(false);
             info.callbackContext.sendPluginResult(result);
@@ -609,6 +661,14 @@ public class AppBasePlugin extends TrinityPlugin {
             if (!appManager.isLauncher(id)) {
                 json.put(id);
             }
+        }
+        return json;
+    }
+
+    protected JSONArray jsonList(String[] ids) {
+        JSONArray json = new JSONArray();
+        for (String id: ids) {
+            json.put(id);
         }
         return json;
     }
@@ -735,8 +795,57 @@ public class AppBasePlugin extends TrinityPlugin {
     protected void broadcastMessage(JSONArray args, CallbackContext callbackContext) throws Exception {
         Integer type = args.getInt(0);
         String msg = args.getString(1);
-        AppManager.getShareInstance().broadcastMessage(type, msg, this.appId);
+        AppManager.getShareInstance().broadcastMessage(type, msg, getModeId());
         callbackContext.success("ok");
+    }
+
+    protected void getStartupMode(CallbackContext callbackContext) throws Exception {
+        JSONObject ret = new JSONObject();
+        ret.put("startupMode", startupMode);
+        if (startupMode.equals(AppManager.STARTUP_SERVICE)) {
+            ret.put("serviceName", serviceName);
+        }
+        callbackContext.success(ret);
+    }
+
+    protected void startBackgroundService(JSONArray args, CallbackContext callbackContext) throws Exception {
+        String serviceName = args.getString(0);
+        appManager.start(appId, AppManager.STARTUP_SERVICE, serviceName);
+        callbackContext.success("ok");
+    }
+
+    protected void stopBackgroundService(JSONArray args, CallbackContext callbackContext) throws Exception {
+        String serviceName = args.getString(0);
+        appManager.close(appId, AppManager.STARTUP_SERVICE, serviceName);
+        callbackContext.success("ok");
+    }
+
+    protected void getRunningServiceList(CallbackContext callbackContext) {
+        String[] ids = appManager.getServiceRunningList(appId);
+        JSONArray ret = jsonList(ids);
+        callbackContext.success(ret);
+    }
+
+    protected void startAppBackgroundService(JSONArray args, CallbackContext callbackContext) throws Exception {
+        startByMode(args, callbackContext, AppManager.STARTUP_SERVICE);
+    }
+
+    protected void stopAppBackgroundService(JSONArray args, CallbackContext callbackContext) throws Exception {
+        String id = args.getString(0);
+        String service = args.getString(1);
+        appManager.close(id, AppManager.STARTUP_SERVICE, service);
+        callbackContext.success("ok");
+    }
+
+    protected void stopAllBackgroundService(CallbackContext callbackContext) throws Exception {
+        appManager.closeAllServices();
+        callbackContext.success("ok");
+    }
+
+    protected void getAllRunningServiceList(CallbackContext callbackContext) {
+        String[] ids = appManager.getAllServiceRunningList();
+        JSONArray ret = jsonIdList(ids);
+        callbackContext.success(ret);
     }
 
     //-------------------------------------------------------------------------
@@ -751,7 +860,7 @@ public class AppBasePlugin extends TrinityPlugin {
         }
         else if (checkIntentScheme(url)) {
             try {
-                IntentManager.getShareInstance().sendIntentByUri(Uri.parse(url), this.appId);
+                IntentManager.getShareInstance().sendIntentByUri(Uri.parse(url), getModeId());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -768,7 +877,7 @@ public class AppBasePlugin extends TrinityPlugin {
         }
         else if (checkIntentScheme(url)) {
             try {
-                IntentManager.getShareInstance().sendIntentByUri(Uri.parse(url), this.appId);
+                IntentManager.getShareInstance().sendIntentByUri(Uri.parse(url), getModeId());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -787,6 +896,11 @@ public class AppBasePlugin extends TrinityPlugin {
 
         return null;
     }
+
+//    @Override
+//    public Boolean shouldOpenExternalUrl(String url) {
+//        return true;
+//    }
 
     @Override
     public Uri remapUri(Uri uri) {
@@ -817,13 +931,6 @@ public class AppBasePlugin extends TrinityPlugin {
         else if (url.startsWith("trinity:///temp/")) {
             url = appManager.getTempUrl(this.appId) + url.substring(16);
         }
-//        else if (checkIntentScheme(url)) {
-//            try {
-//                IntentManager.getShareInstance().sendIntentByUri(uri, this.appId);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }
         else {
             return null;
         }

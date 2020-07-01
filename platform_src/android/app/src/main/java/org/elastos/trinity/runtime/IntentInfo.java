@@ -19,6 +19,8 @@ public class IntentInfo {
     long intentId;
     CallbackContext callbackContext;
 
+    IntentFilter filter;
+
     String originalJwtRequest = null;
     String redirecturl = null;
     String callbackurl = null;

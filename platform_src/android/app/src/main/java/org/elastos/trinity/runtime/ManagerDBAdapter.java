@@ -27,12 +27,9 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
-import org.elastos.trinity.runtime.didsessions.DIDSessionManager;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-
-public class ManagerDBAdapter {
+ public class ManagerDBAdapter {
     ManagerDBHelper helper;
     Context context;
 
@@ -147,11 +144,20 @@ public class ManagerDBAdapter {
                 db.insert(ManagerDBHelper.PLATFORM_TABLE, null, contentValues);
             }
 
-            for (AppInfo.IntentFilter intent_filter : info.intentFilters) {
+            for (IntentFilter intent_filter : info.intentFilters) {
                 contentValues = new ContentValues();
                 contentValues.put(AppInfo.APP_ID, info.app_id);
                 contentValues.put(AppInfo.ACTION, intent_filter.action);
+                contentValues.put(AppInfo.STARTUP_MODE, intent_filter.startupMode);
+                contentValues.put(AppInfo.SERVICE_NAME, intent_filter.serviceName);
                 db.insert(ManagerDBHelper.INTENT_FILTER_TABLE, null, contentValues);
+            }
+
+            for (AppInfo.StartupService service : info.startupServices) {
+                contentValues = new ContentValues();
+                contentValues.put(AppInfo.APP_ID, info.app_id);
+                contentValues.put(AppInfo.STARTUP_SERVICE, service.name);
+                db.insert(ManagerDBHelper.SERVICE_TABLE, null, contentValues);
             }
 
             return true;
@@ -253,6 +259,13 @@ public class ManagerDBAdapter {
             while (cursor1.moveToNext()) {
                 info.addFramework(cursor1.getString(cursor1.getColumnIndex(AppInfo.NAME)),
                         cursor1.getString(cursor1.getColumnIndex(AppInfo.VERSION)));
+            }
+
+            String[] idArg = {info.app_id};
+            String[] columns6 = {AppInfo.STARTUP_SERVICE};
+            cursor1 = db.query(ManagerDBHelper.SERVICE_TABLE, columns6,AppInfo.APP_ID + "=?", idArg,null,null,null);
+            while (cursor1.moveToNext()) {
+                info.addStartService(cursor1.getString(cursor1.getColumnIndex(AppInfo.STARTUP_SERVICE)));
             }
         }
         return infos;
@@ -385,23 +398,31 @@ public class ManagerDBAdapter {
         String[] args = {info.app_id};
         db.delete(ManagerDBHelper.INTENT_FILTER_TABLE, where, args);
         db.delete(ManagerDBHelper.SETTING_TABLE, where, args);
+        db.delete(ManagerDBHelper.SERVICE_TABLE, where, args);
         where = AppInfo.TID + "=?";
         count = db.delete(ManagerDBHelper.APP_TABLE, where, whereArgs);
         return count;
     }
 
-    public String[] getIntentFilter(String action) {
+    public IntentFilter[] getIntentFilter(String action) {
         SQLiteDatabase db = helper.getWritableDatabase();
         String[] args = {action};
-        String[] columns = {AppInfo.APP_ID};
+        String[] columns = {AppInfo.APP_ID, AppInfo.STARTUP_MODE, AppInfo.SERVICE_NAME};
         Cursor cursor = db.query(ManagerDBHelper.INTENT_FILTER_TABLE, columns,AppInfo.ACTION + "=?", args,null,null,null);
-        String ids[] = new String[cursor.getCount()];
+        IntentFilter filters[] = new IntentFilter[cursor.getCount()];
         int count = 0;
         while (cursor.moveToNext()) {
-            ids[count++] = cursor.getString(cursor.getColumnIndex(AppInfo.APP_ID));;
+            String startupMode = cursor.getString(cursor.getColumnIndex(AppInfo.STARTUP_MODE));
+            String serviceName = null;
+            if (startupMode.equals("service")) {
+                serviceName = cursor.getString(cursor.getColumnIndex(AppInfo.SERVICE_NAME));
+            }
+            filters[count] = new IntentFilter(action, startupMode, serviceName);
+            filters[count].packageId = cursor.getString(cursor.getColumnIndex(AppInfo.APP_ID));
+            count++;
         }
 
-        return ids;
+        return filters;
     }
 
     public long setSetting(String id, String key, Object value) throws Exception {
@@ -604,4 +625,5 @@ public class ManagerDBAdapter {
          String[] whereArgs = {appId, String.valueOf(AppInfo.AUTHORITY_DENY)};
          db.delete(ManagerDBHelper.AUTH_API_TABLE, where, whereArgs);
      }
+
 }

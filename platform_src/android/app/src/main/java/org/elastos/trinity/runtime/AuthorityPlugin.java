@@ -45,13 +45,13 @@ import java.io.IOException;
 public class AuthorityPlugin extends CordovaPlugin {
 
     private CordovaPlugin originalPlugin = null;
-    private AppInfo appInfo = null;
+    private WebViewFragment viewFragment = null;
     private String pluginName = null;
     private PermissionGroup permissionGroup = null;
 
-    AuthorityPlugin(String className, AppInfo info, String name,
+    AuthorityPlugin(String className, WebViewFragment fragment, String name,
                     AppWhitelistPlugin whitelistPlugin, PermissionGroup permissionGroup) {
-        appInfo = info;
+        viewFragment = fragment;
         pluginName = name;
         originalPlugin = instantiatePlugin(className, whitelistPlugin);
         this.permissionGroup = permissionGroup;
@@ -79,7 +79,7 @@ public class AuthorityPlugin extends CordovaPlugin {
             if (plugin instanceof TrinityPlugin) {
                 TrinityPlugin trinity = (TrinityPlugin)plugin;
                 trinity.setWhitelistPlugin(whitelistPlugin);
-                trinity.setInfo(appInfo);
+                trinity.setFragment(viewFragment);
             }
         }
         return plugin;
@@ -114,7 +114,8 @@ public class AuthorityPlugin extends CordovaPlugin {
 
     private boolean checkAuthority(String action, CallbackContext callbackContext) {
         if (originalPlugin != null) {
-            int authority = ApiAuthorityManager.getShareInstance().getApiAuthority(appInfo, pluginName, action);
+            int authority = ApiAuthorityManager.getShareInstance().getApiAuthority(
+                                    viewFragment.appInfo, pluginName, action);
             if (authority == AppInfo.AUTHORITY_ALLOW) {
                 return checkApiPermission(action,  callbackContext);
             }

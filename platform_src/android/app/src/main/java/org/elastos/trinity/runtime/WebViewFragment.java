@@ -77,8 +77,11 @@ public class WebViewFragment extends Fragment {
     protected ArrayList<PluginEntry> pluginEntries;
     protected TrinityCordovaInterfaceImpl cordovaInterface;
     protected AppBasePlugin basePlugin;
-    protected String id;
+    protected String appId;
+    protected String modeId;
     protected String did;
+    protected String startupMode = AppManager.STARTUP_APP;
+    protected String serviceName = null;
 
     public AppInfo appInfo;
     protected String launchUrl;
@@ -86,11 +89,11 @@ public class WebViewFragment extends Fragment {
     public TitleBar titlebar;
     protected SystemWebView webView = null;
 
-    public static WebViewFragment newInstance(String id) {
-        if (id != null) {
+    public static WebViewFragment newInstance(String appId, String startupMode, String service) {
+        if (appId != null) {
             WebViewFragment fragment = null;
-            if (AppManager.getShareInstance().isLauncher(id)
-                || AppManager.getShareInstance().isDIDSession(id)) {
+            if (AppManager.getShareInstance().isLauncher(appId)
+                || AppManager.getShareInstance().isDIDSession(appId)) {
                 fragment = new LauncherViewFragment();
             }
             else {
@@ -98,7 +101,9 @@ public class WebViewFragment extends Fragment {
             }
 
             Bundle bundle = new Bundle();
-            bundle.putString("id", id);
+            bundle.putString("appId", appId);
+            bundle.putString("startupMode", startupMode);
+            bundle.putString("serviceName", service);
             fragment.setArguments(bundle);
             return fragment;
         }
@@ -124,14 +129,20 @@ public class WebViewFragment extends Fragment {
             return null;
         }
 
-        id = getArguments().getString("id");
-        appInfo = AppManager.getShareInstance().getAppInfo(id);
+        appId = getArguments().getString("appId");
+        appInfo = AppManager.getShareInstance().getAppInfo(appId);
         did = AppManager.getShareInstance().getDID();
+
+        startupMode = getArguments().getString("startupMode");
+        if (startupMode.equals(AppManager.STARTUP_SERVICE)) {
+            serviceName = getArguments().getString("serviceName");
+        }
+        modeId = AppManager.getShareInstance().getIdbyStartupMode(appId, startupMode, serviceName);
 
         View rootView = inflater.inflate(R.layout.fragments_view, null);
         webView = rootView.findViewById(R.id.webView);
         titlebar = rootView.findViewById(R.id.titlebar);
-        titlebar.initialize(id);
+        titlebar.initialize(modeId);
 
         // Set title bar title to app name by default. Apps are free to change this.
         if (!isLauncher())
@@ -149,7 +160,6 @@ public class WebViewFragment extends Fragment {
         return rootView;
     }
 
-
     public TitleBar getTitlebar() {
         return titlebar;
     }
@@ -159,7 +169,7 @@ public class WebViewFragment extends Fragment {
     }
 
     public String getAppId() {
-        return id;
+        return modeId;
     }
 
     public String getDID() {
@@ -174,7 +184,7 @@ public class WebViewFragment extends Fragment {
         appView = makeWebView();
         createViews();
         if (!appView.isInitialized()) {
-            preferences.set("Hostname", Utility.getCustomHostname(did, id));
+            preferences.set("Hostname", Utility.getCustomHostname(did, appId));
             appView.init(cordovaInterface, pluginEntries, preferences);
         }
         cordovaInterface.onCordovaInit(appView.getPluginManager());
@@ -240,7 +250,7 @@ public class WebViewFragment extends Fragment {
     public String getLaunchUrl() {
         return this.launchUrl;
     }
-    
+
     /**
      * Called when the system is about to start resuming a previous activity.
      */
@@ -433,7 +443,7 @@ public class WebViewFragment extends Fragment {
 
     public void finish() {
         try {
-            AppManager.getShareInstance().close(id);
+            AppManager.getShareInstance().close(modeId, startupMode, serviceName);
         }
         catch (Exception e) {
             e.printStackTrace();

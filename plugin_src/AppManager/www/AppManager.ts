@@ -103,7 +103,7 @@ class AppManagerImpl implements AppManagerPlugin.AppManager {
         exec(onSuccess, onError, 'AppManager', 'closeApp', [id]);
     }
 
-    sendMessage(id: string, type: AppManagerPlugin.MessageType, msg: string, onSuccess: () => void, onError?: (err: string) => void) {
+    sendMessage(id: string, type: AppManagerPlugin.MessageType, msg: string, onSuccess?: () => void, onError?: (err: string) => void) {
         exec(onSuccess, onError, 'AppManager', 'sendMessage', [id, type, msg]);
     }
 
@@ -243,6 +243,38 @@ class AppManagerImpl implements AppManagerPlugin.AppManager {
 
     resetPreferences(onSuccess: () => void, onError?: (err: string) => void) {
         exec(onSuccess, onError, 'AppManager', 'resetPreferences', []);
+    }
+
+    getStartupMode(onSuccess: (info: AppManagerPlugin.StartupInfo) => void, onError?: (err: string) => void) {
+        exec(onSuccess, onError, 'AppManager', 'getStartupMode', []);
+    }
+
+    startBackgroundService(serviceName: string, onSuccess?: () => void, onError?: (err: string) => void) {
+        exec(onSuccess, onError, 'AppManager', 'startBackgroundService', [serviceName]);
+    }
+
+    stopBackgroundService(serviceName: string, onSuccess?: () => void, onError?: (err: string) => void) {
+        exec(onSuccess, onError, 'AppManager', 'stopBackgroundService', [serviceName]);
+    }
+
+    getRunningServiceList(onSuccess:(ids: string[])=>void) {
+        exec(onSuccess, null, 'AppManager', 'getRunningServiceList', []);
+    }
+
+    startAppBackgroundService(id: string, serviceName: string, onSuccess?: () => void, onError?: (err: string) => void) {
+        exec(onSuccess, onError, 'AppManager', 'startAppBackgroundService', [id, serviceName]);
+    }
+
+    stopAppBackgroundService(id: string, serviceName: string, onSuccess?: () => void, onError?: (err: string) => void) {
+        exec(onSuccess, onError, 'AppManager', 'stopAppBackgroundService', [id, serviceName]);
+    }
+
+    stopAllBackgroundService(onSuccess?: () => void, onError?: (err: string) => void) {
+        exec(onSuccess, onError, 'AppManager', 'stopAllBackgroundService', []);
+    }
+
+    getAllRunningServiceList(onSuccess:(ids: string[])=>void) {
+        exec(onSuccess, null, 'AppManager', 'getAllRunningServiceList', []);
     }
 }
 

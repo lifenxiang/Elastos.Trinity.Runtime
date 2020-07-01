@@ -26,8 +26,6 @@ import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaPreferences;
 import org.apache.cordova.CordovaWebView;
-import org.elastos.trinity.runtime.contactnotifier.ContactNotifier;
-import org.elastos.trinity.runtime.didsessions.DIDSessionManager;
 
 import java.io.File;
 
@@ -37,13 +35,25 @@ public class TrinityPlugin extends CordovaPlugin {
     public String appPath = null;
     public String tempPath = null;
     public String configPath = null;
-    private AppInfo appInfo = null;
+    protected AppInfo appInfo = null;
     public AppManager appManager = null;
     protected String appId;
     protected String did;
+    protected WebViewFragment viewFragment = null;
+    protected String startupMode = AppManager.STARTUP_APP;
+    protected String serviceName = null;
+    protected String modeId = null;
 
     public void setWhitelistPlugin(AppWhitelistPlugin appWhitelistPlugin) {
         this.whitelistPlugin = appWhitelistPlugin;
+    }
+
+    public void setFragment(WebViewFragment fragment) {
+        this.viewFragment = fragment;
+        startupMode = fragment.startupMode;
+        serviceName = fragment.serviceName;
+        setInfo(fragment.appInfo);
+        modeId = fragment.modeId;
     }
 
     public void setInfo(AppInfo info) {
@@ -55,6 +65,13 @@ public class TrinityPlugin extends CordovaPlugin {
         this.tempPath = appManager.getTempPath(info.app_id);
         this.appId = info.app_id;
         this.did = appManager.getDID();
+    }
+
+    public String getModeId() {
+        if (modeId == null) {
+            modeId = appId;
+        }
+        return modeId;
     }
 
     public boolean isAllowAccess(String url) {

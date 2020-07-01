@@ -38,6 +38,7 @@
      public static final String SHORT_NAME = "short_name";
      public static final String DESCRIPTION = "description";
      public static final String START_URL = "start_url";
+     public static final String STARTUP_SERVICE = "startup_service";
      public static final String AUTHOR_NAME = "author_name";
      public static final String AUTHOR_EMAIL = "author_email";
      public static final String DEFAULT_LOCAL = "default_locale";
@@ -60,12 +61,13 @@
      public static final String SIZES = "sizes";
      public static final String TYPE = "type";
 
-
      public static final String PLUGIN = "plugin";
      public static final String URL = "url";
      public static final String API = "api";
      public static final String AUTHORITY = "authority";
 
+     public static final String STARTUP_MODE = "startup_mode";
+     public static final String SERVICE_NAME = "service_name";
 
      public static final int MSG_PARAMS = 0;
      public static final int MSG_RETURN = 1;
@@ -170,11 +172,12 @@
              this.version = version;
          }
      }
-     public class IntentFilter {
-         public String action;
 
-         IntentFilter(String action) {
-             this.action = action;
+     public class StartupService {
+         public String name;
+
+         StartupService(String name) {
+             this.name = name;
          }
      }
 
@@ -186,7 +189,7 @@
      public ArrayList<IntentFilter> intentFilters = new ArrayList<IntentFilter>(4);
      public ArrayList<Framework> frameworks = new ArrayList<Framework>(2);
      public ArrayList<Platform> platforms = new ArrayList<Platform>(2);
-
+     public ArrayList<StartupService> startupServices = new ArrayList<StartupService>(2);
 
      public void addIcon(String src, String sizes, String type) {
          icons.add(new Icon(src, sizes, type));
@@ -235,8 +238,8 @@
          platforms.add(new Platform(name, version));
      }
 
-     public void addIntentFilter(String action) {
-         intentFilters.add(new IntentFilter(action));
+     public void addIntentFilter(String action, String startupMode, String serviceName) {
+         intentFilters.add(new IntentFilter(action, startupMode, serviceName));
      }
 
      public Framework getFramework(String name) {
@@ -255,5 +258,9 @@
              }
          }
          return null;
+     }
+
+     public void addStartService(String name) {
+         startupServices.add(new StartupService(name));
      }
  }

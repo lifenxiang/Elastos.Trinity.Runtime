@@ -24,7 +24,6 @@ package org.elastos.trinity.runtime;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
-import org.elastos.trinity.runtime.passwordmanager.AppsPasswordStrategy;
 import org.elastos.trinity.runtime.passwordmanager.PasswordInfoBuilder;
 import org.elastos.trinity.runtime.passwordmanager.passwordinfo.PasswordInfo;
 import org.elastos.trinity.runtime.passwordmanager.PasswordManager;
