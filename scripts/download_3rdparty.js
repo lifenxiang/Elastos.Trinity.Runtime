@@ -3,13 +3,13 @@
 // CONFIGURE HERE
 const files_to_download  = [
   {
-    "url": "https://github.com/elastos/Elastos.NET.Carrier.Swift.SDK/releases/download/release-v5.6.1/ElastosCarrier-framework.zip",
+    "url": "https://github.com/elastos/Elastos.NET.Carrier.Swift.SDK/releases/download/release-v5.6.2/ElastosCarrier-framework.zip",
     "filename": "ElastosCarrier-framework.zip",
     "sourceDirs": [
       "ElastosCarrier-framework/ElastosCarrierSDK.framework"
     ],
     "targetDir": "../Plugins/Carrier/src/ios/libs",
-    "md5": "cb930466ecb79d2cdbcfc726a0150d8f"
+    "md5": "025c9fc553992eacd5c9a44c1c690762"
   },{
     "url": "https://github.com/elastos/Elastos.NET.Hive.Swift.SDK/releases/download/release-v1.0.1/ElastosHiveSDK-framework-for-trinity.zip",
     "filename": "ElastosHiveSDK-framework-for-trinity.zip",
