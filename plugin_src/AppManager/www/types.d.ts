@@ -282,7 +282,7 @@ declare namespace AppManagerPlugin {
      */
     type StartupInfo = {
         /** The start up mode */
-        mode: StartupMode
+        startupMode: StartupMode
         /** If startup mode is service, it will be return */
         serviceName?: string
     }
