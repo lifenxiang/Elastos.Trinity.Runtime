@@ -13,6 +13,7 @@ import org.elastos.carrier.exceptions.CarrierException;
 import org.elastos.did.DIDBackend;
 import org.elastos.did.DIDDocument;
 import org.elastos.did.DIDStore;
+import org.elastos.did.exception.DIDException;
 import org.elastos.trinity.runtime.PreferenceManager;
 import org.elastos.trinity.runtime.contactnotifier.ContactNotifier;
 import org.elastos.trinity.runtime.contactnotifier.OnlineStatusMode;
@@ -21,15 +22,22 @@ import org.elastos.trinity.runtime.didsessions.DIDSessionManager;
 import org.elastos.trinity.runtime.didsessions.IdentityEntry;
 import org.elastos.trinity.runtime.notificationmanager.NotificationManager;
 import org.elastos.trinity.runtime.notificationmanager.NotificationRequest;
+import org.elastos.trinity.runtime.passwordmanager.PasswordManager;
+import org.elastos.trinity.runtime.passwordmanager.passwordinfo.GenericPasswordInfo;
+import org.elastos.trinity.runtime.passwordmanager.passwordinfo.PasswordInfo;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 
 public class CarrierHelper {
     private static final String LOG_TAG = "CNCarrierHelper";
+    // Arbitrary non-0 derived index reserved for this contact notifier service.
+    // Do NOT change this value otherwise all users contact notifier carrier addresses will change!
+    private static final int DID_DOCUMENT_DERIVE_INDEX = 84;
 
     String didSessionDID;
     private ContactNotifier notifier;
@@ -58,7 +66,15 @@ public class CarrierHelper {
         initialize();
     }
 
-    private String getDerivedDIDPrivateKey() throws Exception {
+    private interface DerivedDIDPrivateKeyListener {
+        void onDerivedKeyRetrieved(byte[] keyBytes);
+    }
+
+    /**
+     * Get a private key derived from the DID, in order to make sure we always get the same carrier address
+     * even after a trinity reinstallation, as long as the user keeps using the same DID.
+     */
+    private void getDerivedDIDPrivateKey(DerivedDIDPrivateKeyListener listener) throws Exception {
         // Retrieve the signed in identity info
         IdentityEntry signedInIdentity = DIDSessionManager.getSharedInstance().getSignedInIdentity();
         if (signedInIdentity != null) {
@@ -75,23 +91,67 @@ public class CarrierHelper {
             // Load the did document
             DIDDocument didDocument = didStore.loadDid(signedInIdentity.didString);
             if (didDocument == null) {
-                return null;
+                listener.onDerivedKeyRetrieved(null);
             } else {
-                // TODO: call did document derive() to get the extended private key then extract the private key
-                return "";
+                // Get the DID store password
+                String passwordInfoKey = "didstore-"+signedInIdentity.didStoreId;
+                String appId = "org.elastos.trinity.dapp.didsession"; // act as the did session app to be able to retrieve a DID store password
+                PasswordManager.getSharedInstance().getPasswordInfo(passwordInfoKey, signedInIdentity.didString, appId, new PasswordManager.OnPasswordInfoRetrievedListener() {
+                    @Override
+                    public void onPasswordInfoRetrieved(PasswordInfo info) {
+                        GenericPasswordInfo genericPasswordInfo = (GenericPasswordInfo)info;
+                        if (genericPasswordInfo == null || genericPasswordInfo.password == null || genericPasswordInfo.password.equals("")) {
+                            Log.e(LOG_TAG, "Unable to get a DID derived key: no master password");
+                            listener.onDerivedKeyRetrieved(null);
+                        }
+                        else {
+                            try {
+                                String extendedDerivedKey = didDocument.derive(DID_DOCUMENT_DERIVE_INDEX, genericPasswordInfo.password);
+
+                                // From the 82 bytes of this extended key, get the end part which is the private key that we need.
+                                byte[] extendedDerivedKeyBytes = extendedDerivedKey.getBytes();
+                                byte[] derivedKeyBytes = Arrays.copyOfRange(extendedDerivedKeyBytes, 46,78);
+
+                                listener.onDerivedKeyRetrieved(derivedKeyBytes);
+                            }
+                            catch (DIDException e) {
+                                e.printStackTrace();
+                                listener.onDerivedKeyRetrieved(null);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancel() {
+                        listener.onDerivedKeyRetrieved(null);
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        listener.onDerivedKeyRetrieved(null);
+                    }
+                });
             }
         }
         else {
-            return null;
+            listener.onDerivedKeyRetrieved(null);
         }
     }
 
     private void initialize() throws Exception {
-        String didDerivedPrivateKey = getDerivedDIDPrivateKey();
-        // TODO: use this private key in carrier options, after the carrier plugin upgrade
+        getDerivedDIDPrivateKey(keyBytes -> {
+            try {
+                initializeWithDIDDerivedKey(keyBytes);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
 
+    private void initializeWithDIDDerivedKey(byte[] derivedKeyBytes) throws Exception {
         // Initial setup
         Carrier.Options options = new DefaultCarrierOptions(context.getFilesDir().getAbsolutePath()+"/contactnotifier/"+didSessionDID);
+        options.setSecretKey(derivedKeyBytes);
 
         // Create or get an our carrier instance instance
         carrierInstance = Carrier.createInstance(options, new AbstractCarrierHandler() {

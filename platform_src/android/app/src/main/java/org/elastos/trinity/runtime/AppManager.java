@@ -208,6 +208,10 @@ public class AppManager {
 //            CLIService.getShareInstance().start();
         }
 
+        // Apply theming for native popups
+        boolean darkMode = PreferenceManager.getShareInstance().getBooleanValue("ui.darkmode", false);
+        UIStyling.prepare(darkMode);
+
         try {
             ContactNotifier.getSharedInstance(activity, did);
         } catch (Exception e) {

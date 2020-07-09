@@ -124,10 +124,6 @@ public class WebViewFragment extends Fragment {
             return null;
         }
 
-        // Apply theming for native popups
-        boolean darkMode = PreferenceManager.getShareInstance().getBooleanValue("ui.darkmode", false);
-        UIStyling.prepare(darkMode);
-
         id = getArguments().getString("id");
         appInfo = AppManager.getShareInstance().getAppInfo(id);
         did = AppManager.getShareInstance().getDID();
