@@ -265,7 +265,7 @@ class TitleBarView: UIView {
     }*/
 
     private func closeApp() {
-        try? AppManager.getShareInstance().close(self.viewController!.appInfo!.app_id)
+        try? AppManager.getShareInstance().close(self.viewController!.appInfo!.app_id, AppManager.STARTUP_APP, nil)
     }
 
     private func goToLauncher() {

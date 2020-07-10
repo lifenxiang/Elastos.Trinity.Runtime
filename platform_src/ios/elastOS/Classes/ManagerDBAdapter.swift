@@ -39,6 +39,7 @@ class ManagerDBAdapter {
     @objc static let SETTING_TABLE = "setting";
     //For system preference
     @objc static let PREFERENCE_TABLE = "preference";
+    @objc static let SERVICE_TABLE = "service";
     @objc static let APP_TABLE = "app";
 
     let db: Connection;
@@ -80,10 +81,13 @@ class ManagerDBAdapter {
     let language = Expression<String>(AppInfo.LANGUAGE)
 
     let action = Expression<String>(AppInfo.ACTION)
+    let startup_mode = Expression<String>(AppInfo.STARTUP_MODE)
+    let service_name = Expression<String?>(AppInfo.SERVICE_NAME)
+    let startup_service = Expression<String>(AppInfo.STARTUP_SERVICE)
 
     let key = Expression<String>("key")
     let value = Expression<String>("value")
-
+    
     let plugins = Table(ManagerDBAdapter.AUTH_PLUGIN_TABLE)
     let urls = Table(ManagerDBAdapter.AUTH_URL_TABLE)
     let intents = Table(ManagerDBAdapter.AUTH_INTENT_TABLE)
@@ -95,12 +99,24 @@ class ManagerDBAdapter {
     let intent_filters = Table(ManagerDBAdapter.INTENT_FILTER_TABLE)
     let setting = Table(ManagerDBAdapter.SETTING_TABLE)
     let preference = Table(ManagerDBAdapter.PREFERENCE_TABLE)
+    let services = Table(ManagerDBAdapter.SERVICE_TABLE)
     let apps = Table(ManagerDBAdapter.APP_TABLE)
 
     init(_ dataPath: String) {
         let path = dataPath + ManagerDBAdapter.DATABASE_NAME;
-        db = try! Connection(path)
-        try! creatTables();
+        db = try! Connection(path);
+        do
+        {
+            if (!FileManager.default.fileExists(atPath: path)) {
+                try creatTables();
+            }
+            else if (db.userVersion < ManagerDBAdapter.VERSION){
+                try upgrade();
+            }
+        } catch {
+            print(error)
+        }
+        
     }
 
     func creatTables() throws {
@@ -169,6 +185,8 @@ class ManagerDBAdapter {
             t.column(tid, primaryKey: .autoincrement)
             t.column(app_id)
             t.column(action)
+            t.column(startup_mode)
+            t.column(service_name)
         })
 
         try db.run(setting.create(ifNotExists: true) { t in
@@ -182,6 +200,12 @@ class ManagerDBAdapter {
             t.column(tid, primaryKey: .autoincrement)
             t.column(key)
             t.column(value)
+        })
+        
+        try db.run(services.create(ifNotExists: true) { t in
+            t.column(tid, primaryKey: .autoincrement)
+            t.column(app_id)
+            t.column(startup_service)
         })
 
         try db.run(apps.create(ifNotExists: true) { t in
@@ -210,6 +234,8 @@ class ManagerDBAdapter {
             t.column(category)
             t.column(key_words)
         })
+        
+        db.userVersion = ManagerDBAdapter.VERSION;
     }
 
     func dropTables() throws {
@@ -304,7 +330,15 @@ class ManagerDBAdapter {
             for intentFilter in info.intentFilters {
                 try db.run(intent_filters.insert(
                                         app_id <- info.app_id,
-                                        action <- intentFilter.action));
+                                        action <- intentFilter.action,
+                                        startup_mode <- intentFilter.startupMode,
+                                        service_name <- intentFilter.serviceName));
+            }
+            
+            for service in info.startupServices {
+                try db.run(services.insert(
+                                        app_id <- info.app_id,
+                                        startup_service <- service.name));
             }
         }
     }
@@ -365,6 +399,10 @@ class ManagerDBAdapter {
 
             for platform in try db.prepare(platforms.select(*).filter(app_tid == info.tid)) {
                 info.addPlatform(platform[name], platform[version]);
+            }
+            
+            for service in try db.prepare(services.select(*).filter(app_id == info.app_id)) {
+                info.addStartService(service[startup_service]);
             }
 
             infos.append(info);
@@ -462,19 +500,23 @@ class ManagerDBAdapter {
         try db.run(items.delete());
         items = apis.filter(app_id == info.app_id);
         try db.run(items.delete());
+        items = services.filter(app_id == info.app_id);
+        try db.run(items.delete());
         items = apps.filter(tid == info.tid);
         try db.run(items.delete());
     }
 
-    func getIntentFilter(_ act: String) throws -> [String] {
-        let query = intent_filters.select(app_id)
+    func getIntentFilter(_ act: String) throws -> [IntentFilter] {
+        let query = intent_filters.select(*)
             .filter(action == act)
         let rows = try db.prepare(query);
-        var ids = [String]();
+        var filters = [IntentFilter]();
         for intent in rows {
-            ids.append(intent[app_id]);
+            let filter = IntentFilter(act, intent[startup_mode], intent[service_name])
+            filter.packageId = intent[app_id];
+            filters.append(filter);
         }
-        return ids;
+        return filters;
     }
 
     func setSetting(_ id: String, _ k: String, _ v: Any?) throws {
@@ -648,4 +690,26 @@ class ManagerDBAdapter {
         try creatTables();
     }
 
+    private func upgrade() throws {
+        let oldVersion = db.userVersion;
+        
+        if (oldVersion < 1) {
+           Log.d("ManagerDBHelper", "Upgrading database to v1");
+           try upgradeToV1();
+        }
+    }
+    
+    private func upgradeToV1() throws {
+        try db.run(intent_filters.addColumn(startup_mode, defaultValue: "app"))
+        try db.run(intent_filters.addColumn(service_name, defaultValue: nil))
+        
+        try db.run(services.create(ifNotExists: true) { t in
+            t.column(tid, primaryKey: .autoincrement)
+            t.column(app_id)
+            t.column(startup_service)
+        })
+        
+        db.userVersion = 1;
+    }
+    
  }

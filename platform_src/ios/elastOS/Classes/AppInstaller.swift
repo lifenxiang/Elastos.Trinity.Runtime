@@ -579,10 +579,32 @@
             for intent_filter in intent_filters! {
                 let action = intent_filter["action"];
                 if (action != nil) {
-                    appInfo.addIntentFilter(action!);
+                    var startupMode = intent_filter["startup_mode"];
+                    if (startupMode == nil) {
+                        startupMode = AppManager.STARTUP_APP;
+                    }
+                    else {
+                        if (!AppManager.isStartupMode(startupMode!)) {
+                            throw AppError.error("intent_filters startup_mode '" + startupMode! + "' is invalid!");
+                        }
+                    }
+                    var serviceName = intent_filter["service_name"];
+                    if (startupMode != AppManager.STARTUP_SERVICE && serviceName != nil) {
+                        serviceName = nil;
+                    }
+                    appInfo.addIntentFilter(action!, startupMode!, serviceName);
                 }
             }
         }
+        
+
+        let startup_services = json["startup_service"] as? [String];
+        if (startup_services != nil) {
+            for startup_service in startup_services! {
+                appInfo.addStartService(startup_service);
+            }
+        }
+
 
         appInfo.install_time = Int64(Date().timeIntervalSince1970);
         appInfo.launcher = launcher;

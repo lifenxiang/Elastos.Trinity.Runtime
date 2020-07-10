@@ -28,11 +28,11 @@
     var vcClassName: String?;
     
     convenience init(_ appInfo: AppInfo, _ vcClassName: String) {
-        self.init(appInfo);
+        self.init(appInfo, AppManager.STARTUP_APP, nil);
         self.vcClassName = vcClassName;
         self.basePlugin = AppBasePlugin();
         self.basePlugin!.setWhitelist(self.whitelistFilter)
-        self.basePlugin!.setInfo(self.appInfo);
+        self.basePlugin!.setInfo(self.appInfo, startupMode:AppManager.STARTUP_APP, serviceName:nil);
         
     }
     
@@ -42,7 +42,7 @@
     
     override func loadSettings() {
         self.pluginObjects = NSMutableDictionary();
-        AppManager.getShareInstance().setAppVisible(id, "show");
+        AppManager.getShareInstance().setAppVisible(packageId, "show");
     }
     
     func addControllerView(_ container: UIView) {

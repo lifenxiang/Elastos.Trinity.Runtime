@@ -32,8 +32,12 @@
 @property (nonatomic, readwrite) NSString* dataPath;
 @property (nonatomic, readwrite) NSString* tempPath;
 @property (nonatomic, readwrite) NSString* configPath;
+@property (nonatomic, readwrite) NSString* packageId;
 @property (nonatomic, readwrite) NSString* appId;
 @property (nonatomic, readwrite) NSString* did;
+@property (nonatomic, readwrite) NSString* startupMode;
+@property (nonatomic, readwrite) NSString* serviceName;
+@property (nonatomic, readwrite) NSString* modeId;
 @end
 
 @implementation TrinityPlugin
@@ -46,14 +50,18 @@
 @synthesize dataPath;
 @synthesize tempPath;
 @synthesize configPath;
+@synthesize packageId;
 @synthesize appId;
 @synthesize did;
+@synthesize startupMode;
+@synthesize serviceName;
+@synthesize modeId;
 
 - (void)setWhitelistPlugin: (CDVPlugin *)filter  {
     self.whiteListFilter = (WhitelistFilter*)filter;
 }
 
-- (void)setInfo: (AppInfo*)info {
+- (void)setInfo: (AppInfo*)info startupMode:(NSString *)startupMode serviceName:(NSString *)serviceName {
     self.appInfo = info;
     self.appManager = [AppManager getShareInstance];
     self.appPath = [appManager getAppPath:info];
@@ -61,7 +69,19 @@
     self.configPath = [appManager getConfigPath ];
     self.tempPath = [appManager getTempPath:info.app_id];
     self.appId = info.app_id;
+    self.packageId = info.app_id;
     self.did = [appManager getDID];
+    
+    self.startupMode = startupMode;
+    self.serviceName = serviceName;
+    self.modeId = [self.appManager getIdbyStartupMode:self.appId startupMode:startupMode serviceName:serviceName];
+}
+
+- (NSString*)getModeId {
+    if (modeId == nil) {
+        modeId = appId;
+    }
+    return modeId;
 }
 
 - (BOOL)isAllowAccess:(NSString *)url {
@@ -249,10 +269,10 @@
 - (void)pluginInitialize {
     if (appInfo == NULL) {
         if ([[AppManager getShareInstance] isSignIning]) {
-            [self setInfo:[[AppManager getShareInstance] getDIDSessionAppInfo]];
+            [self setInfo:[[AppManager getShareInstance] getDIDSessionAppInfo] startupMode:AppManager.STARTUP_APP serviceName:nil];
         }
         else {
-            [self setInfo:[[AppManager getShareInstance] getLauncherInfo]];
+            [self setInfo:[[AppManager getShareInstance] getLauncherInfo] startupMode:AppManager.STARTUP_APP serviceName:nil];
         }
     }
     [super pluginInitialize];

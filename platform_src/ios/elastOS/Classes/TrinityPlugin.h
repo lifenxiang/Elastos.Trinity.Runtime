@@ -28,7 +28,7 @@
 @interface TrinityPlugin : CDVPlugin
 
 - (void)setWhitelistPlugin: (CDVPlugin *)filter;
-- (void)setInfo: (NSObject*)info;
+- (void)setInfo: (NSObject*)info startupMode:(NSString *)startupMode serviceName:(NSString *)serviceName;
 
 - (BOOL)isAllowAccess:(NSString *)url;
 - (BOOL)shouldOpenExternalIntentUrl:(NSString *)url;
@@ -43,11 +43,14 @@
 - (NSString*)getCanonicalPath:(NSString*)path error:(NSError * _Nullable *)error;
 - (NSString*)getDataCanonicalPath:(NSString*)path error:(NSError * _Nullable *)error;
 - (NSString*)getRelativePath:(NSString*)path error:(NSError * _Nullable *)error;
-
+- (NSString*)getModeId;
 
 @property (nonatomic, readonly) NSString* dataPath;
+@property (nonatomic, readonly) NSString* packageId;
 @property (nonatomic, readonly) NSString* appId;
 @property (nonatomic, readonly) NSString* did;
+@property (nonatomic, readonly) NSString* startupMode;
+@property (nonatomic, readonly) NSString* serviceName;
 
 @end
 

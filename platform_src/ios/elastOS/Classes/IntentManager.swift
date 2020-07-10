@@ -54,6 +54,8 @@
     @objc dynamic var intentId: Int64 = 0;
     @objc dynamic var callbackId: String? = nil;
     @objc dynamic var callback: ((String, String?, String)->(Void))? = nil;
+    
+    @objc dynamic var filter: IntentFilter? = nil;
 
     @objc dynamic var originalJwtRequest: String? = nil
     @objc dynamic var redirecturl: String?;
@@ -183,12 +185,17 @@ class ShareIntentParams {
             UIApplication.shared.openURL(url);
         }
     }
+    
+    private func getIdbyFilter(_ filter:IntentFilter) -> String {
+        return appManager.getIdbyStartupMode(filter.packageId, startupMode:filter.startupMode, serviceName:filter.serviceName);
+    }
 
-    private func putIntentToList(_ app_id: String, _ info: IntentInfo) {
-        if (intentList[app_id] == nil) {
-            intentList[app_id] = [IntentInfo]();
+    private func addIntentToList(_ info: IntentInfo) {
+        let id = getIdbyFilter(info.filter!)
+        if (intentList[id] == nil) {
+            intentList[id] = [IntentInfo]();
         }
-        intentList[app_id]!.append(info);
+        intentList[id]!.append(info);
     }
 
     func setIntentReady(_ id: String) throws {
@@ -238,21 +245,28 @@ class ShareIntentParams {
         ids!.append(info.intentId);
     }
 
-    public func removeAppFromIntentList(_ appId: String) throws {
+    public func removeAppFromIntentList(_ id: String) throws {
         for (intentId, info) in intentContextList {
-            if (info.toId != nil && info.toId == appId && !info.isDoingResponse) {
+            let modeId = getIdbyFilter(info.filter!);
+            if (modeId != nil && modeId == id && !info.isDoingResponse) {
                 if (info.type == IntentInfo.API) {
                     let viewController: TrinityViewController? = appManager.getViewControllerById(info.fromId);
                     if (viewController != nil) {
-                        try appManager.start(info.fromId);
+                        if (info.filter!.startupMode == AppManager.STARTUP_APP) {
+                            try appManager.start(info.fromId, AppManager.STARTUP_APP, nil);
+                        }
                         info.params = nil;
                         viewController!.basePlugin!.onReceiveIntentResponse(info);
                     }
                 }
                 intentContextList[intentId] = nil;
             }
-            else if (info.fromId == appId) {
+            else if (info.fromId == id) {
                 intentContextList[intentId] = nil;
+                if (info.filter!.startupMode == AppManager.STARTUP_INTENT
+                    || info.filter!.startupMode == AppManager.STARTUP_SILENCE) {
+                    try appManager.close(info.filter!.packageId, info.filter!.startupMode, info.filter!.serviceName);
+                }
             }
         }
     }
@@ -266,24 +280,24 @@ class ShareIntentParams {
         info!.isDoingResponse = true;
     }
 
-    func getIntentFilter(_ action: String) throws -> [String] {
-        let ids = try appManager.dbAdapter.getIntentFilter(action);
-        var list = [String]();
+    func getIntentFilter(_ action: String) throws -> [IntentFilter] {
+        let filters = try appManager.dbAdapter.getIntentFilter(action);
+        var list = [IntentFilter]();
 
-        for id in ids {
-            if (getIntentReceiverPermission(action, id)) {
-                list.append(id);
+        for filter in filters {
+            if (getIntentReceiverPermission(action, filter.packageId)) {
+                list.append(filter);
             }
         }
 
         return list;
     }
 
-    private func popupIntentChooser(_ info: IntentInfo, _ ids: [String]) {
+    private func popupIntentChooser(_ info: IntentInfo, _ filters: [IntentFilter]) {
         // More than one possible handler, show a chooser and pass it the selectable apps info.
         var appInfos: [AppInfo] = []
-        for id in ids {
-            if let info = appManager.getAppInfo(id) {
+        for filter in filters {
+            if let info = appManager.getAppInfo(filter.packageId) {
                 appInfos.append(info)
             }
         }
@@ -306,7 +320,13 @@ class ShareIntentParams {
         vc.setListener() { selectedAppInfo in
             popup.dismiss() {
                 // Now we know the real app that should receive the intent.
-                info.toId = selectedAppInfo.app_id
+                for filter in filters {
+                    if filter.packageId ==  selectedAppInfo.app_id {
+                        info.filter = filter;
+                        info.toId = self.getIdbyFilter(info.filter!);
+                        break;
+                    }
+                }
                 try! self.sendIntent(info)
             }
         }
@@ -325,12 +345,12 @@ class ShareIntentParams {
 
     func doIntent(_ info: IntentInfo) throws {
         if (info.toId == nil) {
-            let ids = try getIntentFilter(info.action);
+            let filters = try getIntentFilter(info.action);
 
             // Throw an error in case no one can handle the action.
             // Special case for the "share" action that is always handled by the native OS too.
             if (info.action != "share") {
-                if (ids.isEmpty) {
+                if (filters.isEmpty) {
                     throw AppError.error("Intent action \(info.action) isn't supported!");
                 }
             }
@@ -343,23 +363,24 @@ class ShareIntentParams {
             // Otherwise, we display a prompt so that user can pick the right application.
             // "share" action is special, as it must deal with the native share action.
             if (info.action != "share") {
-                if (ids.count == 1) {
-                    info.toId = ids[0]
+                if (filters.count == 1) {
+                    info.toId = getIdbyFilter(filters[0]);
+                    info.filter = filters[0];
                     try sendIntent(info)
                 }
                 else {
-                    popupIntentChooser(info, ids);
+                    popupIntentChooser(info, filters);
                 }
             }
             else {
                 // Action is "share"
-                if (ids.count == 0) {
+                if (filters.count == 0) {
                     // No dapp can handle share. Directly send the native action
                     sendNativeShareAction(info);
                 }
                 else {
                     // Show a popup chooser. It will add the native share action.
-                    popupIntentChooser(info, ids);
+                    popupIntentChooser(info, filters);
                 }
             }
         }
@@ -369,18 +390,19 @@ class ShareIntentParams {
     }
 
     private func sendIntent(_ info: IntentInfo) throws {
-        let viewController = appManager.getViewControllerById(info.toId!)
+        let id =  getIdbyFilter(info.filter!);
+        let viewController = appManager.getViewControllerById(id)
         if (viewController != nil && viewController!.basePlugin!.isIntentReady()) {
             saveIntentContext(info);
             if (!appManager.isCurrentViewController(viewController!)) {
-                try appManager.start(info.toId!);
+                try appManager.start(info.filter!.packageId, info.filter!.startupMode, info.filter!.serviceName);
                 try appManager.sendLauncherMessageMinimize(info.fromId);
             }
             viewController!.basePlugin!.onReceiveIntent(info);
         }
         else {
-            putIntentToList(info.toId!, info);
-            try appManager.start(info.toId!);
+            addIntentToList(info);
+            try appManager.start(info.filter!.packageId, info.filter!.startupMode, info.filter!.serviceName);
             try appManager.sendLauncherMessageMinimize(info.fromId);
         }
     }
@@ -619,8 +641,8 @@ class ShareIntentParams {
 
         var viewController: TrinityViewController? = nil
         viewController = appManager.getViewControllerById(info!.fromId)
-        if (viewController != nil) {
-            try self.appManager.start(info!.fromId)
+        if (viewController != nil && viewController!.startupMode == AppManager.STARTUP_APP) {
+            try self.appManager.start(info!.fromId, AppManager.STARTUP_APP, nil)
         }
 
         // The result object can be either a standard json object, or a {jwt:JWT} object.
@@ -629,7 +651,6 @@ class ShareIntentParams {
         if (info!.type == IntentInfo.API) {
             if (viewController != nil) {
                 info!.params = intentResult.payloadAsString()
-                info!.fromId = fromId
                 viewController!.basePlugin!.onReceiveIntentResponse(info!)
             }
         }
@@ -692,6 +713,10 @@ class ShareIntentParams {
         }
 
         intentContextList[intentId] = nil;
+        if (info!.filter!.startupMode == AppManager.STARTUP_INTENT
+            || info!.filter!.startupMode == AppManager.STARTUP_SILENCE) {
+            try appManager.close(info!.filter!.packageId, info!.filter!.startupMode, info!.filter!.serviceName);
+        }
     }
 
     func parseIntentPermission() throws {

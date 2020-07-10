@@ -248,6 +248,22 @@ func getAssetPath(_ url: String) -> String {
             return false;
         }
     }
+    
+    func subStringFrom(index: Int) -> String {
+        let temporaryString: String = self
+        let temporaryIndex = temporaryString.index(temporaryString.startIndex, offsetBy: index)
+        return String(temporaryString[temporaryIndex...])
+    }
+    
+    func indexOf(sub:String, backwards:Bool = false)->Int {
+        var pos = -1
+        if let range = range(of:sub, options: backwards ? .backwards : .literal ) {
+            if !range.isEmpty {
+                pos = self.distance(from:startIndex, to:range.lowerBound)
+            }
+        }
+        return pos
+    }
  }
 
  extension Bool {
@@ -434,3 +450,4 @@ func getAssetPath(_ url: String) -> String {
         bounces = false
     }
  }
+

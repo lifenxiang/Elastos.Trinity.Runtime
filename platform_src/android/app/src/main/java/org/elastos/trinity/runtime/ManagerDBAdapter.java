@@ -414,7 +414,10 @@ import org.json.JSONObject;
         while (cursor.moveToNext()) {
             String startupMode = cursor.getString(cursor.getColumnIndex(AppInfo.STARTUP_MODE));
             String serviceName = null;
-            if (startupMode.equals("service")) {
+            if (startupMode == null) {
+                startupMode = AppManager.STARTUP_APP;
+            }
+            else if (startupMode.equals(AppManager.STARTUP_SERVICE)) {
                 serviceName = cursor.getString(cursor.getColumnIndex(AppInfo.SERVICE_NAME));
             }
             filters[count] = new IntentFilter(action, startupMode, serviceName);

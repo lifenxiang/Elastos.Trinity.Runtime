@@ -113,6 +113,22 @@ class AppManager: NSObject {
 
     static let LAUNCHER = "launcher";
     static let DIDSESSION = "didsession";
+    
+    /** The app mode. */
+    @objc static let STARTUP_APP = "app";
+    /** The service mode. */
+    @objc static let STARTUP_SERVICE = "service";
+    /** The intent mode. It will be closed after sendIntentResponse */
+    @objc static let STARTUP_INTENT = "intent";
+    /** The silence intent mode. It will be closed after sendIntentResponse */
+    @objc static let STARTUP_SILENCE = "silence";
+    
+    static let startupModes = [
+        STARTUP_APP,
+        STARTUP_SERVICE,
+        STARTUP_INTENT,
+        STARTUP_SILENCE
+    ];
 
     let mainViewController: MainViewController;
     var viewControllers = [String: TrinityViewController]();
@@ -127,9 +143,11 @@ class AppManager: NSObject {
     var appList = [AppInfo]();
     var appInfos = [String: AppInfo]();
     var lastList = [String]();
+    var runningList = [String]();
+    var serviceRunningList = [String]();
     var shareInstaller: AppInstaller;
     var visibles = [String: Bool]();
-
+    
     private var launcherInfo: AppInfo? = nil;
     private var diddessionInfo: AppInfo? = nil;
     private var signIning = true;
@@ -202,6 +220,10 @@ class AppManager: NSObject {
         return AppManager.appManager!;
     }
 
+    @objc static func isStartupMode(_ startupMode: String) -> Bool {
+        return startupModes.contains(startupMode);
+    }
+    
     public func getBaseDataPath() -> String {
         return basePathInfo.dataPath;
     }
@@ -233,13 +255,27 @@ class AppManager: NSObject {
             print("loadLauncher error: \(error)");
         }
         refreashInfos();
+        startStartupServices();
         sendRefreshList("initiated", nil);
     }
+    
+    private func startStartupServices() {
+        for info in appList {
+            for service in info.startupServices {
+                do {
+                    try start(info.app_id, AppManager.STARTUP_SERVICE, service.name);
+                }
+                catch let error {
+                    print("startStartupServices error: \(error)");
+                }
+            }
+        }
+    }
 
-    private func closeAll() throws {
+    private func closeAllApps() throws {
         for appId in getRunningList() {
             if (!isLauncher(appId)) {
-                try close(appId);
+                try closeAllModes(appId);
             }
 
         }
@@ -256,6 +292,8 @@ class AppManager: NSObject {
         curController = nil;
         appList = [AppInfo]();
         lastList = [String]();
+        runningList = [String]();
+        serviceRunningList = [String]();
         visibles = [String: Bool]();
 
         dbAdapter.setUserDBAdapter(nil);
@@ -279,7 +317,7 @@ class AppManager: NSObject {
     public func signOut() throws {
         if (!signIning) {
             signIning = true;
-            try closeAll();
+            try closeAllApps();
             clean();
             try startDIDSession();
         }
@@ -305,11 +343,11 @@ class AppManager: NSObject {
     }
 
     func startDIDSession() throws {
-        try start(getDIDSessionId());
+        try start(getDIDSessionId(), AppManager.STARTUP_APP, nil);
     }
 
     func closeDIDSession() throws {
-        try close(getDIDSessionId());
+        try close(getDIDSessionId(), AppManager.STARTUP_APP, nil);
 
         let entry = try DIDSessionManager.getSharedInstance().getSignedInIdentity();
         did = entry?.didString;
@@ -350,7 +388,14 @@ class AppManager: NSObject {
         }
     }
 
-    func getAppVisible(_ id: String) -> Bool {
+    func getAppVisible(_ id: String, _ startupMode: String) -> Bool {
+        if (startupMode == AppManager.STARTUP_INTENT) {
+            return true;
+        }
+        else if (startupMode == AppManager.STARTUP_SERVICE || startupMode == AppManager.STARTUP_SILENCE) {
+            return false;
+        }
+        
         let ret = visibles[id];
         if (ret == nil) {
             return true;
@@ -391,14 +436,20 @@ class AppManager: NSObject {
     }
 
     @objc func getAppInfo(_ id: String) -> AppInfo? {
-        if (isDIDSession(id)) {
+        var packageId = id;
+        if (id.contains("#")) {
+            let index = id.firstIndex(of: "#")!
+            packageId = String(id[..<index]);
+        }
+
+        if (isDIDSession(packageId)) {
             return getDIDSessionAppInfo();
         }
-        else if (isLauncher(id)) {
+        else if (isLauncher(packageId)) {
             return getLauncherInfo();
         }
         else {
-            return appInfos[id];
+            return appInfos[packageId];
         }
     }
 
@@ -644,7 +695,7 @@ class AppManager: NSObject {
     }
 
     func unInstall(_ id: String, _ update: Bool) throws {
-        try close(id);
+        try closeAllModes(id);
         let info = appInfos[id];
         try shareInstaller.unInstall(info, update);
         refreashInfos();
@@ -661,6 +712,24 @@ class AppManager: NSObject {
         for (index, item) in lastList.enumerated() {
             if item == id {
                 lastList.remove(at: index);
+                break;
+            }
+        }
+    }
+    
+    func removeRunninglistItem(_ id: String) {
+        for (index, item) in runningList.enumerated() {
+            if item == id {
+                runningList.remove(at: index);
+                break;
+            }
+        }
+    }
+    
+    func removeServiceRunningList(_ id: String) {
+        for (index, item) in serviceRunningList.enumerated() {
+            if item == id {
+                serviceRunningList.remove(at: index);
                 break;
             }
         }
@@ -682,18 +751,23 @@ class AppManager: NSObject {
 
         curController = to
 
-//        removeRunninglistItem(id);
-//        runningList.insert(id, at: 0);
+        removeRunninglistItem(id);
+        runningList.insert(id, at: 0);
 
         removeLastlistItem(id);
         lastList.insert(id, at: 0);
     }
 
-    private func hideViewController(_ viewController: TrinityViewController, _ id: String) {
+    private func hideViewController(_ viewController: TrinityViewController, _ startupMode: String, _ id: String) {
         viewController.view.isHidden = true;
 
-//        runningList.insert(id, at: 0);
-        lastList.insert(id, at: 1);
+        if (startupMode == AppManager.STARTUP_APP) {
+            runningList.insert(id, at: 0);
+            lastList.insert(id, at: 1);
+        }
+        else if (startupMode == AppManager.STARTUP_SERVICE) {
+            serviceRunningList.insert(id, at: 0);
+        }
     }
 
     func isCurrentViewController(_ viewController: TrinityViewController) -> Bool {
@@ -703,27 +777,43 @@ class AppManager: NSObject {
         return (viewController == curController!);
     }
 
-    func start(_ id: String) throws {
+    @objc func getIdbyStartupMode(_ id: String, startupMode mode: String, serviceName name: String?) -> String {
+        var ret = id;
+        if (mode != AppManager.STARTUP_APP) {
+            ret += "#" + mode;
+            if (mode == AppManager.STARTUP_SERVICE && name != nil) {
+                ret += ":" + name!;
+            }
+        }
+        return ret;
+    }
+    
+    func start(_ packageId: String, _ mode: String, _ serviceName: String?) throws {
+        let appInfo = getAppInfo(packageId);
+        guard appInfo != nil else {
+            throw AppError.error("No such app!");
+        }
+        
+        if (mode == AppManager.STARTUP_SERVICE && serviceName == nil) {
+            throw AppError.error("No service name!")
+        }
+
+        let id = getIdbyStartupMode(packageId, startupMode:mode, serviceName:serviceName);
         var viewController = getViewControllerById(id);
         if viewController == nil {
-            if (isLauncher(id)) {
-                viewController = LauncherViewController(getLauncherInfo()!);
+            if (isLauncher(packageId)) {
+                viewController = LauncherViewController(getLauncherInfo()!, mode, serviceName);
             }
-            else if (isDIDSession(id)) {
-                viewController = LauncherViewController(getDIDSessionAppInfo()!);
+            else if (isDIDSession(packageId)) {
+                viewController = LauncherViewController(getDIDSessionAppInfo()!, mode, serviceName);
             }
             else {
-                let appInfo = appInfos[id];
-                guard appInfo != nil else {
-                    throw AppError.error("No such app!");
-                }
-
                 let nativeClassName = ConfigManager.getShareInstance().getNativeMainViewControllerName(appInfo!);
-                if (nativeClassName != nil) {
+                if (mode == AppManager.STARTUP_APP && nativeClassName != nil) {
                     viewController = NativeAppViewController(appInfo!, nativeClassName!);
                 }
                 else {
-                    viewController = AppViewController(appInfo!);
+                    viewController = AppViewController(appInfo!, mode, serviceName);
                 }
                 sendRefreshList("started", appInfo!);
             }
@@ -731,20 +821,58 @@ class AppManager: NSObject {
             mainViewController.add(viewController!)
             viewControllers[id] = viewController;
 
-            if (!getAppVisible(id)) {
-                hideViewController(viewController!, id);
+            if (!getAppVisible(packageId, mode)) {
+                hideViewController(viewController!, mode, id);
             }
 
             viewController!.setReady();
         }
 
-        if (getAppVisible(id)) {
+        if (getAppVisible(packageId, mode)) {
             viewController!.view.isHidden = false;
             switchContent(viewController!, id);
         }
     }
-
-    func close(_ id: String) throws {
+    
+    func closeAllModes(_ packageId: String) {
+        for mode in AppManager.startupModes {
+            do {
+                if (mode == AppManager.STARTUP_SERVICE) {
+                    try closeAppAllServices(packageId);
+                }
+                else {
+                    try close(packageId, mode, nil);
+                }
+            }
+            catch let error {
+                print("close mode error: \(error)");
+            }
+        }
+    }
+    
+    func closeAppAllServices(_ packageId: String) throws {
+        let appInfo = appInfos[packageId];
+        guard appInfo != nil else {
+            throw AppError.error("No such app!");
+        }
+        
+        for viewController in viewControllers.values {
+            if (viewController.modeId.hasPrefix(packageId + "#service:")) {
+                try closeViewController(appInfo!, viewController);
+            }
+        }
+    }
+    
+    func closeAllServices() throws {
+        for viewController in viewControllers.values {
+            if (viewController.modeId.contains("#service:")) {
+                try closeViewController(viewController.appInfo!, viewController);
+            }
+        }
+    }
+    
+    func close(_ packageId: String, _ mode: String, _ serviceName: String?) throws {
+        var id = packageId;
         if (isDIDSession(id)) {
             return;
         }
@@ -758,14 +886,24 @@ class AppManager: NSObject {
             throw AppError.error("No such app!");
         }
 
-        setAppVisible(id, info!.start_visible);
-
+        if (mode == AppManager.STARTUP_APP) {
+            setAppVisible(id, info!.start_visible);
+        }
+        
+        id = getIdbyStartupMode(id, startupMode: mode, serviceName: serviceName);
         let viewController = getViewControllerById(id);
         if (viewController == nil) {
             return;
         }
 
-        try IntentManager.getShareInstance().removeAppFromIntentList(id);
+        try closeViewController(info!, viewController!);
+    }
+    
+    func closeViewController(_ info: AppInfo, _ viewController: TrinityViewController) throws {
+        let id = viewController.modeId;
+        let mode = viewController.startupMode;
+        
+        try IntentManager.getShareInstance().removeAppFromIntentList(info.app_id);
 
         if (viewController == curController) {
             let id2 = lastList[1];
@@ -777,13 +915,21 @@ class AppManager: NSObject {
         }
 
         viewControllers[id] = nil;
-        viewController!.remove();
-        removeLastlistItem(id);
-        sendRefreshList("closed", info!);
+        viewController.remove();
+        
+        if (mode == AppManager.STARTUP_APP) {
+            removeLastlistItem(id);
+            removeRunninglistItem(id);
+        }
+        else if (mode == AppManager.STARTUP_SERVICE) {
+            removeServiceRunningList(id);
+        }
+        
+        sendRefreshList("closed", info);
     }
 
     func loadLauncher() throws {
-        try start(AppManager.LAUNCHER);
+        try start(AppManager.LAUNCHER, AppManager.STARTUP_APP, nil);
     }
 
    func checkInProtectList(_ uri: String) throws {
@@ -1083,15 +1229,25 @@ class AppManager: NSObject {
     }
 
     func getRunningList() -> [String] {
-        var ret = [String]();
-        for id in viewControllers.keys {
-            ret.append(id);
-        }
-        return ret;
+        return runningList;
     }
 
     func getLastList() -> [String] {
         return lastList;
     }
+    
+    func getServiceRunningList(_ appId: String) -> [String] {
+        let prefix = appId + "#service:";
+        var ret = [String]();
+        for id in serviceRunningList {
+            if (id.hasPrefix(prefix)) {
+                ret.append(id.subStringFrom(index: prefix.count));
+            }
+        }
+        return ret;
+    }
 
+    func getAllServiceRunningList() -> [String] {
+        return serviceRunningList;
+    }
 }
