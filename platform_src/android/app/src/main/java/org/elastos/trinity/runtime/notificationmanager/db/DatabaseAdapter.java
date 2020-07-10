@@ -122,7 +122,7 @@ import java.util.Date;
          SQLiteDatabase db = helper.getWritableDatabase();
 
          String where = DatabaseHelper.DID_SESSION_DID + "=? AND " + DatabaseHelper.NOTIFICATION_ID + " =?";
-         String[] whereArgs = {notificationId};
+         String[] whereArgs = {didSessionDID, notificationId};
          db.delete(DatabaseHelper.NOTIFICATION_TABLE, where, whereArgs);
      }
 
