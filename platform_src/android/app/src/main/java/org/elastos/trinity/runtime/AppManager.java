@@ -38,7 +38,6 @@ import android.util.Log;
 import android.view.View;
 
 import org.apache.cordova.PluginManager;
-import org.elastos.carrier.exceptions.CarrierException;
 import org.elastos.trinity.runtime.contactnotifier.ContactNotifier;
 import org.elastos.trinity.runtime.didsessions.DIDSessionManager;
 import org.elastos.trinity.runtime.didsessions.IdentityEntry;
@@ -93,9 +92,13 @@ public class AppManager {
     public static final String LAUNCHER = "launcher";
     public static final String DIDSESSION = "didsession";
 
+    /** The app mode. */
     public static final String STARTUP_APP = "app";
+    /** The service mode. */
     public static final String STARTUP_SERVICE = "service";
+    /** The intent mode. It will be closed after sendIntentResponse */
     public static final String STARTUP_INTENT = "intent";
+    /** The silence intent mode. It will be closed after sendIntentResponse */
     public static final String STARTUP_SILENCE = "silence";
 
     final static String[] startupModes = {
@@ -562,11 +565,11 @@ public class AppManager {
         }
     }
 
-    public Boolean getAppVisible(String id, String mode) {
-        if (mode.equals(STARTUP_INTENT)) {
+    public Boolean getAppVisible(String id, String startupMode) {
+        if (startupMode.equals(STARTUP_INTENT)) {
             return true;
         }
-        else if (mode.equals(STARTUP_SERVICE) || mode.equals(STARTUP_SILENCE)) {
+        else if (startupMode.equals(STARTUP_SERVICE) || startupMode.equals(STARTUP_SILENCE)) {
             return false;
         }
 
@@ -862,31 +865,31 @@ public class AppManager {
         return id;
     }
 
-    public void start(String appId, String mode, String service) throws Exception {
-        AppInfo info = getAppInfo(appId);
+    public void start(String packageId, String mode, String serviceName) throws Exception {
+        AppInfo info = getAppInfo(packageId);
         if (info == null) {
             throw new Exception("No such app!");
         }
 
-        if (mode.equals(STARTUP_SERVICE) && service == null) {
+        if (mode.equals(STARTUP_SERVICE) && serviceName == null) {
             throw new Exception("No service name!");
         }
 
-        String id = getIdbyStartupMode(appId, mode, service);
+        String id = getIdbyStartupMode(packageId, mode, serviceName);
         WebViewFragment fragment = getFragmentById(id);
         if (fragment == null) {
-            fragment = WebViewFragment.newInstance(appId, mode, service);
-            if (!isLauncher(appId)) {
+            fragment = WebViewFragment.newInstance(packageId, mode, serviceName);
+            if (!isLauncher(packageId)) {
                 sendRefreshList("started", info, false);
             }
 
-            if (!getAppVisible(appId, mode)) {
+            if (!getAppVisible(packageId, mode)) {
                 showActivityIndicator(true);
                 hideFragment(fragment, mode, id);
             }
         }
 
-        if (getAppVisible(appId, mode)) {
+        if (getAppVisible(packageId, mode)) {
             switchContent(fragment, id);
             showActivityIndicator(false);
         }
@@ -904,14 +907,14 @@ public class AppManager {
         });
     }
 
-    public void closeAllModes(String id) throws Exception {
+    public void closeAllModes(String packageId) {
         for(String mode: startupModes) {
             try {
                 if (mode.equals(STARTUP_SERVICE)) {
-                    closeAppAllServices(id);
+                    closeAppAllServices(packageId);
                 }
                 else {
-                    close(id, mode, null);
+                    close(packageId, mode, null);
                 }
             }
             catch (Exception e) {
@@ -920,8 +923,8 @@ public class AppManager {
         }
     }
 
-    public void closeAppAllServices(String id) throws Exception {
-        AppInfo info = getAppInfo(id);
+    public void closeAppAllServices(String packageId) throws Exception {
+        AppInfo info = getAppInfo(packageId);
         if (info == null) {
             throw new Exception("No such app!");
         }
@@ -932,8 +935,8 @@ public class AppManager {
             Fragment fragment = fragments.get(i);
             if (fragment instanceof WebViewFragment) {
                 WebViewFragment webViewFragment = (WebViewFragment)fragment;
-                if (webViewFragment.modeId.startsWith(id + "#service:")) {
-                    closeFragment(id, info, webViewFragment);
+                if (webViewFragment.modeId.startsWith(packageId + "#service:")) {
+                    closeFragment(info, webViewFragment);
                 }
             }
         }
@@ -947,15 +950,15 @@ public class AppManager {
             if (fragment instanceof WebViewFragment) {
                 WebViewFragment webViewFragment = (WebViewFragment)fragment;
                 if (webViewFragment.modeId.contains("#service:")) {
-                    String appId = webViewFragment.appId;
-                    AppInfo info = getAppInfo(appId);
-                    closeFragment(appId, info, webViewFragment);
+                    String packageId = webViewFragment.packageId;
+                    AppInfo info = getAppInfo(packageId);
+                    closeFragment(info, webViewFragment);
                 }
             }
         }
     }
 
-    public void close(String id, String mode, String service) throws Exception {
+    public void close(String id, String mode, String serviceName) throws Exception {
         if (isLauncher(id)) {
             throw new Exception("Launcher can't close!");
         }
@@ -965,23 +968,23 @@ public class AppManager {
             throw new Exception("No such app!");
         }
 
-        if (mode.equals(STARTUP_SERVICE) && service == null) {
+        if (mode.equals(STARTUP_SERVICE) && serviceName == null) {
             throw new Exception("No service name!");
         }
 
-        id = getIdbyStartupMode(id, mode, service);
         if (mode.equals(STARTUP_APP)) {
             setAppVisible(id, info.start_visible);
         }
 
+        id = getIdbyStartupMode(id, mode, serviceName);
         WebViewFragment fragment = getFragmentById(id);
         if (fragment == null) {
             return;
         }
-        closeFragment(id, info, fragment);
+        closeFragment(info, fragment);
     }
 
-    public void closeFragment(String appId, AppInfo info, WebViewFragment fragment) throws Exception {
+    public void closeFragment(AppInfo info, WebViewFragment fragment) throws Exception {
         String id = fragment.modeId;
         String mode = fragment.startupMode;
 

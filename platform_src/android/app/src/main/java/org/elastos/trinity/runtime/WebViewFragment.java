@@ -77,7 +77,7 @@ public class WebViewFragment extends Fragment {
     protected ArrayList<PluginEntry> pluginEntries;
     protected TrinityCordovaInterfaceImpl cordovaInterface;
     protected AppBasePlugin basePlugin;
-    protected String appId;
+    protected String packageId;
     protected String modeId;
     protected String did;
     protected String startupMode = AppManager.STARTUP_APP;
@@ -89,7 +89,7 @@ public class WebViewFragment extends Fragment {
     public TitleBar titlebar;
     protected SystemWebView webView = null;
 
-    public static WebViewFragment newInstance(String appId, String startupMode, String service) {
+    public static WebViewFragment newInstance(String appId, String startupMode, String serviceName) {
         if (appId != null) {
             WebViewFragment fragment = null;
             if (AppManager.getShareInstance().isLauncher(appId)
@@ -103,7 +103,7 @@ public class WebViewFragment extends Fragment {
             Bundle bundle = new Bundle();
             bundle.putString("appId", appId);
             bundle.putString("startupMode", startupMode);
-            bundle.putString("serviceName", service);
+            bundle.putString("serviceName", serviceName);
             fragment.setArguments(bundle);
             return fragment;
         }
@@ -129,15 +129,19 @@ public class WebViewFragment extends Fragment {
             return null;
         }
 
-        appId = getArguments().getString("appId");
-        appInfo = AppManager.getShareInstance().getAppInfo(appId);
+        // Apply theming for native popups
+        boolean darkMode = PreferenceManager.getShareInstance().getBooleanValue("ui.darkmode", false);
+        UIStyling.prepare(darkMode);
+
+        packageId = getArguments().getString("appId");
+        appInfo = AppManager.getShareInstance().getAppInfo(packageId);
         did = AppManager.getShareInstance().getDID();
 
         startupMode = getArguments().getString("startupMode");
         if (startupMode.equals(AppManager.STARTUP_SERVICE)) {
             serviceName = getArguments().getString("serviceName");
         }
-        modeId = AppManager.getShareInstance().getIdbyStartupMode(appId, startupMode, serviceName);
+        modeId = AppManager.getShareInstance().getIdbyStartupMode(packageId, startupMode, serviceName);
 
         View rootView = inflater.inflate(R.layout.fragments_view, null);
         webView = rootView.findViewById(R.id.webView);
@@ -168,7 +172,7 @@ public class WebViewFragment extends Fragment {
 
     }
 
-    public String getAppId() {
+    public String getPackageId() {
         return modeId;
     }
 
@@ -184,7 +188,7 @@ public class WebViewFragment extends Fragment {
         appView = makeWebView();
         createViews();
         if (!appView.isInitialized()) {
-            preferences.set("Hostname", Utility.getCustomHostname(did, appId));
+            preferences.set("Hostname", Utility.getCustomHostname(did, packageId));
             appView.init(cordovaInterface, pluginEntries, preferences);
         }
         cordovaInterface.onCordovaInit(appView.getPluginManager());

@@ -93,7 +93,7 @@ public class IntentManager {
         return appManager.getIdbyStartupMode(filter.packageId, filter.startupMode, filter.serviceName);
     }
 
-    private void saveIntentToList(IntentInfo info) {
+    private void addIntentToList(IntentInfo info) {
         String id = getIdbyFilter(info.filter);
         ArrayList<IntentInfo> infos = intentList.get(id);
         if (infos == null) {
@@ -214,7 +214,13 @@ public class IntentManager {
             actionChooserFragment.dismiss();
 
             // Now we know the real app that should receive the intent.
-            info.toId = getIdbyFilter(info.filter);
+            for (IntentFilter filter : filters) {
+                if (filter.packageId.equals(appInfo.app_id)) {
+                    info.filter = filter;
+                    info.toId = getIdbyFilter(info.filter);
+                    break;
+                }
+            }
             try {
                 sendIntent(info);
             }
@@ -290,7 +296,7 @@ public class IntentManager {
             fragment.basePlugin.onReceiveIntent(info);
         }
         else {
-            saveIntentToList(info);
+            addIntentToList(info);
             appManager.start(info.filter.packageId, info.filter.startupMode, info.filter.serviceName);
             appManager.sendLauncherMessageMinimize(info.fromId);
         }

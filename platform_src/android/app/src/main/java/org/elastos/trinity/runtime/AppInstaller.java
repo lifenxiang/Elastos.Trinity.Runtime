@@ -739,7 +739,7 @@ public class AppInstaller {
                 JSONObject jobj = array.getJSONObject(i);
                 if (jobj.has("action")) {
                     String action = jobj.getString("action");
-                    String startupMode = "app";
+                    String startupMode = AppManager.STARTUP_APP;
                     if (jobj.has("startup_mode")) {
                         startupMode = jobj.getString("startup_mode");
                         if (!AppManager.isStartupMode(startupMode)) {

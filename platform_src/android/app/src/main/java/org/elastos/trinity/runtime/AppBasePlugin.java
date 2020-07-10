@@ -206,10 +206,10 @@ public class AppBasePlugin extends TrinityPlugin {
     }
 
     private void startByMode(JSONArray args, CallbackContext callbackContext,
-                             String mode) throws Exception {
+                             String startupMode) throws Exception {
         String id = args.getString(0);
         String service = null;
-        if (mode.equals(AppManager.STARTUP_SERVICE)) {
+        if (startupMode.equals(AppManager.STARTUP_SERVICE)) {
             service = args.getString(1);
         }
 
@@ -223,7 +223,7 @@ public class AppBasePlugin extends TrinityPlugin {
             callbackContext.error("Can't start did session!");
         }
         else {
-            appManager.start(id, mode, service);
+            appManager.start(id, startupMode, service);
             callbackContext.success("ok");
         }
     }
@@ -832,8 +832,8 @@ public class AppBasePlugin extends TrinityPlugin {
 
     protected void stopAppBackgroundService(JSONArray args, CallbackContext callbackContext) throws Exception {
         String id = args.getString(0);
-        String service = args.getString(1);
-        appManager.close(id, AppManager.STARTUP_SERVICE, service);
+        String serviceName = args.getString(1);
+        appManager.close(id, AppManager.STARTUP_SERVICE, serviceName);
         callbackContext.success("ok");
     }
 
