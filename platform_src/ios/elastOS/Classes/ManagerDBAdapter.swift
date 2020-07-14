@@ -104,11 +104,15 @@ class ManagerDBAdapter {
 
     init(_ dataPath: String) {
         let path = dataPath + ManagerDBAdapter.DATABASE_NAME;
+        var needCreateTables = false;
+        if (!FileManager.default.fileExists(atPath: path)) {
+            needCreateTables = true;
+        }
         db = try! Connection(path);
         do
         {
-            if (!FileManager.default.fileExists(atPath: path)) {
-                try creatTables();
+            if (needCreateTables) {
+                try createTables();
             }
             else if (db.userVersion < ManagerDBAdapter.VERSION){
                 try upgrade();
@@ -119,7 +123,7 @@ class ManagerDBAdapter {
         
     }
 
-    func creatTables() throws {
+    func createTables() throws {
         try db.run(plugins.create(ifNotExists: true) { t in
             t.column(tid, primaryKey: .autoincrement)
             t.column(app_tid)
@@ -687,7 +691,7 @@ class ManagerDBAdapter {
 
     func clean() throws {
         try dropTables();
-        try creatTables();
+        try createTables();
     }
 
     private func upgrade() throws {
