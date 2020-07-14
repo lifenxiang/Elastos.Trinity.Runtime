@@ -486,12 +486,12 @@
             "danger_level": "low",
             "title": {
                 "en": "Authenticate to external services",
-                "zh": "Authenticate to external services",
+                "zh": "验证外部服务",
                 "fr": "Authentification"
             },
             "description": {
                 "en": "This capsule will be able to use your identity to authenticate on external services. Authenticating only means your identity ID can be proven, but this can't do anything harmful.",
-                "zh": "This capsule will be able to use your identity to authenticate on external services. Authenticating only means your identity ID can be proven, but this can't do anything harmful.",
+                "zh": "该胶囊将能够使用您的身份对外部服务进行身份验证。 身份验证仅意味着可以证明您的身份ID，但这不会造成任何有害影响。",
                 "fr": "Cette capsule utiliser votre identité pour vous authentifier sur des services tiers. Ceci sert uniquement à prouver votre identité, mais ne peut rien faire de dangereux."
             }
         }
@@ -699,12 +699,12 @@
             "danger_level": "low",
             "title": {
                 "en": "Your network address",
-                "zh": "Your network address",
+                "zh": "您的网络地址",
                 "fr": "Votre adresse réseau"
             },
             "description": {
                 "en": "This capsule will know the network address you are using to send notifications to your contacts.",
-                "zh": "This capsule will know the network address you are using to send notifications to your contacts.",
+                "zh": "该胶囊将获取到您用来向联系人发送通知的网络地址。",
                 "fr": "Cette capsule connaîtra l'adresse réseau que vous utilisez pour envoyer des notifications à vos contacts."
             }
         },
@@ -712,12 +712,12 @@
             "danger_level": "medium",
             "title": {
                 "en": "Notifications to your contacts",
-                "zh": "Notifications to your contacts",
+                "zh": "通知您的联系人",
                 "fr": "Notifications à vos contacts"
             },
             "description": {
                 "en": "This capsule will be able to send remote notifications to your contacts. Those contacts will view such notifications on their elastOS home screen.",
-                "zh": "This capsule will be able to send remote notifications to your contacts. Those contacts will view such notifications on their elastOS home screen.",
+                "zh": "该胶囊将能够向您的联系人发送远程通知。 这些联系人将在其elastOS主屏幕上查看此类通知。",
                 "fr": "Cette capsule pourra envoyer des notifications à vos contacts. Vos contacts verront ces notifications sur leur écran d'accueil elastOS."
             }
         },
@@ -725,12 +725,12 @@
             "danger_level": "low",
             "title": {
                 "en": "Online status of your contacts",
-                "zh": "Online status of your contacts",
+                "zh": "联系人的在线状态",
                 "fr": "Présence en ligne de vos contacts"
             },
             "description": {
                 "en": "This capsule will be able to know when one of your contacts is online or offline.",
-                "zh": "This capsule will be able to know when one of your contacts is online or offline.",
+                "zh": "该胶囊将能够知道您的一个联系人何时在线或离线。",
                 "fr": "Cette capsule pourra être avertie lorsque vos contacts sont en ligne ou hors ligne."
             }
         },
@@ -738,12 +738,12 @@
             "danger_level": "low",
             "title": {
                 "en": "Online status of your contacts",
-                "zh": "Online status of your contacts",
+                "zh": "联系人的在线状态",
                 "fr": "Présence en ligne de vos contacts"
             },
             "description": {
                 "en": "This capsule will be able to know when one of your contacts is online or offline.",
-                "zh": "This capsule will be able to know when one of your contacts is online or offline.",
+                "zh": "该胶囊将能够知道您的一个联系人何时在线或离线。",
                 "fr": "Cette capsule pourra être avertie lorsque vos contacts sont en ligne ou hors ligne."
             }
         }
