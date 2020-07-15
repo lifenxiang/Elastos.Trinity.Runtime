@@ -7,9 +7,9 @@ module.exports = function(context) {
     let mainProcessFileDestPath = mainProcessFileDestFolder + "/" + mainProcessFileName
 
     // Ensure the folder exists
-    fs.mkdirSync(mainProcessFileDestFolder, {
+    /*fs.mkdirSync(mainProcessFileDestFolder, {
         recursive: true
     })
 
-    fs.copyFileSync(mainProcessFileSrcPath, mainProcessFileDestPath)
+    fs.copyFileSync(mainProcessFileSrcPath, mainProcessFileDestPath)*/
 }

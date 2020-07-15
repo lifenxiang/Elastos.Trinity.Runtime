@@ -31,14 +31,16 @@ module.exports = () => {
 
             // Copy the output file to electron www/ for convenience
             let wwwOutputFilePath = path.join(electronOutputDir, "www", mainFileName);
-            console.log("Copying trinity-renderer.js from "+outputFilePath+" to "+wwwOutputFilePath);
-            fs.copyFileSync(outputFilePath, wwwOutputFilePath);
+            //console.log("Copying trinity-renderer.js from "+outputFilePath+" to "+wwwOutputFilePath);
+            //fs.copyFileSync(outputFilePath, wwwOutputFilePath);
 
             // TODO: MOVE THIS
-            fs.copyFileSync(path.join(platformSrcDir, "dapp_preload.js"), path.join(platformWwwOutputDir, "dapp_preload.js"));
+			//console.log("Copying dapp_reload.js from "+path.join(platformSrcDir, "dapp_preload.js")+" to "+path.join(platformWwwOutputDir, "dapp_preload.js"));
+            //fs.copyFileSync(path.join(platformSrcDir, "dapp_preload.js"), path.join(platformWwwOutputDir, "dapp_preload.js"));
 
             // TODO: MOVE THIS - HAVENT FOUND A WAY TO AUTOMATICALLY COPY THOSE FILES WITH SOURCE-FILE IN PLUGIN.XML
-            fs.copyFileSync(path.join(pluginSrcDir, "AppManager/src/electron/AppManagerPluginIsolated.js"), path.join(platformWwwOutputDir, "plugins/elastos-trinity-plugins-appmanager/src/electron/AppManagerPluginIsolated.js"));
+			//console.log("Copying AppManagerPluginIsolated.js from "+path.join(pluginSrcDir, "AppManager/src/electron/AppManagerPluginIsolated.js")+" to "+path.join(platformWwwOutputDir, "plugins/elastos-trinity-plugins-appmanager/src/electron/AppManagerPluginIsolated.js"));
+            //fs.copyFileSync(path.join(pluginSrcDir, "AppManager/src/electron/AppManagerPluginIsolated.js"), path.join(platformWwwOutputDir, "plugins/elastos-trinity-plugins-appmanager/src/electron/AppManagerPluginIsolated.js"));
 
             resolve();
         });
