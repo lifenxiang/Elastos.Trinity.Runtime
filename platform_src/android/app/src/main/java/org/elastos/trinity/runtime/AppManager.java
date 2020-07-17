@@ -239,12 +239,6 @@ public class AppManager {
         // Apply theming for native popups
         boolean darkMode = PreferenceManager.getShareInstance().getBooleanValue("ui.darkmode", false);
         UIStyling.prepare(darkMode);
-
-        try {
-            ContactNotifier.getSharedInstance(activity, did);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
 
@@ -293,6 +287,12 @@ public class AppManager {
         refreashInfos();
         startStartupServices();
         sendRefreshList("initiated", null, false);
+
+        try {
+            ContactNotifier.getSharedInstance(activity, did);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void startStartupServices() {
