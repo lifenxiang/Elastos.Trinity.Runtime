@@ -311,7 +311,7 @@ public class ContactNotifier {
     /**
      * DID Session sandboxed preferences
      */
-    private SharedPreferences getPrefs() {
+    public SharedPreferences getPrefs() {
         return context.getSharedPreferences("CONTACT_NOTIFIER_PREFS_"+didSessionDID, Context.MODE_PRIVATE);
     }
 

@@ -38,6 +38,7 @@ public class CarrierHelper {
     // Arbitrary non-0 derived index reserved for this contact notifier service.
     // Do NOT change this value otherwise all users contact notifier carrier addresses will change!
     private static final int DID_DOCUMENT_DERIVE_INDEX = 84;
+    private static final String DID_DERIVED_CARRIER_KEY_PREF = "did_derived_carrier_key";
 
     String didSessionDID;
     private ContactNotifier notifier;
@@ -73,8 +74,18 @@ public class CarrierHelper {
     /**
      * Get a private key derived from the DID, in order to make sure we always get the same carrier address
      * even after a trinity reinstallation, as long as the user keeps using the same DID.
+     *
+     * We save this carrier key to disk, as it is usually done when carrier creates a new default instance. This is not password
+     * protected.
      */
     private void getDerivedDIDPrivateKey(DerivedDIDPrivateKeyListener listener) throws Exception {
+        // Try to find a previous key on disk.
+        String existingKey = this.notifier.getPrefs().getString(DID_DERIVED_CARRIER_KEY_PREF, null);
+        if (existingKey != null) {
+            listener.onDerivedKeyRetrieved(existingKey.getBytes());
+            return;
+        }
+
         // Retrieve the signed in identity info
         IdentityEntry signedInIdentity = DIDSessionManager.getSharedInstance().getSignedInIdentity();
         if (signedInIdentity != null) {
@@ -112,6 +123,9 @@ public class CarrierHelper {
                                 byte[] extendedDerivedKeyBytes = extendedDerivedKey.getBytes();
                                 byte[] derivedKeyBytes = Arrays.copyOfRange(extendedDerivedKeyBytes, 46,78);
 
+                                // Save key for next time
+                                saveDerivedDIDPrivateKeyToDisk(new String(derivedKeyBytes));
+
                                 listener.onDerivedKeyRetrieved(derivedKeyBytes);
                             }
                             catch (DIDException e) {
@@ -136,6 +150,10 @@ public class CarrierHelper {
         else {
             listener.onDerivedKeyRetrieved(null);
         }
+    }
+
+    private void saveDerivedDIDPrivateKeyToDisk(String key) {
+        this.notifier.getPrefs().edit().putString(DID_DERIVED_CARRIER_KEY_PREF, key).apply();
     }
 
     private void initialize() throws Exception {
