@@ -1,9 +1,11 @@
 const fs = require('fs')
 const webpack = require("webpack") 
-  
+
+console.log("START - webpack.main.config.js");
+
 module.exports = {
   mode: 'development',
-  entry: `${__dirname}/../../platform_src/electron/main/Main.ts`,
+  entry: `${__dirname}/../../platform_src/electron/main/index.ts`,
   module: {
     rules: [
       {

@@ -3,6 +3,8 @@ const fs = require("fs")
 const path = require("path");
 const { exec } = require("child_process");
 
+console.log("START - build.main.js");
+
 function finalize() {
     console.log("Finalizing");
 
@@ -31,6 +33,9 @@ function finalize() {
 
     // TODO: MOVE THIS
     fs.copyFileSync(path.join(platformSrcDir, "index.html"), path.join(platformWwwOutputDir, "index.html"));
+	
+	fs.copyFileSync(path.join(platformSrcDir, "cdv-electron-settings.json"), path.join(platformWwwOutputDir, "cdv-electron-settings.json"));
+	
 
     console.log("Copies completed.")
 }
@@ -52,15 +57,17 @@ module.exports = () => {
             resolve();
         });
 
-        return;
+        //return;
         
-        let webpackConfig = require("./webpack.main.config");
+        //let webpackConfig = require("./webpack.main.config");
 
         // Do some cleanup
         let defaultElectronMainPath = `${__dirname}/../../platforms/electron/platform_www/cdv-electron-main.js`;
         if (fs.existsSync(defaultElectronMainPath))
             fs.unlinkSync(defaultElectronMainPath);
     
+		return;
+		
         webpack(webpackConfig, (err, stats) => {
             if (err || stats.hasErrors()) {
                 if (err)

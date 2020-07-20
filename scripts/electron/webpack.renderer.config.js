@@ -1,5 +1,7 @@
 const path = require('path');
 
+console.log("START - webpack.renderer.config.js");
+
 module.exports = {
   mode: 'development',
   entry: `${__dirname}/../../platform_src/electron/renderer/Main.ts`,

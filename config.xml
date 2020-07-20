@@ -44,17 +44,17 @@
     <preference name="SplashMaintainAspectRatio" value="true" />
     <preference name="DisallowOverscroll" value="true" />
     <preference name="KeyboardResizeMode" value="ionic" />
-    <hook src="scripts/download_3rdparty.js" type="after_platform_add" />
+    <!--<hook src="scripts/download_3rdparty.js" type="after_platform_add" />
     <hook src="scripts/merge_folders.js" type="after_platform_add" />
     <hook src="scripts/apply_patches.js" type="after_platform_add" />
     <hook src="scripts/remove_files.js" type="after_platform_add" />
     <hook src="scripts/modify_xcode_project.js" type="after_platform_add" />
-    <hook src="scripts/apply_patches.js" type="before_plugin_install" />
-    <hook src="scripts/electron/build.main.js" type="before_prepare" />
+    <hook src="scripts/apply_patches.js" type="before_plugin_install" />-->
+	<hook src="scripts/electron/build.main.js" type="before_prepare" />
     <hook src="scripts/electron/build.renderer.js" type="before_prepare" />
-    <hook src="scripts/remove_files.js" type="after_prepare" />
+    <!--<hook src="scripts/remove_files.js" type="after_prepare" />
     <hook src="scripts/merge_types.js" type="after_prepare" />
-    <hook src="scripts/apply_patches.js" type="after_build" />
+    <hook src="scripts/apply_patches.js" type="after_build" />-->
 	<plugin name="elastos-trinity-plugins-appmanager" spec="./plugin_src/AppManager" />
     <plugin name="elastos-trinity-plugins-titlebarmanager" spec="./plugin_src/TitleBarManager" />
     <plugin name="elastos-trinity-plugins-didsessionmanager" spec="./plugin_src/DIDSessionManager" />
@@ -62,11 +62,11 @@
     <plugin name="elastos-trinity-plugins-notificationmanager" spec="./plugin_src/NotificationManager" />
     <plugin name="elastos-trinity-plugins-contactnotifier" spec="./plugin_src/ContactNotifier" />
     <plugin name="cordova-plugin-file" spec="../Plugins/File" />
-    <!--<plugin name="elastos-trinity-plugins-carrier" spec="../Plugins/Carrier" />-->
+    <plugin name="elastos-trinity-plugins-carrier" spec="../Plugins/Carrier" />
     <plugin name="elastos-trinity-plugins-did" spec="../Plugins/DID" />
-    <!--<plugin name="elastos-trinity-plugins-hive" spec="../Plugins/Hive" />-->
+    <plugin name="elastos-trinity-plugins-hive" spec="../Plugins/Hive" />
     <plugin name="elastos-trinity-plugins-ionicwebview" spec="../Plugins/IonicWebView" />
-    <!--<plugin name="elastos-trinity-plugins-qrscanner" spec="../Plugins/QRScanner" />-->
+    <plugin name="elastos-trinity-plugins-qrscanner" spec="../Plugins/QRScanner" />
     <plugin name="elastos-trinity-plugins-media" spec="../Plugins/Media">
         <variable name="KEEP_AVAUDIOSESSION_ALWAYS_ACTIVE" value="NO" />
     </plugin>

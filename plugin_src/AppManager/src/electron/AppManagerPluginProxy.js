@@ -1,9 +1,9 @@
 var AppManagerPluginProxy = {
     getAppInfos: async function(success, error, opts) {
-        //await window.appManagerImpl.getAppInfos(success, error, opts);
+        await window.appManagerImpl.getAppInfos(success, error, opts);
     },
     getPreference: async function(success, error, opts) {
-        //await window.appManagerImpl.getPreference(success, error, opts);
+        await window.appManagerImpl.getPreference(success, error, opts);
     },
     start: async function(success, error, opts) {
         await window.appManagerImpl.start(success, error, opts);
