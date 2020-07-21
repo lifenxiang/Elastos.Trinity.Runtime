@@ -68,7 +68,7 @@ public class NotificationManager {
      * @param appId
      */
     public void sendNotification(NotificationRequest notificationRequest, String appId) {
-        Notification notification = dbAdapter.addNotification(didSessionDID, notificationRequest.key, notificationRequest.title,
+        Notification notification = dbAdapter.addNotification(didSessionDID, notificationRequest.key, notificationRequest.title, notificationRequest.message,
                                     notificationRequest.url, notificationRequest.emitter, appId);
         notifyNotification(notification);
 

@@ -29,7 +29,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
-  private static final int DATABASE_VERSION = 2;
+  private static final int DATABASE_VERSION = 3;
   private static final String LOG_TAG = "NotificationDBHelper";
 
   // Tables
@@ -41,6 +41,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
   public static final String DID_SESSION_DID = "didsessiondid";
   public static final String KEY = "notificationkey";
   public static final String TITLE = "title";
+  public static final String MESSAGE = "message";
   public static final String URL = "url";
   public static final String EMITTER = "emitter";
   public static final String APP_ID = "appid";
@@ -62,6 +63,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             DID_SESSION_DID + " varchar(128), " +
             KEY + " varchar(128), " +
             TITLE + " varchar(128), " +
+            MESSAGE + " varchar(256), " +
             URL + " varchar(128), " +
             EMITTER + " varchar(128), " +
             APP_ID + " varchar(128), " +
@@ -77,6 +79,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
       Log.d(LOG_TAG, "Upgrading database to v2");
       upgradeToV2(db);
     }
+    if (oldVersion < 3) {
+      Log.d(LOG_TAG, "Upgrading database to v3");
+      upgradeToV3(db);
+    }
   }
 
   // 20200629 - Added didsessiondid
@@ -86,6 +92,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
       db.execSQL(strSQL);
     } catch (SQLException e) {
       Log.d(LOG_TAG, "Upgrading database to v2 error, " + e.getLocalizedMessage());
+      e.printStackTrace();
+    }
+  }
+
+  // 20200721 - Added message field
+  private void upgradeToV3(SQLiteDatabase db) {
+    try {
+      String strSQL = "ALTER TABLE " + NOTIFICATION_TABLE + " ADD COLUMN " + MESSAGE + " varchar(256); ";
+      db.execSQL(strSQL);
+    } catch (SQLException e) {
+      Log.d(LOG_TAG, "Upgrading database to v3 error, " + e.getLocalizedMessage());
       e.printStackTrace();
     }
   }

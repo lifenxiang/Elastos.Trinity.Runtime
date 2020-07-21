@@ -341,13 +341,13 @@ public class ContactNotifier {
                                         if (name != null) {
                                             // Save contact name to database for better display later on
                                             addedContact.setName(name);
-                                            sendLocalNotification(did,"newcontact-"+did, name + context.getString(R.string.notification_name_was_added_new), targetUrl, FRIENDS_APP_PACKAGE_ID);
+                                            sendLocalNotification(did,"newcontact-"+did, "Contact added", name + context.getString(R.string.notification_name_was_added_new), targetUrl, FRIENDS_APP_PACKAGE_ID);
                                             notificationSent = true;
                                         }
                                     }
 
                                     if (!notificationSent) {
-                                        sendLocalNotification(did,"newcontact-"+did, context.getString(R.string.notification_someone_was_added_new), targetUrl, FRIENDS_APP_PACKAGE_ID);
+                                        sendLocalNotification(did,"newcontact-"+did, "Contact added", context.getString(R.string.notification_someone_was_added_new), targetUrl, FRIENDS_APP_PACKAGE_ID);
                                     }
                                 });
                             }
@@ -369,9 +369,9 @@ public class ContactNotifier {
                         String targetUrl = "https://scheme.elastos.org/viewfriendinvitation?did="+did+"&invitationid="+invitationID;
 
                         if (name != null)
-                            sendLocalNotification(did,"contactreq-"+did, name + context.getString(R.string.notification_name_want_add), targetUrl, FRIENDS_APP_PACKAGE_ID);
+                            sendLocalNotification(did,"contactreq-"+did, "Contact request", name + context.getString(R.string.notification_name_want_add), targetUrl, FRIENDS_APP_PACKAGE_ID);
                         else
-                            sendLocalNotification(did,"contactreq-"+did, context.getString(R.string.notification_someone_want_add), targetUrl, FRIENDS_APP_PACKAGE_ID);
+                            sendLocalNotification(did,"contactreq-"+did, "Contact request",  context.getString(R.string.notification_someone_want_add), targetUrl, FRIENDS_APP_PACKAGE_ID);
                     });
                 }
             }
@@ -393,7 +393,7 @@ public class ContactNotifier {
                 if (contact != null) {
                     // Make sure this contact is not blocked by us
                     if (!contact.notificationsBlocked) {
-                        sendLocalNotification(contact.did,remoteNotification.key, remoteNotification.title, remoteNotification.url);
+                        sendLocalNotification(contact.did,remoteNotification.key, remoteNotification.title, remoteNotification.message, remoteNotification.url);
                     }
                     else {
                         Log.w(ContactNotifier.LOG_TAG, "Not delivering remote notification because contact is blocked");
@@ -482,10 +482,10 @@ public class ContactNotifier {
             if (name != null) {
                 // Save name to database for later use
                 addedContact.setName(name);
-                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, name + context.getString(R.string.notification_name_accept_invitation), targetUrl, FRIENDS_APP_PACKAGE_ID);
+                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, "Contact invitation accepted",name + context.getString(R.string.notification_name_accept_invitation), targetUrl, FRIENDS_APP_PACKAGE_ID);
             }
             else {
-                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, context.getString(R.string.notification_someone_accept_invitation), targetUrl, FRIENDS_APP_PACKAGE_ID);
+                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, "Contact invitation accepted", context.getString(R.string.notification_someone_accept_invitation), targetUrl, FRIENDS_APP_PACKAGE_ID);
             }
 
             // Notify the listeners
@@ -534,14 +534,15 @@ public class ContactNotifier {
         return PresenceStatus.Away;
     }
 
-    void sendLocalNotification(String relatedRemoteDID, String key, String title, String url) {
-        sendLocalNotification(relatedRemoteDID, key, title, url, "system");
+    void sendLocalNotification(String relatedRemoteDID, String key, String title, String message, String url) {
+        sendLocalNotification(relatedRemoteDID, key, title, message, url, "system");
     }
 
-    void sendLocalNotification(String relatedRemoteDID, String key, String title, String url, String appId) {
+    void sendLocalNotification(String relatedRemoteDID, String key, String title, String message, String url, String appId) {
         NotificationRequest testNotif = new NotificationRequest();
         testNotif.key = key;
         testNotif.title = title;
+        testNotif.message = message;
         testNotif.emitter = relatedRemoteDID;
         testNotif.url = url;
         try {
