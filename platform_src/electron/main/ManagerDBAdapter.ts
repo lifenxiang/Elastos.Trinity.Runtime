@@ -1,45 +1,32 @@
 import { app, BrowserWindow } from "electron";
-import { join as pathJoin } from "path";
-
-import { AppInfo, Icon } from "./AppInfo"; 
-import { FindConditions, Not, Connection, createConnection } from 'typeorm';
+import { AppInfo } from "./AppInfo"; 
+import { FindConditions, Not, Repository } from 'typeorm';
 import { AppManager } from './AppManager';
 import { Log } from './Log';
-import { notImplemented } from './Utility';
+import { ManagerDBHelper } from './ManagerDBHelper';
+import { IntentFilter } from './IntentFilter';
+import { Setting } from './Setting';
+import { Preference } from './Preference';
+import { ApiAuth } from './ApiAuth';
 
 export class ManagerDBAdapter {
     private static LOG_TAG = "ManagerDBAdapter";
 
-    // TODO ManagerDBHelper helper;
-    context: any;
-    connection: Connection;
-
-    private constructor(context: any, dbPath: string = "")
-    {
-        // TODO helper = new ManagerDBHelper(context, dbPath);
-        this.context = context;
+    helper: ManagerDBHelper;
+    window: BrowserWindow;
+    
+    constructor(window: BrowserWindow, dbPath: string = "") {
+        this.window = window;
     }
 
-    public static async create(window: BrowserWindow, dbRootPath: string = app.getAppPath()): Promise<ManagerDBAdapter> {
-        let adapter = new ManagerDBAdapter(window, dbRootPath);
-        await adapter.init(dbRootPath);
-        return adapter;
+    public static async newInstance(window: BrowserWindow, dbPath: string = app.getAppPath()): Promise<ManagerDBAdapter> {
+        let managerDBAdapter = new ManagerDBAdapter(window, dbPath);
+        await managerDBAdapter.init(dbPath);
+        return managerDBAdapter;
     }
 
-    private async init(dbRootPath: string) {
-        Log.d(ManagerDBAdapter.LOG_TAG, "Creating DB connection: "+dbRootPath);
-        this.connection = await createConnection({
-            type: "sqljs",
-            name: pathJoin(dbRootPath, "manager.db"), // Use full path as a unique connection name to ensure multiple connections capability, not "default" connection
-            location: pathJoin(dbRootPath, "manager.db"),
-            entities: [
-                AppInfo,
-                Icon
-            ],
-            autoSave: true,
-            synchronize: true,
-            logging: false
-        })
+    private async init(dbPath: string) {
+        this.helper = await ManagerDBHelper.newInstance(dbPath);
     }
 
     public clean() {
@@ -48,179 +35,146 @@ export class ManagerDBAdapter {
     }
 
     public async addAppInfo(info: AppInfo): Promise<boolean> {
-        if (info == null)
-            return false;
+        if (info != null) {
+            let appRepository = this.helper.getRepository(ManagerDBHelper.APP_TABLE) as Repository<AppInfo>;
+            let savedAppInfo = await appRepository.save(info);
+            let tid = savedAppInfo.tid;
 
-        try {
-            let appsRepository = this.connection.getRepository(AppInfo);
-            let savedAppInfo = await appsRepository.save(info);
+            if (savedAppInfo == null) {
+                return false;
+            }
+            info.tid = tid;
 
-            console.log("Adding "+info.icons.length+" icons");
-            let iconsRepository = this.connection.getRepository(Icon);
+            let iconRepository = this.helper.getRepository(ManagerDBHelper.ICONS_TABLE) as Repository<AppInfo.Icon>;
             for (let icon of info.icons) {
-                icon.app_tid = savedAppInfo.tid;
-                await iconsRepository.save(icon);
-            }
-        }
-        catch (e) {
-            // DB error
-            return false;
-        }
-
-        notImplemented("NOT FINISHED - addAppInfo")
-        
-        /* TODO 
-            for (AppInfo.PluginAuth pluginAuth : info.plugins) {
-                contentValues = new ContentValues();
-                contentValues.put(AppInfo.APP_TID, tid);
-                contentValues.put(AppInfo.PLUGIN, pluginAuth.plugin);
-                contentValues.put(AppInfo.AUTHORITY, pluginAuth.authority);
-                db.insert(ManagerDBHelper.AUTH_PLUGIN_TABLE, null, contentValues);
+                icon.app_tid = tid;
+                await iconRepository.save(icon);
             }
 
-            for (AppInfo.UrlAuth urlAuth : info.urls) {
-                contentValues = new ContentValues();
-                contentValues.put(AppInfo.APP_TID, tid);
-                contentValues.put(AppInfo.URL, urlAuth.url);
-                contentValues.put(AppInfo.AUTHORITY, urlAuth.authority);
-                db.insert(ManagerDBHelper.AUTH_URL_TABLE, null, contentValues);
+            let pluginRepository = this.helper.getRepository(ManagerDBHelper.AUTH_PLUGIN_TABLE) as Repository<AppInfo.PluginAuth>;
+            for (let plugin of info.plugins) {
+                plugin.app_tid = tid;
+                await pluginRepository.save(plugin);
             }
 
-            for (AppInfo.UrlAuth intent : info.intents) {
-                contentValues = new ContentValues();
-                contentValues.put(AppInfo.APP_TID, tid);
-                contentValues.put(AppInfo.URL, intent.url);
-                contentValues.put(AppInfo.AUTHORITY, intent.authority);
-                db.insert(ManagerDBHelper.AUTH_INTENT_TABLE, null, contentValues);
+            let urlRepository = this.helper.getRepository(ManagerDBHelper.AUTH_URL_TABLE) as Repository<AppInfo.UrlAuth>;
+            for (let url of info.urls) {
+                url.app_tid = tid;
+                await urlRepository.save(url);
+            }
+            
+            let intentRepository = this.helper.getRepository(ManagerDBHelper.AUTH_INTENT_TABLE) as Repository<AppInfo.IntentAuth>;
+            for (let intent of info.intents) {
+                intent.app_tid = tid;
+                await intentRepository.save(intent);
             }
 
-            for (AppInfo.Locale locale : info.locales) {
-                contentValues = new ContentValues();
-                contentValues.put(AppInfo.APP_TID, tid);
-                contentValues.put(AppInfo.LANGUAGE, locale.language);
-                contentValues.put(AppInfo.NAME, locale.name);
-                contentValues.put(AppInfo.SHORT_NAME, locale.short_name);
-                contentValues.put(AppInfo.DESCRIPTION, locale.description);
-                contentValues.put(AppInfo.AUTHOR_NAME, locale.author_name);
-                db.insert(ManagerDBHelper.LACALE_TABLE, null, contentValues);
+            let localeRepository = this.helper.getRepository(ManagerDBHelper.LACALE_TABLE) as Repository<AppInfo.Locale>;
+            for (let locale of info.locales) {
+                locale.app_tid = tid;
+                await localeRepository.save(locale);
             }
 
-            for (AppInfo.Framework framework : info.frameworks) {
-                contentValues = new ContentValues();
-                contentValues.put(AppInfo.APP_TID, tid);
-                contentValues.put(AppInfo.NAME, framework.name);
-                contentValues.put(AppInfo.VERSION, framework.version);
-                db.insert(ManagerDBHelper.FRAMEWORK_TABLE, null, contentValues);
+            let frameworkRepository = this.helper.getRepository(ManagerDBHelper.FRAMEWORK_TABLE) as Repository<AppInfo.Framework>;
+            for (let framework of info.frameworks) {
+                framework.app_tid = tid;
+                await frameworkRepository.save(framework);
             }
 
-            for (AppInfo.Platform platform : info.platforms) {
-                contentValues = new ContentValues();
-                contentValues.put(AppInfo.APP_TID, tid);
-                contentValues.put(AppInfo.NAME, platform.name);
-                contentValues.put(AppInfo.VERSION, platform.version);
-                db.insert(ManagerDBHelper.PLATFORM_TABLE, null, contentValues);
+            let platformRepository = this.helper.getRepository(ManagerDBHelper.PLATFORM_TABLE) as Repository<AppInfo.Platform>;
+            for (let platform of info.platforms) {
+                platform.app_tid = tid;
+                await platformRepository.save(platform);
             }
 
-            for (AppInfo.IntentFilter intent_filter : info.intentFilters) {
-                contentValues = new ContentValues();
-                contentValues.put(AppInfo.APP_ID, info.app_id);
-                contentValues.put(AppInfo.ACTION, intent_filter.action);
-                db.insert(ManagerDBHelper.INTENT_FILTER_TABLE, null, contentValues);
+            let intentFilterRepository = this.helper.getRepository(ManagerDBHelper.INTENT_FILTER_TABLE) as Repository<IntentFilter>;
+            for (let intentFilter of info.intentFilters) {
+                intentFilter.app_id = info.app_id;
+                await intentFilterRepository.save(intentFilter);
+            }
+
+            let startupServiceRepository = this.helper.getRepository(ManagerDBHelper.SERVICE_TABLE) as Repository<AppInfo.StartupService>;
+            for (let startupService of info.startupServices) {
+                startupService.app_id = info.app_id;
+                await startupServiceRepository.save(startupService);
             }
 
             return true;
         }
-        else {
+        else{
             return false;
-        }*/
-
-        return true; // TMP
+        }
     }
 
     private async getInfos(selectionArgs: FindConditions<AppInfo>): Promise<AppInfo[]> {
-        let appsRepository = this.connection.getRepository(AppInfo);
-        let infos = await appsRepository.find(selectionArgs)
+        let appRepository = this.helper.getRepository(ManagerDBHelper.APP_TABLE) as Repository<AppInfo>;
+        let infos = await appRepository.find(selectionArgs);
 
-        let iconsRepository = this.connection.getRepository(Icon);
+        let iconRepository = this.helper.getRepository(ManagerDBHelper.ICONS_TABLE) as Repository<AppInfo.Icon>;
+        let pluginRepository = this.helper.getRepository(ManagerDBHelper.AUTH_PLUGIN_TABLE) as Repository<AppInfo.PluginAuth>;
+        let urlRepository = this.helper.getRepository(ManagerDBHelper.AUTH_URL_TABLE) as Repository<AppInfo.UrlAuth>;
+        let intentRepository = this.helper.getRepository(ManagerDBHelper.AUTH_INTENT_TABLE) as Repository<AppInfo.IntentAuth>;
+        let localeRepository = this.helper.getRepository(ManagerDBHelper.LACALE_TABLE) as Repository<AppInfo.Locale>;
+        let frameworkRepository = this.helper.getRepository(ManagerDBHelper.FRAMEWORK_TABLE) as Repository<AppInfo.Framework>;
+        let platformRepository = this.helper.getRepository(ManagerDBHelper.PLATFORM_TABLE) as Repository<AppInfo.Platform>;
+        let intentFilterRepository = this.helper.getRepository(ManagerDBHelper.INTENT_FILTER_TABLE) as Repository<IntentFilter>;
+        let startupServiceRepository = this.helper.getRepository(ManagerDBHelper.SERVICE_TABLE) as Repository<AppInfo.StartupService>;
+
         for (let info of infos) {
-            let icons = await iconsRepository.find({
-                app_tid: info.tid
-            });
+            let icons = await iconRepository.find({app_tid: info.tid});
             for (let icon of icons) {
-                info.addIcon(icon);
+                info.addIcon(icon.src, icon.sizes, icon.type);
+            }
+
+            let plugins = await pluginRepository.find({app_tid: info.tid});
+            for (let plugin of plugins) {
+                info.addPlugin(plugin.plugin, plugin.authority);
+            }
+
+            let urls = await urlRepository.find({app_tid: info.tid});
+            for (let url of urls) {
+                info.addUrl(url.url, url.authority);
+            }
+
+            let intents = await intentRepository.find({app_tid: info.tid});
+            for (let intent of intents) {
+                info.addIntent(intent.url, intent.authority);
+            }
+
+            let locales = await localeRepository.find({app_tid: info.tid});
+            for (let locale of locales) {
+                info.addLocale(locale.language, locale.name, locale.short_name, locale.description, locale.author_name);
+            }
+
+            let frameworks = await frameworkRepository.find({app_tid: info.tid});
+            for (let framework of frameworks) {
+                info.addFramework(framework.name, framework.version);
+            }
+
+            let platforms = await platformRepository.find({app_tid: info.tid});
+            for (let platform of platforms) {
+                info.addPlatform(platform.name, platform.version);
+            }
+
+            //TODO: check if it is necessary, not implemented in java
+            let intentFilters = await intentFilterRepository.find({app_id: info.app_id});
+            for (let intentFilter of intentFilters) {
+                info.addIntentFilter(intentFilter.action, intentFilter.startupMode, intentFilter.serviceName);
+            }
+
+            let startupServices = await startupServiceRepository.find({app_id: info.app_id});
+            for (let startupService of startupServices) {
+                info.addStartService(startupService.name);
             }
         }
         
-        notImplemented("NOT FINISHED - getInfos")
-
-        /* DELETE ME String[] columns = {AppInfo.TID, AppInfo.APP_ID, AppInfo.VERSION, AppInfo.VERSION_CODE, AppInfo.NAME, AppInfo.SHORT_NAME,
-                AppInfo.DESCRIPTION, AppInfo.START_URL, AppInfo.START_VISIBLE, AppInfo.TYPE,
-                AppInfo.AUTHOR_NAME, AppInfo.AUTHOR_EMAIL, AppInfo.DEFAULT_LOCAL, AppInfo.BACKGROUND_COLOR,
-                AppInfo.THEME_DISPLAY, AppInfo.THEME_COLOR, AppInfo.THEME_FONT_NAME, AppInfo.THEME_FONT_COLOR,
-                AppInfo.INSTALL_TIME, AppInfo.BUILT_IN, AppInfo.REMOTE, AppInfo.LAUNCHER,
-                AppInfo.CATEGORY, AppInfo.KEY_WORDS};
-        Cursor cursor = db.query(ManagerDBHelper.APP_TABLE, columns,selection, selectionArgs,null,null,null);
-        AppInfo infos[] = new AppInfo[cursor.getCount()];
-        int count = 0;
-        while (cursor.moveToNext()) {*/
-            /* TODO String[] args1 = {String.valueOf(info.tid)};
-
-            String[] columns1 = {AppInfo.SRC, AppInfo.SIZES, AppInfo.TYPE};
-            Cursor cursor1 = db.query(ManagerDBHelper.ICONS_TABLE, columns1,AppInfo.APP_TID + "=?", args1,null,null,null);
-            while (cursor1.moveToNext()) {
-                info.addIcon(cursor1.getString(cursor1.getColumnIndex(AppInfo.SRC)),
-                        cursor1.getString(cursor1.getColumnIndex(AppInfo.SIZES)),
-                        cursor1.getString(cursor1.getColumnIndex(AppInfo.TYPE)));
-            }
-
-            String[] columns2 = {AppInfo.PLUGIN, AppInfo.AUTHORITY};
-            cursor1 = db.query(ManagerDBHelper.AUTH_PLUGIN_TABLE, columns2,AppInfo.APP_TID + "=?", args1,null,null,null);
-            while (cursor1.moveToNext()) {
-                info.addPlugin(cursor1.getString(cursor1.getColumnIndex(AppInfo.PLUGIN)), cursor1.getInt(cursor1.getColumnIndex(AppInfo.AUTHORITY)));
-            }
-
-            String[] columns3 = {AppInfo.URL, AppInfo.AUTHORITY};
-            cursor1 = db.query(ManagerDBHelper.AUTH_URL_TABLE, columns3,AppInfo.APP_TID + "=?", args1,null,null,null);
-            while (cursor1.moveToNext()) {
-                info.addUrl(cursor1.getString(cursor1.getColumnIndex(AppInfo.URL)), cursor1.getInt(cursor1.getColumnIndex(AppInfo.AUTHORITY)));
-            }
-
-            String[] intent_columns = {AppInfo.URL, AppInfo.AUTHORITY};
-            cursor1 = db.query(ManagerDBHelper.AUTH_INTENT_TABLE, intent_columns,AppInfo.APP_TID + "=?", args1,null,null,null);
-            while (cursor1.moveToNext()) {
-                info.addIntent(cursor1.getString(cursor1.getColumnIndex(AppInfo.URL)), cursor1.getInt(cursor1.getColumnIndex(AppInfo.AUTHORITY)));
-            }
-
-            String[] columns4 = {AppInfo.LANGUAGE, AppInfo.NAME, AppInfo.SHORT_NAME, AppInfo.DESCRIPTION, AppInfo.AUTHOR_NAME};
-            cursor1 = db.query(ManagerDBHelper.LACALE_TABLE, columns4,AppInfo.APP_TID + "=?", args1,null,null,null);
-            while (cursor1.moveToNext()) {
-                info.addLocale(cursor1.getString(cursor1.getColumnIndex(AppInfo.LANGUAGE)),
-                        cursor1.getString(cursor1.getColumnIndex(AppInfo.NAME)),
-                        cursor1.getString(cursor1.getColumnIndex(AppInfo.SHORT_NAME)),
-                        cursor1.getString(cursor1.getColumnIndex(AppInfo.DESCRIPTION)),
-                        cursor1.getString(cursor1.getColumnIndex(AppInfo.AUTHOR_NAME)));
-            }
-
-            String[] columns5 = {AppInfo.NAME, AppInfo.VERSION};
-            cursor1 = db.query(ManagerDBHelper.FRAMEWORK_TABLE, columns5,AppInfo.APP_TID + "=?", args1,null,null,null);
-            while (cursor1.moveToNext()) {
-                info.addFramework(cursor1.getString(cursor1.getColumnIndex(AppInfo.NAME)),
-                        cursor1.getString(cursor1.getColumnIndex(AppInfo.VERSION)));
-            }
-
-            cursor1 = db.query(ManagerDBHelper.PLATFORM_TABLE, columns5,AppInfo.APP_TID + "=?", args1,null,null,null);
-            while (cursor1.moveToNext()) {
-                info.addFramework(cursor1.getString(cursor1.getColumnIndex(AppInfo.NAME)),
-                        cursor1.getString(cursor1.getColumnIndex(AppInfo.VERSION)));
-            }*/
-        // DELETE ME }
         return infos;
     }
 
     public async getAppInfo(id: string): Promise<AppInfo> {
         let infos = await this.getInfos({
             app_id: id,
-            isLauncher: false
+            launcher: 0
         });
 
         if (infos.length > 0) {
@@ -231,32 +185,30 @@ export class ManagerDBAdapter {
         }
     }
 
-    public getAppAuthInfo(info: AppInfo) {
-        notImplemented("getAppAuthInfo")
-        /* TODO SQLiteDatabase db = helper.getWritableDatabase();
-        String[] args1 = {String.valueOf(info.tid)};
-        String[] columns2 = {AppInfo.PLUGIN, AppInfo.AUTHORITY};
-        Cursor cursor = db.query(ManagerDBHelper.AUTH_PLUGIN_TABLE, columns2, AppInfo.APP_TID + "=?", args1, null, null, null);
-        while (cursor.moveToNext()) {
-            info.addPlugin(cursor.getString(cursor.getColumnIndex(AppInfo.PLUGIN)), cursor.getInt(cursor.getColumnIndex(AppInfo.AUTHORITY)));
+    public async getAppAuthInfo(info: AppInfo) {
+        let pluginRepository = this.helper.getRepository(ManagerDBHelper.AUTH_PLUGIN_TABLE) as Repository<AppInfo.PluginAuth>;
+        let urlRepository = this.helper.getRepository(ManagerDBHelper.AUTH_URL_TABLE) as Repository<AppInfo.UrlAuth>;
+        let intentRepository = this.helper.getRepository(ManagerDBHelper.AUTH_INTENT_TABLE) as Repository<AppInfo.IntentAuth>;
+
+        let plugins = await pluginRepository.find({app_tid: info.tid});
+        for (let plugin of plugins) {
+            info.addPlugin(plugin.plugin, plugin.authority);
         }
 
-        String[] columns3 = {AppInfo.URL, AppInfo.AUTHORITY};
-        cursor = db.query(ManagerDBHelper.AUTH_URL_TABLE, columns3, AppInfo.APP_TID + "=?", args1, null, null, null);
-        while (cursor.moveToNext()) {
-            info.addUrl(cursor.getString(cursor.getColumnIndex(AppInfo.URL)), cursor.getInt(cursor.getColumnIndex(AppInfo.AUTHORITY)));
+        let urls = await urlRepository.find({app_tid: info.tid});
+        for (let url of urls) {
+            info.addUrl(url.url, url.authority);
         }
 
-        String[] intent_columns = {AppInfo.URL, AppInfo.AUTHORITY};
-        cursor = db.query(ManagerDBHelper.AUTH_INTENT_TABLE, intent_columns, AppInfo.APP_TID + "=?", args1, null, null, null);
-        while (cursor.moveToNext()) {
-            info.addIntent(cursor.getString(cursor.getColumnIndex(AppInfo.URL)), cursor.getInt(cursor.getColumnIndex(AppInfo.AUTHORITY)));
-        }*/
+        let intents = await intentRepository.find({app_tid: info.tid});
+        for (let intent of intents) {
+            info.addIntent(intent.url, intent.authority);
+        }
     }
 
     public async getAppInfos(): Promise<AppInfo[]> {
         let appInfos = await this.getInfos({
-            isLauncher: false,
+            launcher: 0,
             app_id: Not(AppManager.getSharedInstance().getDIDSessionId())
         })
         return appInfos;
@@ -264,7 +216,7 @@ export class ManagerDBAdapter {
 
     public async getLauncherInfo(): Promise<AppInfo> {
         let infos = await this.getInfos({
-            isLauncher: true
+            launcher: 1
         });
 
         if (infos.length > 0) {
@@ -275,305 +227,333 @@ export class ManagerDBAdapter {
         }
     }
 
-    public changeBuiltInToNormal(appId: string): number {
-        notImplemented("changeBuiltInToNormal");
-        /*SQLiteDatabase db = helper.getWritableDatabase();
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(AppInfo.BUILT_IN, 0);
-        String where = AppInfo.APP_ID + "=?";
-        String[] whereArgs= {appId};
-        int count = db.update(ManagerDBHelper.APP_TABLE, contentValues, where, whereArgs );
-        return count;*/
-
-        return 1; // TMP
+    public async changeBuiltInToNormal(appId: string): Promise<number> {
+        let appRepository = this.helper.getRepository(ManagerDBHelper.APP_TABLE) as Repository<AppInfo>;
+        let infos = await appRepository.find({app_id: appId});
+        for (let info of infos) {
+            info.built_in = 0;
+            await appRepository.save(info);
+        }
+        let count = infos.length;
+        return count;
+        return 1;
     }
 
-    /*public long updatePluginAuth(long tid, String plugin, int authority) {
-        SQLiteDatabase db = helper.getWritableDatabase();
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(AppInfo.AUTHORITY, authority);
-        String where = AppInfo.APP_TID + "=? AND " + AppInfo.PLUGIN + "=?";
-        String[] whereArgs= {String.valueOf(tid), plugin};
-        long count = db.update(ManagerDBHelper.AUTH_PLUGIN_TABLE, contentValues, where, whereArgs );
+    public async updatePluginAuth(tid: string, plugin: string, authority: number): Promise<number> {
+        let pluginRepository = this.helper.getRepository(ManagerDBHelper.AUTH_PLUGIN_TABLE) as Repository<AppInfo.PluginAuth>;
+        let plugins = await pluginRepository.find({
+            app_tid: tid,
+            plugin: plugin
+        });
+        let count = plugins.length;
+        for (let plugin of plugins) {
+            plugin.authority = authority;
+            await pluginRepository.save(plugin);
+        }
         if (count < 1) {
-            contentValues = new ContentValues();
-            contentValues.put(AppInfo.APP_TID, tid);
-            contentValues.put(AppInfo.PLUGIN, plugin);
-            contentValues.put(AppInfo.AUTHORITY, authority);
-            db.insert(ManagerDBHelper.AUTH_PLUGIN_TABLE, null, contentValues);
+            let newPlugin = new AppInfo.PluginAuth(plugin, authority);
+            newPlugin.app_tid = tid; 
+            await pluginRepository.save(newPlugin);
+            count = 1;
         }
         return count;
     }
 
-    public long updateURLAuth(long tid, String url, int authority) {
-        SQLiteDatabase db = helper.getWritableDatabase();
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(AppInfo.AUTHORITY, authority);
-        String where = AppInfo.APP_TID + "=? AND " + AppInfo.URL + "=?";
-        String[] whereArgs= {String.valueOf(tid), url};
-        long count = db.update(ManagerDBHelper.AUTH_URL_TABLE, contentValues, where, whereArgs );
+    public async updateURLAuth(tid: string, url: string, authority: number): Promise<number> {
+        let urlRepository = this.helper.getRepository(ManagerDBHelper.AUTH_URL_TABLE) as Repository<AppInfo.UrlAuth>;
+        let urls = await urlRepository.find({
+            app_tid: tid,
+            url: url
+        });
+        let count = urls.length;
+        for (let url of urls) {
+            url.authority = authority;
+            await urlRepository.save(url);
+        }
         if (count < 1) {
-            contentValues = new ContentValues();
-            contentValues.put(AppInfo.APP_TID, tid);
-            contentValues.put(AppInfo.URL, url);
-            contentValues.put(AppInfo.AUTHORITY, authority);
-            count = db.insert(ManagerDBHelper.AUTH_URL_TABLE, null, contentValues);
+            let newUrl = new AppInfo.UrlAuth(url, authority);
+            newUrl.app_tid = tid; 
+            await urlRepository.save(newUrl);
+            count = 1;
         }
         return count;
     }
 
-    public long updateIntentAuth(long tid, String url, int authority) {
-        SQLiteDatabase db = helper.getWritableDatabase();
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(AppInfo.AUTHORITY, authority);
-        String where = AppInfo.APP_TID + "=? AND " + AppInfo.URL + "=?";
-        String[] whereArgs= {String.valueOf(tid), url};
-        long count = db.update(ManagerDBHelper.AUTH_INTENT_TABLE, contentValues, where, whereArgs );
+    public async updateIntentAuth(tid: string, url: string, authority: number): Promise<number> {
+        let intentRepository = this.helper.getRepository(ManagerDBHelper.AUTH_INTENT_TABLE) as Repository<AppInfo.IntentAuth>;
+        let intents = await intentRepository.find({
+            app_tid: tid,
+            url: url
+        });
+        let count = intents.length;
+        for (let intent of intents) {
+            intent.authority = authority;
+            await intentRepository.save(intent);
+        }
         if (count < 1) {
-            contentValues = new ContentValues();
-            contentValues.put(AppInfo.APP_TID, tid);
-            contentValues.put(AppInfo.URL, url);
-            contentValues.put(AppInfo.AUTHORITY, authority);
-            db.insert(ManagerDBHelper.AUTH_INTENT_TABLE, null, contentValues);
+            let newIntent = new AppInfo.IntentAuth(url, authority);
+            newIntent.app_tid = tid;
+            await intentRepository.save(newIntent);
+            count = 1;
         }
         return count;
-    }*/
-
-    public removeAppInfo(info: AppInfo): number {
-        notImplemented("removeAppInfo")
-        /*SQLiteDatabase db = helper.getWritableDatabase();
-        String where = AppInfo.APP_TID + "=?";
-        String[] whereArgs = {String.valueOf(info.tid)};
-        int count = db.delete(ManagerDBHelper.AUTH_URL_TABLE, where, whereArgs);
-        db.delete(ManagerDBHelper.AUTH_INTENT_TABLE, where, whereArgs);
-        count = db.delete(ManagerDBHelper.AUTH_PLUGIN_TABLE, where, whereArgs);
-        db.delete(ManagerDBHelper.ICONS_TABLE, where, whereArgs);
-        db.delete(ManagerDBHelper.LACALE_TABLE, where, whereArgs);
-        db.delete(ManagerDBHelper.FRAMEWORK_TABLE, where, whereArgs);
-        db.delete(ManagerDBHelper.PLATFORM_TABLE, where, whereArgs);
-        where = AppInfo.APP_ID + "=?";
-        String[] args = {info.app_id};
-        db.delete(ManagerDBHelper.INTENT_FILTER_TABLE, where, args);
-        db.delete(ManagerDBHelper.SETTING_TABLE, where, args);
-        where = AppInfo.TID + "=?";
-        count = db.delete(ManagerDBHelper.APP_TABLE, where, whereArgs);
-        return count;*/
-
-        return 0; // TMP
     }
 
-    /*public String[] getIntentFilter(String action) {
-        SQLiteDatabase db = helper.getWritableDatabase();
-        String[] args = {action};
-        String[] columns = {AppInfo.APP_ID};
-        Cursor cursor = db.query(ManagerDBHelper.INTENT_FILTER_TABLE, columns,AppInfo.ACTION + "=?", args,null,null,null);
-        String ids[] = new String[cursor.getCount()];
-        int count = 0;
-        while (cursor.moveToNext()) {
-            ids[count++] = cursor.getString(cursor.getColumnIndex(AppInfo.APP_ID));;
+    public async removeAppInfo(info: AppInfo): Promise<number> {
+        let urlRepository = this.helper.getRepository(ManagerDBHelper.AUTH_URL_TABLE) as Repository<AppInfo.UrlAuth>;
+        let urls = await urlRepository.find({app_tid: info.tid});
+        await urlRepository.remove(urls);
+
+        let intentRepository = this.helper.getRepository(ManagerDBHelper.AUTH_INTENT_TABLE) as Repository<AppInfo.IntentAuth>;
+        let intents = await intentRepository.find({app_tid: info.tid});
+        await intentRepository.remove(intents);
+
+        let pluginRepository = this.helper.getRepository(ManagerDBHelper.AUTH_PLUGIN_TABLE) as Repository<AppInfo.PluginAuth>;
+        let plugins = await pluginRepository.find({app_tid: info.tid});
+        await pluginRepository.remove(plugins);
+
+        let iconRepository = this.helper.getRepository(ManagerDBHelper.ICONS_TABLE) as Repository<AppInfo.Icon>;
+        let icons = await iconRepository.find({app_tid: info.tid});
+        await iconRepository.remove(icons);
+
+        let localeRepository = this.helper.getRepository(ManagerDBHelper.LACALE_TABLE) as Repository<AppInfo.Locale>;
+        let locales = await localeRepository.find({app_tid: info.tid});
+        await localeRepository.remove(locales);
+
+        let frameworkRepository = this.helper.getRepository(ManagerDBHelper.FRAMEWORK_TABLE) as Repository<AppInfo.Framework>;
+        let frameworks = await frameworkRepository.find({app_tid: info.tid});
+        await frameworkRepository.remove(frameworks);
+
+        let platformRepository = this.helper.getRepository(ManagerDBHelper.PLATFORM_TABLE) as Repository<AppInfo.Platform>;
+        let platforms = await platformRepository.find({app_tid: info.tid});
+        await platformRepository.remove(platforms);
+        
+        let intentFilterRepository = this.helper.getRepository(ManagerDBHelper.INTENT_FILTER_TABLE) as Repository<IntentFilter>;
+        let intentFilters = await intentFilterRepository.find({app_id: info.app_id});
+        await intentFilterRepository.remove(intentFilters);
+
+        let settingRepository = this.helper.getRepository(ManagerDBHelper.SETTING_TABLE) as Repository<Setting>;
+        let settings = await settingRepository.find({app_id: info.app_id});
+        await settingRepository.remove(settings);
+        
+        let startupServiceRepository = this.helper.getRepository(ManagerDBHelper.SERVICE_TABLE) as Repository<AppInfo.StartupService>;
+        let startupServices = await startupServiceRepository.find({app_id: info.app_id});
+        await startupServiceRepository.remove(startupServices);
+
+        let appRepository = this.helper.getRepository(ManagerDBHelper.APP_TABLE) as Repository<AppInfo>;
+        let apps = await appRepository.find({tid: info.tid});
+        let count = apps.length;
+        await appRepository.remove(apps);
+        return count;
+    }
+
+    public async getIntentFilter(action: string): Promise<IntentFilter[]> {
+        let intentFilterRepository = this.helper.getRepository(ManagerDBHelper.INTENT_FILTER_TABLE) as Repository<IntentFilter>;
+        let savedIntentFilters = await intentFilterRepository.find({action: action});
+        let intentFilters = new Array<IntentFilter>();
+
+        for (let savedIntentFilter of savedIntentFilters) {
+            let startupMode = savedIntentFilter.startupMode;
+            let serviceName = null;
+            if (startupMode == null) {
+                startupMode = AppManager.STARTUP_APP;
+            }
+            else if (startupMode == AppManager.STARTUP_SERVICE) {
+                serviceName = savedIntentFilter.serviceName;
+            }
+            let newIntentFilter = new IntentFilter(action, startupMode, serviceName);
+            //TODO: check if packageId need instead of app_id
+            newIntentFilter.packageId = savedIntentFilter.app_id;
+            intentFilters.push(newIntentFilter);
         }
 
-        return ids;
+        return intentFilters;
     }
 
-    public long setSetting(String id, String key, Object value) throws Exception {
-        SQLiteDatabase db = helper.getWritableDatabase();
-        long ret = 0;
-
-        String data = null;
+    public async setSetting(id: string, key: string, value: any): Promise<number> {
+        let ret = 0;
+        
+        let data: string = null;
         if (value != null) {
-            JSONObject json = new JSONObject();
-            json.put("data", value);
-            data = json.toString();
+            data = JSON.stringify(value);
         }
 
-        Boolean isExist = getSetting(id, key) != null;
-        if (!isExist) {
+        let isExsits: boolean = this.getSetting(id, key) != null;
+        if (!isExsits) {
             if (value != null) {
-                ContentValues contentValues = new ContentValues();
-                contentValues.put(AppInfo.APP_ID, id);
-                contentValues.put(ManagerDBHelper.KEY, key);
-                contentValues.put(ManagerDBHelper.VALUE, data);
-                ret = db.insert(ManagerDBHelper.SETTING_TABLE, null, contentValues);
+                let settingRepository = this.helper.getRepository(ManagerDBHelper.SETTING_TABLE) as Repository<Setting>;
+                let newSetting = new Setting(key, data);
+                newSetting.app_id = id;
+                await settingRepository.save(newSetting);
+                ret = 1;
             }
         }
         else {
-            String where = AppInfo.APP_ID + "=? AND " + ManagerDBHelper.KEY + "=?";
-            String[] whereArgs = {id, key};
+            let settingRepository = this.helper.getRepository(ManagerDBHelper.SETTING_TABLE) as Repository<Setting>;
+            let settings = await settingRepository.find({
+                app_id: id,
+                key: key
+            });
             if (value != null) {
-                ContentValues contentValues = new ContentValues();
-                contentValues.put(ManagerDBHelper.VALUE, data);
-                ret = db.update(ManagerDBHelper.SETTING_TABLE, contentValues, where, whereArgs );
+                if (settings.length > 0) {
+                    let setting = settings[0];
+                    setting.value = data;
+                    await settingRepository.save(setting);
+                    ret = 1;
+                }
             }
             else {
-                ret = db.delete(ManagerDBHelper.SETTING_TABLE, where, whereArgs);
+                await settingRepository.remove(settings);
+                ret = 1;
             }
         }
         return ret;
     }
 
-    public JSONObject getSetting(String id, String key) throws Exception {
-        SQLiteDatabase db = helper.getWritableDatabase();
-        String where = AppInfo.APP_ID + "=? AND " + ManagerDBHelper.KEY + "=?";
-        String[] whereArgs = {id, key};
-        String[] columns = {ManagerDBHelper.VALUE};
-        Cursor cursor = db.query(ManagerDBHelper.SETTING_TABLE, columns, where, whereArgs,null,null,null);
-        if (cursor.moveToNext()) {
-            String value = cursor.getString(cursor.getColumnIndex(ManagerDBHelper.VALUE));
-            JSONObject dict = new JSONObject(value);
-            if (dict != null) {
-                JSONObject ret = new JSONObject();
-                ret.put("key", key);
-                ret.put("value", dict.get("data"));
-                return ret;
+    public async getSetting(id: string, key: string): Promise<Setting> {
+        let settingRepository = this.helper.getRepository(ManagerDBHelper.SETTING_TABLE) as Repository<Setting>;
+        let settings = await settingRepository.find({
+            app_id: id,
+            key: key
+        });
+        if (settings.length > 0) {
+            if (settings[0].value != null) {
+                return settings[0];
             }
         }
-
         return null;
     }
 
-    public JSONObject getSettings(String id) throws Exception {
-        SQLiteDatabase db = helper.getWritableDatabase();
-        String where = AppInfo.APP_ID + "=?";
-        String[] whereArgs = {id};
-        String[] columns = {ManagerDBHelper.KEY, ManagerDBHelper.VALUE};
-        Cursor cursor = db.query(ManagerDBHelper.SETTING_TABLE, columns, where, whereArgs,null,null,null);
-        JSONObject ret = new JSONObject();
-        while (cursor.moveToNext()) {
-            String key = cursor.getString(cursor.getColumnIndex(ManagerDBHelper.KEY));
-            String value = cursor.getString(cursor.getColumnIndex(ManagerDBHelper.VALUE));
+    public async getSettings(id: string): Promise<Setting[]> {
+        let settingRepository = this.helper.getRepository(ManagerDBHelper.SETTING_TABLE) as Repository<Setting>;
+        let savedSettings = await settingRepository.find({app_id: id});
+        let settings = new Array<Setting>();
+        for (let savedSetting of savedSettings) {
+            if (savedSetting.value ! = null) {
+                settings.push(savedSetting);
+            }
+        }
+        return settings;
+    }
 
-            JSONObject dict = new JSONObject(value);
-            if (dict != null) {
-                ret.put(key, dict.get("data"));
+    public async setPreference(key: string, value: any): Promise<number> {
+        let ret = 0;
+        
+        let data: string = null;
+        if (value != null) {
+            data = JSON.stringify(value);
+        }
+
+        let isExsits: boolean = this.getPreference(key) != null;
+        if (!isExsits) {
+            if (value != null) {
+                let preferenceRepository = this.helper.getRepository(ManagerDBHelper.PREFERENCE_TABLE) as Repository<Preference>;
+                let newPreference = new Preference(key, data);
+                await preferenceRepository.save(newPreference);
+                ret = 1;
+            }
+        }
+        else {
+            let preferenceRepository = this.helper.getRepository(ManagerDBHelper.PREFERENCE_TABLE) as Repository<Preference>;
+            let preferences = await preferenceRepository.find({key: key});
+            if (value != null) {
+                if (preferences.length > 0) {
+                    let preference = preferences[0];
+                    preference.value = data;
+                    await preferenceRepository.save(preference);
+                    ret = 1;
+                }
+            }
+            else {
+                await preferenceRepository.remove(preferences);
+                ret = 1;
             }
         }
         return ret;
     }
 
-     public long setPreference(String key, Object value) throws Exception {
-         SQLiteDatabase db = helper.getWritableDatabase();
-         long ret = 0;
+    public async resetPreferences() {
+        let preferenceRepository = this.helper.getRepository(ManagerDBHelper.PREFERENCE_TABLE) as Repository<Preference>;
+        let preferences = await preferenceRepository.find();
+        await preferenceRepository.remove(preferences);
+    }
 
-         String data = null;
-         if (value != null) {
-             JSONObject json = new JSONObject();
-             json.put("data", value);
-             data = json.toString();
-         }
+    public async getPreference(key: string): Promise<Preference> {
+        let preferenceRepository = this.helper.getRepository(ManagerDBHelper.PREFERENCE_TABLE) as Repository<Preference>;
+        let preferences = await preferenceRepository.find({key: key});
+        if (preferences.length > 0) {
+            if (preferences[0].value != null) {
+                return preferences[0];
+            }
+        }
+        return null;
+    }
 
-         Boolean isExist = getPreference(key) != null;
-         if (!isExist) {
-             if (value != null) {
-                 ContentValues contentValues = new ContentValues();
-                 contentValues.put(ManagerDBHelper.KEY, key);
-                 contentValues.put(ManagerDBHelper.VALUE, data);
-                 ret = db.insert(ManagerDBHelper.PREFERENCE_TABLE, null, contentValues);
-             }
-         }
-         else {
-             String where = ManagerDBHelper.KEY + "=?";
-             String[] whereArgs = {key};
-             if (value != null) {
-                 ContentValues contentValues = new ContentValues();
-                 contentValues.put(ManagerDBHelper.VALUE, data);
-                 ret = db.update(ManagerDBHelper.PREFERENCE_TABLE, contentValues, where, whereArgs );
-             }
-             else {
-                 ret = db.delete(ManagerDBHelper.PREFERENCE_TABLE, where, whereArgs);
-             }
-         }
-         return ret;
-     }
+    public async getPreferences(): Promise<Preference[]> {
+        let preferenceRepository = this.helper.getRepository(ManagerDBHelper.PREFERENCE_TABLE) as Repository<Preference>;
+        let savedPreferences = await preferenceRepository.find();
+        let preferences = new Array<Preference>();
+        for (let savedPreference of savedPreferences) {
+            if (savedPreference.value ! = null) {
+                preferences.push(savedPreference);
+            }
+        }
+        return preferences;
+    }
 
-     public void resetPreferences() {
-         helper.getWritableDatabase().delete(ManagerDBHelper.PREFERENCE_TABLE, null, null);
-     }
+    public async getApiAuth(appId: string, plugin: string, api: string): Promise<number> {
+        let apiRepository = this.helper.getRepository(ManagerDBHelper.AUTH_API_TABLE) as Repository<ApiAuth>;
+        let apis = await apiRepository.find({
+            app_id: appId,
+            plugin: plugin,
+            api: api
+        });
+        if (apis.length > 0) {
+            return apis[0].authority;
+        }
+        return AppInfo.AUTHORITY_NOEXIST;
+    }
 
-     public JSONObject getPreference(String key) throws Exception {
-         SQLiteDatabase db = helper.getWritableDatabase();
-         String where = ManagerDBHelper.KEY + "=?";
-         String[] whereArgs = {key};
-         String[] columns = {ManagerDBHelper.VALUE};
-         Cursor cursor = db.query(ManagerDBHelper.PREFERENCE_TABLE, columns, where, whereArgs,null,null,null);
-         if (cursor.moveToNext()) {
-             String value = cursor.getString(cursor.getColumnIndex(ManagerDBHelper.VALUE));
-             JSONObject dict = new JSONObject(value);
-             if (dict != null) {
-                 JSONObject ret = new JSONObject();
-                 ret.put("key", key);
-                 ret.put("value", dict.get("data"));
-                 return ret;
-             }
-         }
+    public async setApiAuth(appId: string, plugin: string, api: string, auth: number): Promise<number> {
+        let ret = 0;
 
-         return null;
-     }
+        let isExsits: boolean = this.getApiAuth(appId, plugin, api) != null;
+        if (!isExsits) {
+            let apiRepository = this.helper.getRepository(ManagerDBHelper.AUTH_API_TABLE) as Repository<ApiAuth>;
+            let newApi = new ApiAuth(plugin, api);
+            newApi.app_id = appId;
+            await apiRepository.save(newApi);
+            ret = 1;
+        }
+        else {
+            let apiRepository = this.helper.getRepository(ManagerDBHelper.AUTH_API_TABLE) as Repository<ApiAuth>;
+            let apis = await apiRepository.find({
+                app_id: appId,
+                plugin: plugin,
+                api: api
+            });
+            if (auth != AppInfo.AUTHORITY_NOINIT) {
+                for (let api of apis) {
+                    api.authority = auth;
+                }
+                await apiRepository.save(apis);
+                ret = 1;
+            }
+            else {
+                await apiRepository.remove(apis);
+                ret = 1;
+            }
+        }
+        return ret;
+    }
 
-     public JSONObject getPreferences() throws Exception {
-         SQLiteDatabase db = helper.getWritableDatabase();
-         String[] columns = {ManagerDBHelper.KEY, ManagerDBHelper.VALUE};
-         Cursor cursor = db.query(ManagerDBHelper.PREFERENCE_TABLE, columns, null, null,null,null,null);
-         JSONObject ret = new JSONObject();
-         while (cursor.moveToNext()) {
-             String key = cursor.getString(cursor.getColumnIndex(ManagerDBHelper.KEY));
-             String value = cursor.getString(cursor.getColumnIndex(ManagerDBHelper.VALUE));
-             JSONObject dict = new JSONObject(value);
-             if (dict != null) {
-                 ret.put(key, dict.get("data"));
-             }
-         }
-         return ret;
-     }
+    public async resetApiDenyAuth(appId: string) {
+        let apiRepository = this.helper.getRepository(ManagerDBHelper.AUTH_API_TABLE) as Repository<ApiAuth>;
+        let apis = await apiRepository.find({
+            app_id: appId,
+            authority: AppInfo.AUTHORITY_DENY
+        });
+        await apiRepository.remove(apis);
+    }
 
-     public int getApiAuth(String appId, String plugin, String api) {
-
-         SQLiteDatabase db = helper.getWritableDatabase();
-         String where = AppInfo.APP_ID + "=? AND " + AppInfo.PLUGIN + "=? AND " + AppInfo.API + "=?";
-         String[] whereArgs = {appId, plugin, api};
-         String[] columns = {AppInfo.AUTHORITY};
-         Cursor cursor = db.query(ManagerDBHelper.AUTH_API_TABLE, columns, where, whereArgs,null,null,null);
-         if (cursor.moveToNext()) {
-             return cursor.getInt(cursor.getColumnIndex(AppInfo.AUTHORITY));
-         }
-
-         return AppInfo.AUTHORITY_NOEXIST;
-     }
-
-     public long setApiAuth(String appId, String plugin, String api, int auth) {
-
-         SQLiteDatabase db = helper.getWritableDatabase();
-         long ret = 0;
-
-         Boolean isExist = getApiAuth(appId, plugin, api) != AppInfo.AUTHORITY_NOEXIST;
-         if (!isExist) {
-             ContentValues contentValues = new ContentValues();
-             contentValues.put(AppInfo.APP_ID, appId);
-             contentValues.put(AppInfo.PLUGIN, plugin);
-             contentValues.put(AppInfo.API, api);
-             contentValues.put(AppInfo.AUTHORITY, auth);
-             ret = db.insert(ManagerDBHelper.AUTH_API_TABLE, null, contentValues);
-         }
-         else {
-             String where = AppInfo.APP_ID + "=? AND " + AppInfo.PLUGIN + "=? AND " + AppInfo.API + "=?";
-             String[] whereArgs = {appId, plugin, api};
-             if (auth != AppInfo.AUTHORITY_NOINIT) {
-                 ContentValues contentValues = new ContentValues();
-                 contentValues.put(AppInfo.AUTHORITY, auth);
-                 ret = db.update(ManagerDBHelper.AUTH_API_TABLE, contentValues, where, whereArgs );
-             }
-             else {
-                 ret = db.delete(ManagerDBHelper.AUTH_API_TABLE, where, whereArgs);
-             }
-         }
-
-         return ret;
-     }
-
-     public void resetApiDenyAuth(String appId)  {
-         SQLiteDatabase db = helper.getWritableDatabase();
-         String where = AppInfo.APP_ID + "=? AND " + AppInfo.AUTHORITY + "=?";
-         String[] whereArgs = {appId, String.valueOf(AppInfo.AUTHORITY_DENY)};
-         db.delete(ManagerDBHelper.AUTH_API_TABLE, where, whereArgs);
-     }*/
 }

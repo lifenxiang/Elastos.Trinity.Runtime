@@ -1,25 +1,33 @@
 import { AppInfo } from "./AppInfo";
 import { ManagerDBAdapter } from "./ManagerDBAdapter";
 import { BrowserWindow } from 'electron';
+import { IntentFilter } from './IntentFilter';
+import { Setting } from './Setting';
+import { Preference } from './Preference';
 
 export class MergeDBAdapter {
     window: BrowserWindow = null;
     baseDBAdapter: ManagerDBAdapter = null;
     userDBAdapter: ManagerDBAdapter = null;
 
-    private constructor(window: BrowserWindow) {
+    constructor(window: BrowserWindow) {
         this.window = window;
+        this.baseDBAdapter = new ManagerDBAdapter(window);
     }
 
-    public static async create(window: BrowserWindow): Promise<MergeDBAdapter> {
-        let adapter = new MergeDBAdapter(window)
-        adapter.baseDBAdapter = await ManagerDBAdapter.create(window);
-        return adapter;
+    public static async newInstance(window: BrowserWindow): Promise<MergeDBAdapter> {
+        let mergeDBAdapter = new MergeDBAdapter(window);
+        await mergeDBAdapter.init();
+        return mergeDBAdapter;
+    }
+
+    private async init() {
+        this.baseDBAdapter = await ManagerDBAdapter.newInstance(this.window);
     }
 
     public async setUserDBAdapter(path: string) {
         if (path != null) {
-            this.userDBAdapter = await ManagerDBAdapter.create(this.window, path);
+            this.userDBAdapter = await ManagerDBAdapter.newInstance(this.window, path);
         }
         else {
             this.userDBAdapter = null;
@@ -28,7 +36,7 @@ export class MergeDBAdapter {
 
     public async addAppInfo(info: AppInfo, isShare: boolean): Promise<boolean> {
         if (info != null) {
-            if (isShare || info.isBuiltIn || this.userDBAdapter == null) {
+            if (isShare || info.built_in == 1 || this.userDBAdapter == null) {
                 console.log("Adding app info to BASE DB")
                 return await this.baseDBAdapter.addAppInfo(info);
             }
@@ -89,7 +97,7 @@ export class MergeDBAdapter {
                 }
             }
         }
-
+ 
         return list;
     }
 
@@ -97,38 +105,38 @@ export class MergeDBAdapter {
         return this.baseDBAdapter.getLauncherInfo();
     }
 
-    public changeBuiltInToNormal(appId: string): number {
+    public async changeBuiltInToNormal(appId: string): Promise<number> {
         return this.baseDBAdapter.changeBuiltInToNormal(appId);
     }
 
-    /*public long updatePluginAuth(long tid, String plugin, int authority) {
-        if (userDBAdapter != null) {
-            return userDBAdapter.updatePluginAuth(tid, plugin, authority);
+    public async updatePluginAuth(tid: string, plugin: string, authority: number): Promise<number> {
+        if (this.userDBAdapter != null) {
+            return this.userDBAdapter.updatePluginAuth(tid, plugin, authority);
         }
         else {
             return 0;
         }
     }
 
-    public long updateURLAuth(long tid, String url, int authority) {
-        if (userDBAdapter != null) {
-            return userDBAdapter.updateURLAuth(tid, url, authority);
+    public async updateURLAuth(tid: string, url: string, authority: number): Promise<number> {
+        if (this.userDBAdapter != null) {
+            return this.userDBAdapter.updateURLAuth(tid, url, authority);
         }
         else {
             return 0;
         }
     }
 
-    public long updateIntentAuth(long tid, String url, int authority) {
-        if (userDBAdapter != null) {
-            return userDBAdapter.updateIntentAuth(tid, url, authority);
+    public async updateIntentAuth(tid: string, url: string, authority: number): Promise<number> {
+        if (this.userDBAdapter != null) {
+            return this.userDBAdapter.updateIntentAuth(tid, url, authority);
         }
         else {
             return 0;
         }
-    }*/
+    }
 
-    public removeAppInfo(info: AppInfo, isShare: boolean): number {
+    public removeAppInfo(info: AppInfo, isShare: boolean): Promise<number> {
         if (this.userDBAdapter != null && !isShare) {
             return this.userDBAdapter.removeAppInfo(info);
         }
@@ -137,123 +145,123 @@ export class MergeDBAdapter {
         }
     }
 
-    /*public String[] getIntentFilter(String action) {
-        ArrayList<String> list = new ArrayList<String>();
-        String[] ids = null;
-        if (userDBAdapter != null) {
-            ids = userDBAdapter.getIntentFilter(action);
+    public async getIntentFilter(action: string): Promise<IntentFilter[]> {
+        let list = new Array<IntentFilter>();
+        let filters = null;
+        if (this.userDBAdapter != null) {
+            filters = await this.userDBAdapter.getIntentFilter(action);
         }
 
-        String[] baseIds = baseDBAdapter.getIntentFilter(action);
+        let baseFilters = await this.baseDBAdapter.getIntentFilter(action);
 
-        for (String id: ids) {
-            list.add(id);
+        for (let filter of filters) {
+            list.push(filter);
         }
 
-        for (String baseId: baseIds) {
-            Boolean needAdd = true;
-            for (String id: ids) {
-                if (baseId.equals(id)) {
+        for (let baseFilter of baseFilters) {
+            let needAdd = true;
+            for (let filter of filters) {
+                if (baseFilter.packageId == filter.packageId) {
                     needAdd = false;
                     break;
                 }
             }
             if (needAdd) {
-                list.add(baseId);
+                list.push(baseFilter);
             }
         }
 
-        ids = new String[list.size()];
-        return list.toArray(ids);
+        return list;
     }
 
-    public long setSetting(String id, String key, Object value) throws Exception {
-        if (userDBAdapter != null) {
-            return userDBAdapter.setSetting(id, key, value);
+    public async setSetting(id: string, key: string, value: any): Promise<number> {
+        if (this.userDBAdapter != null) {
+            return this.userDBAdapter.setSetting(id, key, value);
         }
         else {
-            return baseDBAdapter.setSetting(id, key, value);
-        }
-    }
-
-    public JSONObject getSetting(String id, String key) throws Exception {
-        if (userDBAdapter != null) {
-            return userDBAdapter.getSetting(id, key);
-        }
-        else {
-            return baseDBAdapter.getSetting(id, key);
+            return this.baseDBAdapter.setSetting(id, key, value);
         }
     }
 
-    public JSONObject getSettings(String id) throws Exception {
-        if (userDBAdapter != null) {
-            return userDBAdapter.getSettings(id);
+    public async getSetting(id: string, key: string): Promise<Setting> {
+        if (this.userDBAdapter != null) {
+            return this.userDBAdapter.getSetting(id, key);
         }
         else {
-            return baseDBAdapter.getSettings(id);
+            return this.baseDBAdapter.getSetting(id, key);
         }
     }
 
-    public long setPreference(String key, Object value) throws Exception {
-        if (userDBAdapter != null) {
-            return userDBAdapter.setPreference(key, value);
+    public async getSettings(id: string): Promise<Setting[]> {
+        if (this.userDBAdapter != null) {
+            return this.userDBAdapter.getSettings(id);
         }
         else {
-            return baseDBAdapter.setPreference(key, value);
+            return this.baseDBAdapter.getSettings(id);
         }
     }
 
-    public void resetPreferences() {
-        if (userDBAdapter != null) {
-            userDBAdapter.resetPreferences();
+    public async setPreference(key: string, value: any): Promise<number> {
+        if (this.userDBAdapter != null) {
+            return this.userDBAdapter.setPreference(key, value);
         }
         else {
-            baseDBAdapter.resetPreferences();
+            return this.baseDBAdapter.setPreference(key, value);
         }
     }
 
-    public JSONObject getPreference(String key) throws Exception {
-        if (userDBAdapter != null) {
-            return userDBAdapter.getPreference(key);
+    public async resetPreferences() {
+        if (this.userDBAdapter != null) {
+            this.userDBAdapter.resetPreferences();
         }
         else {
-            return baseDBAdapter.getPreference(key);
+            this.baseDBAdapter.resetPreferences();
         }
     }
 
-    public JSONObject getPreferences() throws Exception {
-        if (userDBAdapter != null) {
-            return userDBAdapter.getPreferences();
+    public async getPreference(key: string): Promise<Preference> {
+        if (this.userDBAdapter != null) {
+            return this.userDBAdapter.getPreference(key);
         }
         else {
-            return baseDBAdapter.getPreferences();
+            return this.baseDBAdapter.getPreference(key);
         }
     }
 
-    public int getApiAuth(String appId, String plugin, String api) {
-        if (userDBAdapter != null) {
-            return userDBAdapter.getApiAuth(appId, plugin, api);
+    public async getPreferences(): Promise<Preference[]> {
+        if (this.userDBAdapter != null) {
+            return this.userDBAdapter.getPreferences();
         }
         else {
-            return baseDBAdapter.getApiAuth(appId, plugin, api);
+            return this.baseDBAdapter.getPreferences();
         }
     }
 
-    public long setApiAuth(String appId, String plugin, String api, int auth) {
-        if (userDBAdapter != null) {
-            return userDBAdapter.setApiAuth(appId, plugin, api, auth);
+    public async getApiAuth(appId: string, plugin: string, api: string): Promise<number> {
+        if (this.userDBAdapter != null) {
+            return this.userDBAdapter.getApiAuth(appId, plugin, api);
         }
         else {
-            return baseDBAdapter.setApiAuth(appId, plugin, api, auth);
+            return this.baseDBAdapter.getApiAuth(appId, plugin, api);
         }
     }
 
-    public void resetApiDenyAuth(String appId)  {
-        if (userDBAdapter != null) {
-            userDBAdapter.resetApiDenyAuth(appId);
+    public async setApiAuth(appId: string, plugin: string, api: string, auth: number): Promise<number> {
+        if (this.userDBAdapter != null) {
+            return this.userDBAdapter.setApiAuth(appId, plugin, api, auth);
         }
         else {
-            baseDBAdapter.resetApiDenyAuth(appId);
+            return this.baseDBAdapter.setApiAuth(appId, plugin, api, auth);
         }
-    }*/
+    }
+
+    public async resetApiDenyAuth(appId: string) {
+        if (this.userDBAdapter != null) {
+            this.userDBAdapter.resetApiDenyAuth(appId);
+        }
+        else {
+            this.baseDBAdapter.resetApiDenyAuth(appId);
+        }
+    }
+
 }

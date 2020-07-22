@@ -2,7 +2,7 @@ import { join as pathJoin } from "path";
 import { renameSync, statSync } from "fs-extra";
 import { app } from "electron";
 
-import { AppInfo, Icon} from "./AppInfo";
+import { AppInfo} from "./AppInfo";
 import { Utility, notImplemented } from "./Utility";
 import { Log } from "./Log";
 import { AppManager } from "./AppManager";
@@ -522,10 +522,10 @@ export class AppInstaller {
         appInfo.name = this.getMustStrValue(json, AppInfo.NAME);
         appInfo.start_url = this.getMustStrValue(json, AppInfo.START_URL);
         if (appInfo.start_url.indexOf("://") != -1) {
-            appInfo.isRemote = true;
+            appInfo.remote = 1;
         }
         else {
-            appInfo.isRemote = false;
+            appInfo.remote = 0;
         }
 
         if (!isLauncher) {
@@ -536,7 +536,7 @@ export class AppInstaller {
                     let src = icon[AppInfo.SRC];
                     let sizes = icon[AppInfo.SIZES];
                     let type = icon[AppInfo.TYPE];
-                    appInfo.addIcon(new Icon(null, src, sizes, type));
+                    appInfo.addIcon(src, sizes, type);
                 }
             } else {
                 throw new Error("Parse Manifest.json error: 'icons' no exist!");
@@ -689,13 +689,13 @@ export class AppInstaller {
             for (let i = 0; i < array.length; i++) {
                 let jobj = array[i];
                 if ("action" in jobj) {
-                    appInfo.addIntentFilter(jobj["action"] as string);
+                    appInfo.addIntentFilter(jobj["action"] as string, null, null);
                 }
             }
         }
 
         appInfo.install_time = Math.round(new Date().getTime()/1000);
-        appInfo.isLauncher = isLauncher;
+        appInfo.launcher = isLauncher ? 1 : 0;
 
         return appInfo;
     }

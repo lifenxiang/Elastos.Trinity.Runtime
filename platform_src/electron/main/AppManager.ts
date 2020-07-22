@@ -113,6 +113,9 @@ export class AppManager {
     public static LAUNCHER = "org.elastos.trinity.launcher";
     public static DIDSESSION = "didsession";
 
+    public static STARTUP_APP = "app";
+    public static STARTUP_SERVICE = "service";
+
     private static appManager: AppManager;
     private runtime: TrinityRuntime;
     private window: BrowserWindow = null
@@ -153,7 +156,8 @@ export class AppManager {
     }
 
     private async init() {
-        this.dbAdapter = await MergeDBAdapter.create(this.window);
+        //this.dbAdapter = await MergeDBAdapter.create(this.window);
+        this.dbAdapter = await MergeDBAdapter.newInstance(this.window);
 
         await this.refreshInfos();
         await this.getLauncherInfo();
@@ -416,7 +420,7 @@ export class AppManager {
         if (needInstall) {
             Log.d("AppManager", "Needs install - copying assets and setting built-in to 1");
             this.shareInstaller.copyAssetsFolder(relativeRootPath, this.basePathInfo.appsPath + builtInInfo.app_id);
-            builtInInfo.isBuiltIn = true;
+            builtInInfo.built_in = 1;
             await this.dbAdapter.addAppInfo(builtInInfo, true);
             if (isLauncher) {
                 this.launcherInfo = null;
@@ -430,8 +434,8 @@ export class AppManager {
             let launcherPath = pathJoin(this.basePathInfo.appsPath, AppManager.LAUNCHER);
             if (existsSync(launcherPath)) {
                 let info = this.shareInstaller.getInfoByManifest(this.basePathInfo.appsPath + AppManager.LAUNCHER + "/", true);
-                info.isBuiltIn = true;
-                let count = this.dbAdapter.removeAppInfo(this.launcherInfo, true);
+                info.built_in = 1;
+                let count = await this.dbAdapter.removeAppInfo(this.launcherInfo, true);
                 if (count < 1) {
                     Log.e("AppManager", "Launcher upgrade -- Can't remove the older DB info.");
                     //TODO:: need remove the files? now, restart will try again.
@@ -501,8 +505,8 @@ export class AppManager {
             }
 
             for (let i = 0; i < this.appList.length; i++) {
-                Log.d(AppManager.LOG_TAG, "save / app "+this.appList[i].app_id+" buildin "+this.appList[i].isBuiltIn);
-                if (!this.appList[i].isBuiltIn) {
+                Log.d(AppManager.LOG_TAG, "save / app "+this.appList[i].app_id+" buildin "+this.appList[i].built_in);
+                if (!this.appList[i].built_in) {
                     continue;
                 }
 
@@ -595,7 +599,7 @@ export class AppManager {
             return null;
         }
 
-        if (!info.isRemote) {
+        if (!info.remote) {
             return this.getAppUrl(info) + info.start_url;
         }
         else {
@@ -612,7 +616,7 @@ export class AppManager {
     }
 
     public getAppPath(info: AppInfo): string {
-        if (!info.isRemote) {
+        if (!info.remote) {
             return this.getAppLocalPath(info);
         }
         else {
@@ -622,7 +626,7 @@ export class AppManager {
 
     public getAppUrl(info: AppInfo): string {
         let url = this.getAppPath(info);
-        if (!info.isRemote) {
+        if (!info.remote) {
             url = /*"file://" + */url;
         }
         return url;

@@ -131,8 +131,8 @@ export class AppManagerPlugin extends TrinityPlugin {
             "themeFontName": info.theme_font_name,
             "themeFontColor": info.theme_font_color,*/
             "installTime": info.install_time,
-            "builtIn": info.isBuiltIn? 1 : 0,
-            "remote": info.isRemote? 1 : 0,
+            "builtIn": info.built_in? 1 : 0,
+            "remote": info.remote? 1 : 0,
             "appPath": appUrl,
             "dataPath": dataUrl,
             /* TODO "locales": this.jsonAppLocales(info),
