@@ -44,14 +44,14 @@ class PasswordManagerImpl implements PasswordManagerPlugin.PasswordManager {
         });
     }
 
-    getPasswordInfo(key: string): Promise<PasswordManagerPlugin.PasswordInfo> {
+    getPasswordInfo(key: string, options?: PasswordManagerPlugin.GetPasswordInfoOptions): Promise<PasswordManagerPlugin.PasswordInfo> {
         return new Promise((resolve, reject)=>{
             exec((result: { passwordInfo: PasswordManagerPlugin.PasswordInfo })=>{
                 resolve(result.passwordInfo);
             }, (err)=>{
                 console.error("Error while calling PasswordManagerPlugin.getPasswordInfo()", err);
                 reject(this.nativeToTSException(err));
-            }, 'PasswordManagerPlugin', 'getPasswordInfo', [key]);    
+            }, 'PasswordManagerPlugin', 'getPasswordInfo', [key, options]);    
         });
     }
 

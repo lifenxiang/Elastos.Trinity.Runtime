@@ -22,6 +22,7 @@ import org.elastos.trinity.runtime.didsessions.DIDSessionManager;
 import org.elastos.trinity.runtime.didsessions.IdentityEntry;
 import org.elastos.trinity.runtime.notificationmanager.NotificationManager;
 import org.elastos.trinity.runtime.notificationmanager.NotificationRequest;
+import org.elastos.trinity.runtime.passwordmanager.PasswordGetInfoOptions;
 import org.elastos.trinity.runtime.passwordmanager.PasswordManager;
 import org.elastos.trinity.runtime.passwordmanager.passwordinfo.GenericPasswordInfo;
 import org.elastos.trinity.runtime.passwordmanager.passwordinfo.PasswordInfo;
@@ -107,7 +108,8 @@ public class CarrierHelper {
                 // Get the DID store password
                 String passwordInfoKey = "didstore-"+signedInIdentity.didStoreId;
                 String appId = "org.elastos.trinity.dapp.didsession"; // act as the did session app to be able to retrieve a DID store password
-                PasswordManager.getSharedInstance().getPasswordInfo(passwordInfoKey, signedInIdentity.didString, appId, new PasswordManager.OnPasswordInfoRetrievedListener() {
+                PasswordManager.getSharedInstance().getPasswordInfo(passwordInfoKey, signedInIdentity.didString, appId, new PasswordGetInfoOptions(),
+                new PasswordManager.OnPasswordInfoRetrievedListener() {
                     @Override
                     public void onPasswordInfoRetrieved(PasswordInfo info) {
                         GenericPasswordInfo genericPasswordInfo = (GenericPasswordInfo)info;

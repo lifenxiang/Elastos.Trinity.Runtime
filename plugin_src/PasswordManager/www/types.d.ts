@@ -195,6 +195,14 @@ declare namespace PasswordManagerPlugin {
         UNLOCK_EVERY_TIME = 1
     }
 
+    type GetPasswordInfoOptions = {
+        /** 
+         * If true, the master password is asked (popup) in case the database is locked. If false,
+         * getPasswordInfo() fails silently and throws a cancellation exception. Default: true.
+         */
+        promptPasswordIfLocked?: boolean
+    }
+
     /** The provided password is invalid */
     interface InvalidPasswordException extends Error {}
 
@@ -227,7 +235,7 @@ declare namespace PasswordManagerPlugin {
          * 
          * @returns The password info, or null if nothing was found.
          */
-        getPasswordInfo(key: string): Promise<PasswordInfo>;
+        getPasswordInfo(key: string, options?: GetPasswordInfoOptions): Promise<PasswordInfo>;
 
         /**
          * Deletes an existing password information from the secure database.

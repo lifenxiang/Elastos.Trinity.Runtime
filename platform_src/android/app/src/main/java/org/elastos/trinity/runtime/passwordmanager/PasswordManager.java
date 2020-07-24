@@ -171,13 +171,19 @@ public class PasswordManager {
      *
      * @returns The password info, or null if nothing was found.
      */
-    public void getPasswordInfo(String key, String did, String appID, OnPasswordInfoRetrievedListener listener) throws Exception {
+    public void getPasswordInfo(String key, String did, String appID, PasswordGetInfoOptions options, OnPasswordInfoRetrievedListener listener) throws Exception {
         String actualDID = getActualDIDContext(did);
         String actualAppID = getActualAppID(appID);
 
         checkMasterPasswordCreationRequired(actualDID, new OnMasterPasswordCreationListener() {
             @Override
             public void onMasterPasswordCreated() {
+                // In case caller doesn't want to show the password prompt if the database is locked, we return a cancellation exception.
+                if (!isDatabaseLoaded(actualDID) && !options.promptPasswordIfLocked) {
+                    listener.onCancel();
+                    return;
+                }
+
                 loadDatabase(actualDID, new OnDatabaseLoadedListener() {
                     @Override
                     public void onDatabaseLoaded() {
