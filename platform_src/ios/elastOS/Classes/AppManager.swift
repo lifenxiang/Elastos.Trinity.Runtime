@@ -113,7 +113,7 @@ class AppManager: NSObject {
 
     static let LAUNCHER = "launcher";
     static let DIDSESSION = "didsession";
-    
+
     /** The app mode. */
     @objc static let STARTUP_APP = "app";
     /** The service mode. */
@@ -122,7 +122,7 @@ class AppManager: NSObject {
     @objc static let STARTUP_INTENT = "intent";
     /** The silence intent mode. It will be closed after sendIntentResponse */
     @objc static let STARTUP_SILENCE = "silence";
-    
+
     static let startupModes = [
         STARTUP_APP,
         STARTUP_SERVICE,
@@ -147,7 +147,7 @@ class AppManager: NSObject {
     var serviceRunningList = [String]();
     var shareInstaller: AppInstaller;
     var visibles = [String: Bool]();
-    
+
     private var launcherInfo: AppInfo? = nil;
     private var diddessionInfo: AppInfo? = nil;
     private var signIning = true;
@@ -223,7 +223,7 @@ class AppManager: NSObject {
     @objc static func isStartupMode(_ startupMode: String) -> Bool {
         return startupModes.contains(startupMode);
     }
-    
+
     public func getBaseDataPath() -> String {
         return basePathInfo.dataPath;
     }
@@ -258,7 +258,7 @@ class AppManager: NSObject {
         startStartupServices();
         sendRefreshList("initiated", nil);
     }
-    
+
     private func startStartupServices() {
         for info in appList {
             for service in info.startupServices {
@@ -395,7 +395,7 @@ class AppManager: NSObject {
         else if (startupMode == AppManager.STARTUP_SERVICE || startupMode == AppManager.STARTUP_SILENCE) {
             return false;
         }
-        
+
         let ret = visibles[id];
         if (ret == nil) {
             return true;
@@ -554,12 +554,11 @@ class AppManager: NSObject {
         let originPath = getAbsolutePath(appPath + id);
         var path = originPath;
         let fileManager = FileManager.default;
-        var ret = fileManager.fileExists(atPath: path + "/manifest.json");
+        var ret = fileManager.fileExists(atPath: path + "/assets/manifest.json");
         if (!ret) {
-            path = path + "/assets";
             ret = fileManager.fileExists(atPath: path + "/manifest.json");
             guard ret else {
-                fatalError("installBuiltInApp error: No manifest found, returning.")
+                fatalError("installBuiltInApp error: Can't find manifest.json in / or /assets/, do not install this dapp.")
             }
         }
 
@@ -716,7 +715,7 @@ class AppManager: NSObject {
             }
         }
     }
-    
+
     func removeRunninglistItem(_ id: String) {
         for (index, item) in runningList.enumerated() {
             if item == id {
@@ -725,7 +724,7 @@ class AppManager: NSObject {
             }
         }
     }
-    
+
     func removeServiceRunningList(_ id: String) {
         for (index, item) in serviceRunningList.enumerated() {
             if item == id {
@@ -787,13 +786,13 @@ class AppManager: NSObject {
         }
         return ret;
     }
-    
+
     func start(_ packageId: String, _ mode: String, _ serviceName: String?) throws {
         let appInfo = getAppInfo(packageId);
         guard appInfo != nil else {
             throw AppError.error("No such app!");
         }
-        
+
         if (mode == AppManager.STARTUP_SERVICE && serviceName == nil) {
             throw AppError.error("No service name!")
         }
@@ -833,7 +832,7 @@ class AppManager: NSObject {
             switchContent(viewController!, id);
         }
     }
-    
+
     func closeAllModes(_ packageId: String) {
         for mode in AppManager.startupModes {
             do {
@@ -849,20 +848,20 @@ class AppManager: NSObject {
             }
         }
     }
-    
+
     func closeAppAllServices(_ packageId: String) throws {
         let appInfo = appInfos[packageId];
         guard appInfo != nil else {
             throw AppError.error("No such app!");
         }
-        
+
         for viewController in viewControllers.values {
             if (viewController.modeId.hasPrefix(packageId + "#service:")) {
                 try closeViewController(appInfo!, viewController);
             }
         }
     }
-    
+
     func closeAllServices() throws {
         for viewController in viewControllers.values {
             if (viewController.modeId.contains("#service:")) {
@@ -870,7 +869,7 @@ class AppManager: NSObject {
             }
         }
     }
-    
+
     func close(_ packageId: String, _ mode: String, _ serviceName: String?) throws {
         var id = packageId;
         if (isDIDSession(id)) {
@@ -889,7 +888,7 @@ class AppManager: NSObject {
         if (mode == AppManager.STARTUP_APP) {
             setAppVisible(id, info!.start_visible);
         }
-        
+
         id = getIdbyStartupMode(id, startupMode: mode, serviceName: serviceName);
         let viewController = getViewControllerById(id);
         if (viewController == nil) {
@@ -898,11 +897,11 @@ class AppManager: NSObject {
 
         try closeViewController(info!, viewController!);
     }
-    
+
     func closeViewController(_ info: AppInfo, _ viewController: TrinityViewController) throws {
         let id = viewController.modeId;
         let mode = viewController.startupMode;
-        
+
         try IntentManager.getShareInstance().removeAppFromIntentList(info.app_id);
 
         if (viewController == curController) {
@@ -916,7 +915,7 @@ class AppManager: NSObject {
 
         viewControllers[id] = nil;
         viewController.remove();
-        
+
         if (mode == AppManager.STARTUP_APP) {
             removeLastlistItem(id);
             removeRunninglistItem(id);
@@ -924,7 +923,7 @@ class AppManager: NSObject {
         else if (mode == AppManager.STARTUP_SERVICE) {
             removeServiceRunningList(id);
         }
-        
+
         sendRefreshList("closed", info);
     }
 
@@ -1196,7 +1195,7 @@ class AppManager: NSObject {
             self.mainViewController.present(alertController, animated: true, completion: nil)
         }
     }
-    
+
     func runAlertUrlAuth(_ info: AppInfo, _ url: String) {
         let urlAuthorityController = UrlAuthorityAlertController(nibName: "UrlAuthorityAlertController", bundle: Bundle.main)
 
@@ -1210,7 +1209,7 @@ class AppManager: NSObject {
         urlAuthorityController.setOnAllowClicked {
             try? self.setUrlAuthority(info.app_id, url, AppInfo.AUTHORITY_ALLOW);
         }
-        
+
         urlAuthorityController.setOnDenyClicked {
             try? self.setUrlAuthority(info.app_id, url, AppInfo.AUTHORITY_DENY);
         }
@@ -1235,7 +1234,7 @@ class AppManager: NSObject {
     func getLastList() -> [String] {
         return lastList;
     }
-    
+
     func getServiceRunningList(_ appId: String) -> [String] {
         let prefix = appId + "#service:";
         var ret = [String]();

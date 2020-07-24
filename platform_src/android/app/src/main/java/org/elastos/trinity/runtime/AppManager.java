@@ -53,6 +53,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 public class AppManager {
+    private static final String TAG = "AppManager";
 
     /**
      * The internal message
@@ -408,21 +409,21 @@ public class AppManager {
             input = manager.open(path);
         }
         catch (IOException e) {
-            e.printStackTrace();
+            Log.e(TAG, "open " + path + " error: " + e.getLocalizedMessage());
         }
 
         return input;
     }
 
     private void installBuiltInApp(String path, String id, int launcher) throws Exception {
-        Log.d("AppManager", "Entering installBuiltInApp path="+path+" id="+id+" launcher="+launcher);
+        Log.d(TAG, "Entering installBuiltInApp path="+path+" id="+id+" launcher="+launcher);
 
         path = path + id;
-        InputStream input = getAssetsFile(path + "/manifest.json");
+        InputStream input = getAssetsFile(path + "/assets/manifest.json");
         if (input == null) {
-            input = getAssetsFile(path + "/assets/manifest.json");
+            input = getAssetsFile(path + "/manifest.json");
             if (input == null) {
-                Log.e("AppManager", "No manifest found, returning");
+                Log.e(TAG, "Can't find manifest.json in / or /assets/, do not install this dapp");
                 return;
             }
         }
@@ -433,20 +434,20 @@ public class AppManager {
         if (installedInfo != null) {
             boolean versionChanged = PreferenceManager.getShareInstance().versionChanged;
             if (versionChanged || builtInInfo.version_code > installedInfo.version_code) {
-                Log.d("AppManager", "built in version > installed version: uninstalling installed");
+                Log.d(TAG, "built in version > installed version: uninstalling installed");
                 shareInstaller.unInstall(installedInfo, true);
             }
             else {
-                Log.d("AppManager", "Built in version <= installed version, No need to install");
+                Log.d(TAG, "Built in version <= installed version, No need to install");
                 needInstall = false;
             }
         }
         else {
-            Log.d("AppManager", "No installed info found");
+            Log.d(TAG, "No installed info found");
         }
 
         if (needInstall) {
-            Log.d("AppManager", "Needs install - copying assets and setting built-in to 1");
+            Log.d(TAG, "Needs install - copying assets and setting built-in to 1");
             shareInstaller.copyAssetsFolder(path, basePathInfo.appsPath + builtInInfo.app_id);
             builtInInfo.built_in = 1;
             dbAdapter.addAppInfo(builtInInfo, true);
@@ -465,7 +466,7 @@ public class AppManager {
                 info.built_in = 1;
                 int count = dbAdapter.removeAppInfo(launcherInfo, true);
                 if (count < 1) {
-                    Log.e("AppManager", "Launcher upgrade -- Can't remove the older DB info.");
+                    Log.e(TAG, "Launcher upgrade -- Can't remove the older DB info.");
                     //TODO:: need remove the files? now, restart will try again.
                     return;
                 }
@@ -489,7 +490,7 @@ public class AppManager {
                 info.built_in = 1;
                 int count = dbAdapter.removeAppInfo(getDIDSessionAppInfo(), true);
                 if (count < 1) {
-                    Log.e("AppManager", "Launcher upgrade -- Can't remove the older DB info.");
+                    Log.e(TAG, "Launcher upgrade -- Can't remove the older DB info.");
                     return;
                 }
                 shareInstaller.renameFolder(didsession, basePathInfo.appsPath, getDIDSessionId());
