@@ -57,7 +57,7 @@ export class TitleBar {
     public handleTitleBarEvent(titleBarEvent: TitleBarEventToMainProcess) {
         switch (titleBarEvent.method) {
             case "iconclicked":
-                AppManager.getSharedInstance().close(this.runningApp.appInfo.app_id);
+                AppManager.getSharedInstance().close(this.runningApp.appInfo.app_id, AppManager.STARTUP_APP, null);
                 break;
         }
     }

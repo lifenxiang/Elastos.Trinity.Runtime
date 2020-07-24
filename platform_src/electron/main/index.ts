@@ -5,7 +5,7 @@ const cdvElectronSettings = require('./cdv-electron-settings.json');
 const reservedScheme = require('./cdv-reserved-scheme.json');
 import { TrinityRuntime } from './Runtime';
 
-console.log("Loaded electron settings:", cdvElectronSettings)
+//console.log("Loaded electron settings:", cdvElectronSettings)
 
 const scheme = cdvElectronSettings.scheme;
 const hostname = cdvElectronSettings.hostname;
@@ -19,7 +19,7 @@ const isFileProtocol = scheme === 'file';
  *  The hostname "localhost" can be changed but only set when scheme is not "file"
  */
 const basePath = (() => isFileProtocol ? `file://${__dirname}` : `${scheme}://${hostname}`)();
-console.log("Base path:", basePath)
+//console.log("Base path:", basePath)
 
 if (reservedScheme.includes(scheme)) throw new Error(`The scheme "${scheme}" can not be registered. Please use a non-reserved scheme.`);
 

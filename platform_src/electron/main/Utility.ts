@@ -1,8 +1,14 @@
 export class Utility {
     public static getJsonFromFile(loadedJsonFile: any): any {
-        // Useless - more straight forward in JS than in Java. Just kept here to keep code similar among
-        // platforms.
         return loadedJsonFile;
+    }
+
+    public static getJsonMapFromFile(loadedJsonFile: any): Map<string, any> {
+        let jsonMap = new Map<string, any>();
+        for (var value in loadedJsonFile) {
+            jsonMap.set(value, loadedJsonFile[value]);
+        }
+        return jsonMap;
     }
 
     /*public static void alertPrompt(String title, String msg, Activity activity) {

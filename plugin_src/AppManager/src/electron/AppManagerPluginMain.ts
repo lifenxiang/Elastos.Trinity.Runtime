@@ -23,7 +23,7 @@ export class AppManagerPlugin extends TrinityPlugin {
     }
     
     getAppInfos(success: SuccessCallback, error: ErrorCallback, args: any) {
-        console.log("getAppInfos - caller appId="+this.appId)
+        //console.log("getAppInfos - caller appId="+this.appId)
 
         let infosMap = this.appManager.getAppInfos();
         this.isChangeIconPath = true;
@@ -42,7 +42,7 @@ export class AppManagerPlugin extends TrinityPlugin {
     }
 
     getPreference(success: SuccessCallback, error: ErrorCallback, args: any) {
-        console.log("getPreference")
+        //console.log("getPreference")
         success("");
     }
 
@@ -69,6 +69,8 @@ export class AppManagerPlugin extends TrinityPlugin {
     }
 
     protected setVisible(success: SuccessCallback, error: ErrorCallback, args: any) {
+        //console.error("asd - setVisible");
+        //console.log(args);
         let visible = args[0] as string;
 
         if (visible == null || visible != "hide") {
@@ -77,7 +79,7 @@ export class AppManagerPlugin extends TrinityPlugin {
 
         this.appManager.setAppVisible(this.appId, visible);
         if (visible == "show") {
-            this.appManager.start(this.appId);
+            this.appManager.start(this.appId, AppManager.STARTUP_APP, null);
         }
         else {
             this.appManager.loadLauncher();
@@ -100,7 +102,7 @@ export class AppManagerPlugin extends TrinityPlugin {
             throw new Error("Can't start did session!");
         }
         else {
-            this.appManager.start(id);
+            this.appManager.start(id, AppManager.STARTUP_APP, null);
             return "ok";
         }
     }

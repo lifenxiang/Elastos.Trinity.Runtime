@@ -478,27 +478,33 @@ export class ManagerDBAdapter {
         await preferenceRepository.remove(preferences);
     }
 
-    public async getPreference(key: string): Promise<Preference> {
+    public async getPreference(key: string): Promise<any> {
         let preferenceRepository = this.helper.getRepository(ManagerDBHelper.PREFERENCE_TABLE) as Repository<Preference>;
         let preferences = await preferenceRepository.find({key: key});
         if (preferences.length > 0) {
             if (preferences[0].value != null) {
-                return preferences[0];
+                let ret = {
+                    key: preferences[0].key,
+                    value: JSON.parse(preferences[0].value)
+                };
+                return ret;
             }
         }
         return null;
     }
 
-    public async getPreferences(): Promise<Preference[]> {
+    public async getPreferences(): Promise<any> {
         let preferenceRepository = this.helper.getRepository(ManagerDBHelper.PREFERENCE_TABLE) as Repository<Preference>;
         let savedPreferences = await preferenceRepository.find();
-        let preferences = new Array<Preference>();
+        let ret: any = {};
         for (let savedPreference of savedPreferences) {
-            if (savedPreference.value ! = null) {
-                preferences.push(savedPreference);
+            let key = savedPreference.key;
+            let value = savedPreference.value;
+            if (value ! = null) {
+                ret[key] = JSON.parse(value);
             }
         }
-        return preferences;
+        return ret;
     }
 
     public async getApiAuth(appId: string, plugin: string, api: string): Promise<number> {

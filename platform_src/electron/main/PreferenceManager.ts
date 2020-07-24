@@ -4,6 +4,8 @@ import { MergeDBAdapter } from "./MergeDBAdapter";
 import { AppManager } from "./AppManager";
 import { Log } from './Log';
 import { Utility } from './Utility';
+import { join as pathJoin } from "path";
+import { UIStyling } from './UIStyling';
 
 export class PreferenceManager {
     private static LOG_TAG = "PreferenceManager";
@@ -30,217 +32,187 @@ export class PreferenceManager {
         return PreferenceManager.preferenceManager;
     }
 
-    public parsePreferences() {
-        let preferencesFile = require(app.getAppPath() + "config.preferences.json");
-        this.defaultPreferences = preferencesFile;
-        this.defaultPreferences.set("version", this.getNativeSystemVersion());
+    public async parsePreferences() {
+        let preferencesFile = require(pathJoin(app.getAppPath(), "config", "preferences.json"));
+        this.defaultPreferences = Utility.getJsonMapFromFile(preferencesFile);
+        this.defaultPreferences.set("version", await this.getNativeSystemVersion());
     }
 
-    /* TODO private getDefaultValue(key: string): Object {
-        Object value = null;
-        if (defaultPreferences.has(key)) {
-            value = defaultPreferences.get(key);
+    private getDefaultValue(key: string): any {
+        let value = null;
+        if (this.defaultPreferences.has(key)) {
+            value = this.defaultPreferences.get(key);
         }
         return value;
     }
 
-    public JSONObject getPreference(String key) throws Exception  {
-        Object defaultValue = getDefaultValue(key);
+    public async getPreference(key: string): Promise<any> {
+        let defaultValue = this.getDefaultValue(key);
         if (defaultValue == null) {
-            throw new Exception("getPreference error: no such preference!");
+            Log.e(PreferenceManager.LOG_TAG, "getPreference error: no such preference!");
         }
 
-        JSONObject ret = dbAdapter.getPreference(key);
+        let ret = await this.dbAdapter.getPreference(key);
 
         if (ret == null) {
-            ret = new JSONObject();
-            ret.put("key", key);
-            ret.put("value", defaultValue);
+            ret = {
+                key: key,
+                value: defaultValue
+            };
         }
 
-        if (key.equals("locale.language") && ret.getString("value").equals("native system")) {
-            ret.put("value", Locale.getDefault().getLanguage());
+        if (key == "locale.language" && ret.value == "native system") {
+            //TODO: use en for dev
+            //ret.value = app.getLocale();
+            ret.value = "en";
         }
 
         return ret;
     }
 
-    public JSONObject getPreferences() throws Exception {
-        JSONObject values = dbAdapter.getPreferences();
-        Iterator keys = defaultPreferences.keys();
-        while (keys.hasNext()) {
-            String key = (String)keys.next();
-            if (!values.has(key)) {
-                Object value = defaultPreferences.get(key);
-                values.put(key, value);
+    public async getPreferences(): Promise<any> {
+        let values = await this.dbAdapter.getPreferences();
+
+        console.log("asd - values");
+        console.log(values);
+
+        this.defaultPreferences.forEach((value: any, key: string) => {
+            if (values[key] == null) {
+                values[key] = value;
             }
 
-            if (key.equals("locale.language") && values.getString(key).equals("native system")) {
-                values.put(key, Locale.getDefault().getLanguage());
+            if (key == "locale.language" && values.key == "native system") {
+                //TODO: use en for dev
+                //values[key] = app.getLocale();
+                values[key] = "en";
             }
-        }
+        });
+        
         return values;
     }
 
-    final static String[] refuseSetPreferences = {
-            "version"
-    };
+    public static refuseSetPreferences: string[] = [
+        "version"
+    ];
 
-    private Boolean isAllowSetPreference(String key) {
-        for (String item : PreferenceManager.refuseSetPreferences) {
-            if (item.equals(key)) {
+    private isAllowSetPreference(key: string): boolean {
+        for (let item of PreferenceManager.refuseSetPreferences) {
+            if (item == key) {
                 return false;
             }
         }
         return true;
     }
-*/
-    public setPreference(key: string, value: Object) {
-        /* TODO if (!isAllowSetPreference(key)) {
-            throw new Exception("setPreference error: " + key + " can't be set!");
+
+    public setPreference(key: string, value: any) {
+        if (!this.isAllowSetPreference(key)) {
+            Log.e(PreferenceManager.LOG_TAG, "setPreference error: " + key + " can't be set!");
+            return;
         }
 
-        Object defaultValue = getDefaultValue(key);
-        if (defaultValue == null) {
-            throw new Exception("setPreference error: no such preference!");
+        let defaultValue = this.getDefaultValue(key);
+        if (defaultValue) {
+            Log.e(PreferenceManager.LOG_TAG, "setPreference error: no such preference!");
+            return;
         }
 
-        if (dbAdapter.setPreference(key, value) < 1) {
-            throw new Exception("setPreference error: write db error!");
+        if (key == "ui.darkmode") {
+            this.prepareUIStyling(value);
         }
 
-//        if (key == "developer.mode") {
-//            Boolean isMode = false;
-//            if (value != null) {
-//                isMode = Boolean.getBoolean(value);
-//            }
-//
-//            if (isMode) {
-//                CLIService.getShareInstance().start();
-//            }
-//            else {
-//                CLIService.getShareInstance().stop();
-//            }
-//        }
+        let data = {
+            key: key,
+            value: value
+        };
+        let json = {
+            action: "preferenceChanged",
+            data: data
+        };
 
-        if (key.equals("ui.darkmode")) {
-            prepareUIStyling((Boolean)value);
-        }
-
-        JSONObject data = new JSONObject();
-        data.put("key", key);
-        data.put("value", value);
-        JSONObject json = new JSONObject();
-        json.put("action", "preferenceChanged");
-        json.put("data", data);
-        AppManager.getShareInstance().broadcastMessage(AppManager.MSG_TYPE_IN_REFRESH,
-                json.toString() , "system");*/
+        //TODO: need implementation in AppManager
+        //AppManager.getSharedInstance();
     }
 
     /**
      * From a given base context (ex: activity), returns a new context on which the default locale/language has been
      * modified to match trinity's language, so that native screens and dialogs can show native strings in the right language.
      */
-    /*public Context getLocalizedContext(Context context) {
-        String language;
-        try {
-            language = getCurrentLocale();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return context;
-        }
-
-        Configuration config = context.getResources().getConfiguration();
-        Locale locale = new Locale(language);
-        Locale.setDefault(locale);
-        config.locale = locale;
-        context.getResources().updateConfiguration(config, context.getResources().getDisplayMetrics());
-
-        return context.createConfigurationContext(config);
+    public getLocalizedContext(): any {
+        //TODO: check if need implementation in typescript
     }
 
-    public Boolean getDeveloperMode() {
-        return getBooleanValue("developer.mode", false);
+    public async getDeveloperMode(): Promise<boolean> {
+        return await this.getBooleanValue("developer.mode", false);
     }
 
-    public void setDeveloperMode(Boolean value) {
-        try {
-            setPreference("developer.mode", value);
-        }
-        catch (Exception e){
-            e.printStackTrace();
-        }
+    public setDeveloperMode(value: boolean) {
+        this.setPreference("developer.mode", value);
     }
 
-    public String getCurrentLocale() throws Exception {
-        JSONObject value = getPreference("locale.language");
-        String ret = value.getString("value");
-        if (ret.equals("native system")) {
-            ret = Locale.getDefault().getLanguage();
+    public async getCurrentLocale(): Promise<string> {
+        let value = await this.getPreference("locale.language");
+        let ret = value.value;
+        if (ret == "native system") {
+            //TODO: use en for dev
+            //ret = app.getLocale();
+            ret = "en";
         }
+
         return ret;
     }
 
-    public void setCurrentLocale(String code) throws Exception {
-        setPreference("locale.language", code);
-        JSONObject json = new JSONObject();
-        json.put("action", "currentLocaleChanged");
-        json.put("data", code);
-        AppManager.getShareInstance().broadcastMessage(AppManager.MSG_TYPE_IN_REFRESH,
-                json.toString(), AppManager.LAUNCHER);
+    public setCurrentLocale(code: string) {
+        this.setPreference("locale.language", code);
+        let json = {
+            action: "currentLocaleChanged",
+            data: code
+        };
+        //TODO: need implementation in AppManager
+        //AppManager.getSharedInstance();
     }
-*/
-    public getNativeSystemVersion(): String {
-        /* TODO Context context = AppManager.getShareInstance().activity;
-        PackageManager manager = context.getPackageManager();
-        PackageInfo info = manager.getPackageInfo(context.getPackageName(), 0);
 
-        //check version
-        JSONObject json = dbAdapter.getPreference("version");
-        String version = null;
+    public async getNativeSystemVersion(): Promise<string> {
+        //TODO: get app version from electron context
+        let versionName = "0.0.1"; 
+
+        let json = await this.dbAdapter.getPreference("version");
+        let version = null;
         if (json != null) {
-            version = json.getString("value");
+            version = json.value;
         }
 
-        if (json == null || !info.versionName.equals(version)) {
-            dbAdapter.setPreference("version", info.versionName);
-            versionChanged = true;
+        if (json == null || versionName != version) {
+            this.dbAdapter.setPreference("version", versionName);
+            this.versionChanged = true;
         }
 
-        return info.versionName;*/
-
-        return "0.0.1"; // TMP
+        return versionName;
     }
 
-   /* public String getVersion() throws Exception {
-        String version = "";
-        if (defaultPreferences.has("version")) {
-            version = defaultPreferences.getString("version");
+    public getVersion(): string {
+        let version = "";
+        if (this.defaultPreferences.has("version")) {
+            version = this.defaultPreferences.get("version");
         }
         return version;
     }
 
-    public String getWalletNetworkType()  {
-        return getStringValue("chain.network.type", "MainNet");
+    public getWalletNetworkType(): Promise<string> {
+        return this.getStringValue("chain.network.type", "MainNet");
     }
 
-    public String getWalletNetworkConfig()  {
-        return getStringValue("chain.network.config", "");
+    public getWalletNetworkConfig(): Promise<string> {
+        return this.getStringValue("chain.network.config", "");
     }
 
-    public String getDIDResolver()  {
-        return getStringValue("did.resolver", "http://api.elastos.io:20606");
+    public getDIDResolver(): Promise<string> {
+        return this.getStringValue("did.resolver", "http://api.elastos.io:20606");
     }
 
-    public String getStringValue(String key, String defaultValue) {
-        String value = null;
-        try {
-            JSONObject item = getPreference(key);
-            value = item.getString("value");
-        }
-        catch (Exception e){
-            e.printStackTrace();
-        }
+    public async getStringValue(key: string, defaultValue: string): Promise<string> {
+        let value: string = null;
+        let item = await this.getPreference(key);
+        value = item.value;
 
         if (value == null) {
             value = defaultValue;
@@ -249,15 +221,10 @@ export class PreferenceManager {
         return value;
     }
 
-    public boolean getBooleanValue(String key, boolean defaultValue) {
-        Boolean value = null;
-        try {
-            JSONObject item = getPreference(key);
-            value = item.getBoolean("value");
-        }
-        catch (Exception e){
-            e.printStackTrace();
-        }
+    public async getBooleanValue(key: string, defaultValue: boolean): Promise<boolean> {
+        let value: boolean = null;
+        let item = await this.getPreference(key);
+        value = item.value;
 
         if (value == null) {
             value = defaultValue;
@@ -266,21 +233,16 @@ export class PreferenceManager {
         return value;
     }
 
-    public String[] getStringArrayValue(String key, String[] defaultValue) {
-        String[] value = null;
-        try {
-            JSONObject item = getPreference(key);
-            JSONArray array =  item.getJSONArray("value");
-            if (array != null) {
-                value = new String[array.length()];
-                for (int i = 0; i < array.length(); i++) {
-                    value[i] = array.getString(i);
-                }
+    public async getStringArrayValue(key: string, defaultValue: string[]): Promise<string[]> {
+        let value: string[] = null;
+        let item = await this.getPreference(key);
+        let array = item.value;
+        if (array != null) {
+            value = [];
+            for (var i = 0; i < array.length; i++) {
+                value[i] = array[i];
             }
         }
-        catch (Exception e){
-            e.printStackTrace();
-        }
 
         if (value == null) {
             value = defaultValue;
@@ -289,15 +251,13 @@ export class PreferenceManager {
         return value;
     }
 
-    private void prepareUIStyling(boolean useDarkMode) {
+    private prepareUIStyling(useDarkMode: boolean) {
         UIStyling.prepare(useDarkMode);
     }
 
-    public Boolean getDeveloperInstallVerify() {
-        if (getDeveloperMode()) {
-            return getBooleanValue("developer.install.verifyDigest", true);
+    public getDeveloperInstallVerify(): Promise<boolean> {
+        if (this.getDeveloperMode()) {
+            return this.getBooleanValue("developer.install.verifyDigest", true);
         }
-
-        return true;
-    }*/
+    }
 }

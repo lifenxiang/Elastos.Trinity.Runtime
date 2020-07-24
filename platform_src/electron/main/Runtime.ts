@@ -54,9 +54,9 @@ export class TrinityRuntime {
     createIPCDefinitionForMainProcess(pluginName: string, methodsList: string[]) {
         for (let m of methodsList) {
             let fullMethodName = pluginName+"-"+m;
-            console.log("Main process is registering an IPC event handler for event "+fullMethodName);
+            //console.log("Main process is registering an IPC event handler for event "+fullMethodName);
             ipcMain.on(fullMethodName, (event, args: any)=>{
-                console.log("IPCMAIN ON ", args)
+                //console.log("IPCMAIN ON ", args)
                 this.appManager.handleIPCCall(event, pluginName, m, fullMethodName, (data?: any)=>{
                     let response: InvocationResult = {
                         successResultArgs: data

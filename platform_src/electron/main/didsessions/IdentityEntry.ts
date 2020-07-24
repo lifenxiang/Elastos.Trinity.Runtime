@@ -13,42 +13,31 @@ export class IdentityEntry {
         this.avatar = avatar;
     }
 
-    /* TODO public JSONObject asJsonObject() {
-        try {
-            JSONObject jsonObj = new JSONObject();
-            jsonObj.put("didStoreId", didStoreId);
-            jsonObj.put("didString", didString);
-            jsonObj.put("name", name);
+    public asJsonObject(): any {
+        let jsonObj: any = {
+            didStoreId: this.didStoreId,
+            didString: this.didString,
+            name: this.name
+        };
 
-            if (avatar != null) {
-                jsonObj.put("avatar", avatar.asJsonObject());
-            }
-
-            return jsonObj;
-        } catch (JSONException e) {
-            e.printStackTrace();
-            return null;
+        if (this.avatar != null) {
+            jsonObj.avatar = this.avatar.asJsonObject();
         }
+
+        return jsonObj;
     }
 
-    public static IdentityEntry fromJsonObject(JSONObject jsonObj) {
-        if (!jsonObj.has("didStoreId") || !jsonObj.has("didString") || !jsonObj.has("name"))
-            return null;
-
-        try {
-            IdentityEntry identity = new IdentityEntry(
-                    jsonObj.getString("didStoreId"),
-                    jsonObj.getString("didString"),
-                    jsonObj.getString("name"));
-
-            if (jsonObj.has("avatar")) {
-                identity.avatar = IdentityAvatar.fromJsonObject(jsonObj.getJSONObject("avatar"));
-            }
-
-            return identity;
-        } catch (JSONException e) {
-            e.printStackTrace();
+    public static fromJsonObject(jsonObj: any): IdentityEntry {
+        if (jsonObj.didStoreId == null || jsonObj.didString == null || jsonObj.name == null) {
             return null;
         }
-    }*/
+        
+        let identity = new IdentityEntry(jsonObj.didStoreId, jsonObj.didString, jsonObj.name);
+        if (jsonObj.avatar != null) {
+            identity.avatar = IdentityAvatar.fromJsonObject(jsonObj.avatar);
+        }
+
+        return identity;
+    }
+
 }

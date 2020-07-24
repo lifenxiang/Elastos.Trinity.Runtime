@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readdirSync } from 'fs-extra';
-import { app, BrowserWindow, session, BrowserView, Session, Request } from 'electron';
+import { app, BrowserWindow, session, BrowserView, Session, Request, Info } from 'electron';
 import { join as pathJoin } from "path";
 
 import { Log } from "./Log";
@@ -13,131 +13,102 @@ import { TrinityRuntime } from './Runtime';
 import { TitleBar } from './TitleBar';
 import { notImplemented } from './Utility';
 import { AppManagerPlugin } from './plugins_main/AppManagerPluginMain';
-
-class AppPathInfo {
-    public appsPath: string = null;
-    public dataPath: string = null;
-    public configPath: string = null;
-    public tempPath: string = null;
-    public databasePath: string = null;
-
-    constructor(basePath: string) {
-        let baseDir = app.getAppPath(); // TODO CHECK String baseDir = activity.getFilesDir().toString();
-        if (basePath != null) {
-            baseDir = baseDir + "/" + basePath;
-        }
-        this.appsPath = baseDir + "/apps/";
-        this.dataPath = baseDir + "/data/";
-        this.configPath = baseDir + "/config/";
-        this.tempPath = baseDir + "/temp/";
-        this.databasePath = baseDir + "/database/";
-
-        if (!existsSync(this.appsPath)) {
-            mkdirSync(this.appsPath, { recursive: true });
-        }
-
-        if (!existsSync(this.dataPath)) {
-            mkdirSync(this.dataPath, { recursive: true });
-        }
-
-        if (!existsSync(this.configPath)) {
-            mkdirSync(this.configPath, { recursive: true });
-        }
-
-        if (!existsSync(this.tempPath)) {
-            mkdirSync(this.tempPath, { recursive: true });
-        }
-
-        if (!existsSync(this.databasePath)) {
-            mkdirSync(this.databasePath, { recursive: true });
-        }
-    }
-}
-
-export class RunningApp {
-    appInfo: AppInfo;
-    browserViewID: number;
-    runtime: TrinityRuntime;
-    pluginInstances: { [key: string] : TrinityPlugin };
-    titleBar: TitleBar;
-
-    private constructor(appInfo: AppInfo, browserViewID: number, runtime: TrinityRuntime, titleBar: TitleBar) {
-        this.browserViewID = browserViewID;
-        this.appInfo = appInfo;
-        this.runtime = runtime;
-        this.titleBar = titleBar;
-    }
-
-    private async createPluginInstances() {
-        // Create plugin instances fo this app
-        this.pluginInstances = {};
-        for (let pluginName of Object.keys(this.runtime.plugins)) {
-            console.log("pluginName", pluginName)
-            let plugin = this.runtime.plugins[pluginName];
-            let pluginInstance = plugin.instanceCreationCallback(this.appInfo.app_id);
-            this.pluginInstances[pluginName] = pluginInstance;
-
-            await pluginInstance.setInfo(this.appInfo)
-        }
-    }
-
-    public static async create(appInfo: AppInfo, browserViewID: number, runtime: TrinityRuntime, titleBar: TitleBar): Promise<RunningApp> {
-        let app = new RunningApp(appInfo, browserViewID, runtime, titleBar);
-        await app.createPluginInstances();
-        titleBar.setRunningApp(app);
-        return app;
-    }
-}
+import { UIStyling } from './UIStyling';
 
 export class AppManager {
     private static LOG_TAG = "AppManager";
 
-     /** The internal message */
-     public static MSG_TYPE_INTERNAL = 1;
-     /** The internal return message. */
-     public static MSG_TYPE_IN_RETURN = 2;
-     /** The internal refresh message. */
-     public static MSG_TYPE_IN_REFRESH = 3;
-     /** The installing message. */
-     public static MSG_TYPE_INSTALLING = 4;
- 
-     /** The external message */
-     public static MSG_TYPE_EXTERNAL = 11;
-     /** The external launcher message */
-     public static MSG_TYPE_EX_LAUNCHER = 12;
-     /** The external install message */
-     public static MSG_TYPE_EX_INSTALL = 13;
-     /** The external return message. */
-     public static MSG_TYPE_EX_RETURN = 14;
+    /**
+     * The internal message
+     */
+    public static MSG_TYPE_INTERNAL = 1;
+    /**
+     * The internal return message.
+     */
+    public static MSG_TYPE_IN_RETURN = 2;
+    /**
+     * The internal refresh message.
+     */
+    public static MSG_TYPE_IN_REFRESH = 3;
+    /**
+     * The installing message.
+     */
+    public static MSG_TYPE_INSTALLING = 4;
+
+    /**
+     * The external message
+     */
+    public static MSG_TYPE_EXTERNAL = 11;
+    /**
+     * The external launcher message
+     */
+    public static MSG_TYPE_EX_LAUNCHER = 12;
+    /**
+     * The external install message
+     */
+    public static MSG_TYPE_EX_INSTALL = 13;
+    /**
+     * The external return message.
+     */
+    public static MSG_TYPE_EX_RETURN = 14;
+
 
     public static LAUNCHER = "org.elastos.trinity.launcher";
+    //public static LAUNCHER = "launcher"; //TODO: check if working
     public static DIDSESSION = "didsession";
 
+    /** The app mode. */
     public static STARTUP_APP = "app";
+    /** The service mode. */
     public static STARTUP_SERVICE = "service";
+    /** The intent mode. It will be closed after sendIntentResponse */
+    public static STARTUP_INTENT = "intent";
+    /** The silence intent mode. It will be closed after sendIntentResponse */
+    public static STARTUP_SILENCE = "silence";
+
+    static startupModes: string[] = [
+        AppManager.STARTUP_APP,
+        AppManager.STARTUP_SERVICE,
+        AppManager.STARTUP_INTENT,
+        AppManager.STARTUP_SILENCE
+    ];
 
     private static appManager: AppManager;
-    private runtime: TrinityRuntime;
+    private runtime: TrinityRuntime; //TODO: diff with java
+    private curFragment: any = null; //TODO: change type
     private window: BrowserWindow = null
     dbAdapter: MergeDBAdapter = null;
-    runningApps: { [key:string]: RunningApp };
+    runningApps: { [key:string]: RunningApp }; //TODO: diff with java
+
 
     private basePathInfo: AppPathInfo = null;
     private pathInfo: AppPathInfo = null;
 
-    private signIning = true;
+    private signIning: boolean = true;
     private did: string = null;
 
-    shareInstaller: AppInstaller = new AppInstaller();;
+    private shareInstaller: AppInstaller = new AppInstaller();
 
     protected appInfos: Map<string, AppInfo>;
     private lastList = new Array<string>();
     private runningList = new Array<string>();
+    private serviceRunningList = new Array<string>();
     public appList: AppInfo[];
     protected visibles = new Map<string, boolean>();
 
     private launcherInfo: AppInfo = null;
     private didSessionInfo: AppInfo = null;
+
+    private installUriList = new Array<InstallInfo>();
+    private intentUriList = new Array<any>(); //TODO: diff with java
+    private launcherReady: boolean = false;
+
+    static defaultPlugins: string[] = [
+        "AppManager",
+        "StatusBar",
+        "Clipboard",
+        "TitleBarPlugin"
+    ];
 
     constructor(window: BrowserWindow, runtime: TrinityRuntime) {
         AppManager.appManager = this;
@@ -149,25 +120,24 @@ export class AppManager {
         this.basePathInfo = new AppPathInfo(null);
         this.pathInfo = this.basePathInfo;
 
-
         this.shareInstaller.init(this.basePathInfo.appsPath, this.basePathInfo.tempPath);
 
         this.init();
     }
 
     private async init() {
-        //this.dbAdapter = await MergeDBAdapter.create(this.window);
         this.dbAdapter = await MergeDBAdapter.newInstance(this.window);
 
-        await this.refreshInfos();
+        await this.refreashInfos();
         await this.getLauncherInfo();
         await this.saveLauncher();
         await this.checkAndUpateDIDSession();
         await this.saveBuiltInApps();
-        await this.refreshInfos();
+        await this.refreashInfos();
 
         let entry: IdentityEntry = null;
-        /* TODO try {
+        //TODO: migrate from java
+        /*try {
             entry = DIDSessionManager.getSharedInstance().getSignedInIdentity();
         }
         catch (Exception e){
@@ -189,13 +159,18 @@ export class AppManager {
             }
         }
 
-        /* TODO if (PreferenceManager.getSharedInstance().getDeveloperMode()) {
-//            CLIService.getShareInstance().start();
+        if (await PreferenceManager.getSharedInstance().getDeveloperMode()) {
+            //CLIService.getShareInstance().start();
         }
 
-        try {
+        //Apply theming for native popups
+        let darkMode: boolean = await PreferenceManager.getSharedInstance().getBooleanValue("ui.darkmode", false);
+        UIStyling.prepare(darkMode);
+
+        //TODO: migrate from java
+        /*try {
             ContactNotifier.getSharedInstance(activity, did);
-        } catch (CarrierException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }*/
     }
@@ -204,35 +179,113 @@ export class AppManager {
         return AppManager.appManager;
     }
 
-    private getAssetsFile(path: string, warnIfNotFound = true): Object {
-        let fullPath = pathJoin(app.getAppPath(), path);
-        if (existsSync(fullPath))
-            return require(fullPath);
-        else {
-            if (warnIfNotFound)
-                Log.w(AppManager.LOG_TAG, "File "+path+" doesn't exist");
-            return null;
+    public static isStartupMode(startupMode: string): boolean {
+        for (let mode of this.startupModes) {
+            if (mode == startupMode) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public getBaseDataPath(): string {
+        return this.basePathInfo.dataPath;
+    }
+
+    private async reInit(sessionLanguage: string) {
+        //TODO: diff with java
+        //curFragment = null;
+
+        this.pathInfo = new AppPathInfo(this.getDIDDir());
+
+        await this.dbAdapter.setUserDBAdapter(this.pathInfo.databasePath);
+
+        // If we have received an optional language info, we set the DID session language preference with it.
+        // This is normally passed by the DID session app to force the initial session language
+        if (sessionLanguage != null) {
+            try {
+                PreferenceManager.getSharedInstance().setPreference("locale.language", sessionLanguage);
+            } catch (e) {
+                Log.e(AppManager.LOG_TAG, e);
+            }
+        }
+
+        await this.refreashInfos();
+        await this.getLauncherInfo();
+        try {
+            await this.loadLauncher();
+        }
+        catch (e) {
+            Log.e(AppManager.LOG_TAG, e);
+        }
+        await this.refreashInfos();
+        this.sendRefreshList("initiated", null, false);
+    }
+
+    private startStartupServices() {
+        for (let info of this.appList) {
+            for (let service of info.startupServices) {
+                try {
+                    this.start(info.app_id, AppManager.STARTUP_SERVICE, service.name);
+                } catch (e) {
+                    Log.e(AppManager.LOG_TAG, e);
+                }   
+            }
         }
     }
 
-    public async getLauncherInfo(): Promise<AppInfo> {
-        if (this.launcherInfo == null) {
-            this.launcherInfo = await this.dbAdapter.getLauncherInfo();
+    private closeAllApps() {
+        for (let appId of this.getRunningList()) {
+            if (!this.isLauncher(appId)) {
+                this.closeAllModes(appId);
+            }
         }
-        return this.launcherInfo;
+
+        //TODO: migrate from java
+        /*FragmentManager manager = activity.getSupportFragmentManager();
+        for (Fragment fragment : manager.getFragments()) {
+            manager.beginTransaction().remove(fragment).commit();
+        }*/
     }
 
-    public isLauncher(appId: String): boolean {
-        if (appId == null || this.launcherInfo == null) {
-            return false;
-        }
+    private async clean() {
+        this.did = null;
+        //TOOD: this.curFragment = null;
+        this.appList = null;
+        this.lastList = new Array<string>();
+        this.runningList = new Array<string>();
+        this.serviceRunningList = new Array<string>();
+        this.visibles = new Map<string, boolean>();
+        await this.dbAdapter.setUserDBAdapter(null);
 
-        if (appId == AppManager.LAUNCHER || appId == this.launcherInfo.app_id) {
-            return true;
+        this.pathInfo = this.basePathInfo;
+    }
+
+    /**
+     * Signs in to a new DID session.
+     */
+    public async signIn(sessionLanguage: string) {
+        if (this.signIning) {
+            this.signIning = false;
+            await this.closeDIDSession();
+            await this.reInit(sessionLanguage);
         }
-        else {
-            return false;
+    }
+
+    /**
+     * Signs out from a DID session. All apps and services are closed, and launcher goes back to the DID session app prompt.
+     */
+    public async signOut() {
+        if (!this.signIning) {
+            this.signIning = true;
+            await this.closeAllApps();
+            await this.clean();
+            await this.startDIDSession();
         }
+    }
+
+    public isSignIning(): boolean {
+        return this.signIning;
     }
 
     public getDIDSessionId(): string {
@@ -250,110 +303,16 @@ export class AppManager {
         return this.didSessionInfo;
     }
 
-    public getBaseDataPath(): string {
-        return this.basePathInfo.dataPath;
-    }
-
-    private async reInit(sessionLanguage: string) {
-        // TODO curFragment = null;
-
-        this.pathInfo = new AppPathInfo(this.getDIDDir());
-
-        await this.dbAdapter.setUserDBAdapter(this.pathInfo.databasePath);
-
-        // If we have received an optional language info, we set the DID session language preference with it.
-        // This is normally passed by the DID session app to force the initial session language
-        if (sessionLanguage != null) {
-            try {
-                PreferenceManager.getSharedInstance().setPreference("locale.language", sessionLanguage);
-            } catch (e) {
-                Log.e(AppManager.LOG_TAG, e);
-            }
-        }
-
-        Log.d(AppManager.LOG_TAG, "Refreshing info after reinit");
-        await this.refreshInfos();
-        await this.getLauncherInfo();
-        try {
-            await this.loadLauncher();
-        }
-        catch (e){
-            Log.e(AppManager.LOG_TAG, e);
-        }
-        await this.refreshInfos();
-        this.sendRefreshList("initiated", null, false);
-    }
-
-    private async closeAll() {
-        for (let appId of this.getRunningList()) {
-            if (!this.isLauncher(appId)) {
-                await this.close(appId);
-            }
-
-        }
-
-        console.log("NOT IMPLEMENTED - closeAll")
-
-        /* TODO FragmentManager manager = activity.getSupportFragmentManager();
-        for (Fragment fragment : manager.getFragments()) {
-            manager.beginTransaction().remove(fragment).commit();
-        }*/
-    }
-
-    private async clean() {
-        this.did = null;
-        // TOOD this.curFragment = null;
-        this.appList = null;
-        this.lastList = new Array<string>();
-        this.runningList = new Array<string>();
-        this.visibles = new Map<string, boolean>();
-        await this.dbAdapter.setUserDBAdapter(null);
-
-        this.pathInfo = this.basePathInfo;
-    }
-    /**
-     * Signs in to a new DID session.
-     */
-    /*public signIn(sessionLanguage: string) {
-        if (this.signIning) {
-            this.signIning = false;
-            await this.closeDIDSession();
-            await this.reInit(sessionLanguage);
-        }
-    }
-
-    /**
-     * Signs out from a DID session. All apps and services are closed, and launcher goes back to the DID session app prompt.
-     */
-    public async signOut() {
-        if (!this.signIning) {
-            this.signIning = true;
-            await this.closeAll();
-            await this.clean();
-            await this.startDIDSession();
-        }
-    }
-
-    /*public boolean isSignIning() {
-        return signIning;
-    }
-
-    public String getDIDSessionId() {
-        return "org.elastos.trinity.dapp.didsession";
-    }
-    public boolean isDIDSession(String appId) {
-        return appId.equals("didsession") || appId.equals(getDIDSessionId());
-    }
-*/
     public async startDIDSession() {
-        await this.start(this.getDIDSessionId());
+        await this.start(this.getDIDSessionId(), AppManager.STARTUP_APP, null);
     }
 
     public async closeDIDSession() {
-        await this.close(this.getDIDSessionId());
+        await this.close(this.getDIDSessionId(), AppManager.STARTUP_APP, null);
 
-        // TODO let entry = DIDSessionManager.getSharedInstance().getSignedInIdentity();
-        // TODO did = entry.didString;
+        //TODO: need DIDSessionManager
+        /*let entry = DIDSessionManager.getSharedInstance().getSignedInIdentity();
+        did = entry.didString;*/
     }
 
     public getDID(): string {
@@ -372,33 +331,28 @@ export class AppManager {
         return this.dbAdapter;
     }
 
-   /* private InputStream getAssetsFile(String path) {
-        InputStream input = null;
-
-        AssetManager manager = activity.getAssets();
-        try {
-            input = manager.open(path);
+    private getAssetsFile(path: string): Object {
+        let input = null;
+        let fullPath = pathJoin(app.getAppPath(), path);
+        if (existsSync(fullPath)) {
+            input = require(fullPath);
         }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-
         return input;
-    }*/
+    }
 
-    private async installBuiltInApp(relativeRootPath: string, id: string, isLauncher: boolean) {
-        Log.d("AppManager", "Entering installBuiltInApp relativeRootPath="+relativeRootPath+" id="+id+" launcher="+isLauncher);
+    private async installBuiltInApp(path: string, id: string, launcher: number) {
+        Log.d("AppManager", "Entering installBuiltInApp relativeRootPath="+path+" id="+id+" launcher="+launcher);
 
-        relativeRootPath = relativeRootPath + id;
-        let input = this.getAssetsFile(relativeRootPath + "/manifest.json", false);
+        path = path + id;
+        let input = this.getAssetsFile(path + "/manifest.json");
         if (input == null) {
-            input = this.getAssetsFile(relativeRootPath + "/assets/manifest.json", false);
+            input = this.getAssetsFile(path + "/assets/manifest.json");
             if (input == null) {
                 Log.e("AppManager", "No manifest found, returning");
                 return;
             }
         }
-        let builtInInfo = this.shareInstaller.parseManifest(input, isLauncher);
+        let builtInInfo = this.shareInstaller.parseManifest(input, launcher);
 
         let installedInfo = await this.getAppInfo(id);
         let needInstall = true;
@@ -419,10 +373,10 @@ export class AppManager {
 
         if (needInstall) {
             Log.d("AppManager", "Needs install - copying assets and setting built-in to 1");
-            this.shareInstaller.copyAssetsFolder(relativeRootPath, this.basePathInfo.appsPath + builtInInfo.app_id);
+            this.shareInstaller.copyAssetsFolder(path, this.basePathInfo.appsPath + builtInInfo.app_id);
             builtInInfo.built_in = 1;
             await this.dbAdapter.addAppInfo(builtInInfo, true);
-            if (isLauncher) {
+            if (launcher == 1) {
                 this.launcherInfo = null;
                 this.getLauncherInfo();
             }
@@ -431,9 +385,9 @@ export class AppManager {
 
     private async saveLauncher() {
         try {
-            let launcherPath = pathJoin(this.basePathInfo.appsPath, AppManager.LAUNCHER);
-            if (existsSync(launcherPath)) {
-                let info = this.shareInstaller.getInfoByManifest(this.basePathInfo.appsPath + AppManager.LAUNCHER + "/", true);
+            let launcher = pathJoin(this.basePathInfo.appsPath, AppManager.LAUNCHER);
+            if (existsSync(launcher)) {
+                let info = this.shareInstaller.getInfoByManifest(this.basePathInfo.appsPath + AppManager.LAUNCHER + "/", 1);
                 info.built_in = 1;
                 let count = await this.dbAdapter.removeAppInfo(this.launcherInfo, true);
                 if (count < 1) {
@@ -441,38 +395,39 @@ export class AppManager {
                     //TODO:: need remove the files? now, restart will try again.
                     return;
                 }
-                this.shareInstaller.renameFolder(launcherPath, this.basePathInfo.appsPath, this.launcherInfo.app_id);
+                this.shareInstaller.renameFolder(launcher, this.basePathInfo.appsPath, this.launcherInfo.app_id);
                 await this.dbAdapter.addAppInfo(info, true);
                 this.launcherInfo = null;
                 this.getLauncherInfo();
             }
 
-            this.installBuiltInApp("/", "launcher", true);
+            //TODO: diff with java
+            this.installBuiltInApp("/", "launcher", 1);
+        } catch (e) {
+            Log.e(AppManager.LOG_TAG, e);
+        }
+    }
+    
+    private async checkAndUpateDIDSession() {
+        try {
+            let didsession = pathJoin(this.basePathInfo.appsPath, AppManager.DIDSESSION);
+            if (existsSync(didsession)) {
+                let info = this.shareInstaller.getInfoByManifest(this.basePathInfo.appsPath + AppManager.DIDSESSION + "/", 0);
+                info.built_in = 1;
+                let count = await this.dbAdapter.removeAppInfo(await this.getDIDSessionAppInfo(), true);
+                if (count < 1) {
+                    Log.e("AppManager", "Launcher upgrade -- Can't remove the older DB info.");
+                    return;
+                }
+                this.shareInstaller.renameFolder(didsession, this.basePathInfo.appsPath, this.getDIDSessionId());
+                this.dbAdapter.addAppInfo(info, true);
+                this.didSessionInfo = null;
+            }
         } catch (e) {
             Log.e(AppManager.LOG_TAG, e);
         }
     }
 
-    private checkAndUpateDIDSession() {
-        console.log("NOT IMPLEMENTED - checkAndUpateDIDSession")
-        /* TODO try {
-            File didsession = new File(basePathInfo.appsPath, AppManager.DIDSESSION);
-            if (didsession.exists()) {
-                AppInfo info = shareInstaller.getInfoByManifest(basePathInfo.appsPath + AppManager.DIDSESSION + "/", 0);
-                info.built_in = 1;
-                int count = dbAdapter.removeAppInfo(getDIDSessionAppInfo(), true);
-                if (count < 1) {
-                    Log.e("AppManager", "Launcher upgrade -- Can't remove the older DB info.");
-                    return;
-                }
-                shareInstaller.renameFolder(didsession, basePathInfo.appsPath, getDIDSessionId());
-                await dbAdapter.addAppInfo(info, true);
-                diddessionInfo = null;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }*/
-    }
     /**
      * USE CASES:
      *
@@ -498,15 +453,16 @@ export class AppManager {
      */
     public async saveBuiltInApps(){
         try {
+            //TODO: diff with java
             let appdirs = readdirSync(pathJoin(app.getAppPath(), "built-in"));
 
             for (let appdir of appdirs) {
-                await this.installBuiltInApp("built-in/", appdir, false);
+                await this.installBuiltInApp("built-in/", appdir, 0);
             }
 
             for (let i = 0; i < this.appList.length; i++) {
                 Log.d(AppManager.LOG_TAG, "save / app "+this.appList[i].app_id+" buildin "+this.appList[i].built_in);
-                if (!this.appList[i].built_in) {
+                if (this.appList[i].built_in != 1) {
                     continue;
                 }
 
@@ -527,7 +483,6 @@ export class AppManager {
         }
     }
 
-
     public setAppVisible(id: string, visible: string) {
         if (visible == "hide") {
             this.visibles.set(id, false);
@@ -537,39 +492,45 @@ export class AppManager {
         }
     }
 
-    public getAppVisible(id: string): boolean {
+    public getAppVisible(id: string, startupMode: string): boolean {
+        if (startupMode == AppManager.STARTUP_INTENT) {
+            return true;
+        }
+        else if (startupMode == AppManager.STARTUP_SERVICE || startupMode == AppManager.STARTUP_SILENCE) {
+            return false;
+        }
+
         let ret = this.visibles.get(id);
         if (ret == null) {
             return true;
         }
         return ret;
     }
-/*
-    public AppInfo getLauncherInfo() {
-        if (launcherInfo == null) {
-            launcherInfo = dbAdapter.getLauncherInfo();
+
+    public async getLauncherInfo(): Promise<AppInfo> {
+        if (this.launcherInfo == null) {
+            this.launcherInfo = await this.dbAdapter.getLauncherInfo();
         }
-        return launcherInfo;
+        return this.launcherInfo;
     }
 
-    public boolean isLauncher(String appId) {
-        if (appId == null || launcherInfo == null) {
+    public isLauncher(appId: String): boolean {
+        if (appId == null || this.launcherInfo == null) {
             return false;
         }
 
-        if (appId.equals(LAUNCHER) || appId.equals(launcherInfo.app_id)) {
+        if (appId == AppManager.LAUNCHER || appId == this.launcherInfo.app_id) {
             return true;
         }
         else {
             return false;
         }
-    }*/
+    }
 
-    private async refreshInfos() {
+    private async refreashInfos() {
         this.appList = await this.dbAdapter.getAppInfos();
-        //console.log("refreshInfos: got "+this.appList.length+" app infos", this.appList);
-        this.appInfos = new Map();
-        for (let i = 0; i < this.appList.length; i++) {
+        this.appInfos = new Map<string, AppInfo>();
+        for (var i = 0; i < this.appList.length; i++) {
             this.appInfos.set(this.appList[i].app_id, this.appList[i]);
             let visible = this.visibles.get(this.appList[i].app_id);
             if (visible == null) {
@@ -579,6 +540,11 @@ export class AppManager {
     }
 
     public async getAppInfo(id: string): Promise<AppInfo> {
+        let index = id.indexOf("#");
+        if (index != -1) {
+            id = id.substring(0, index);
+        }
+
         if (this.isDIDSession(id)) {
             return await this.getDIDSessionAppInfo();
         }
@@ -599,7 +565,7 @@ export class AppManager {
             return null;
         }
 
-        if (!info.remote) {
+        if (info.remote == 0) {
             return this.getAppUrl(info) + info.start_url;
         }
         else {
@@ -616,7 +582,7 @@ export class AppManager {
     }
 
     public getAppPath(info: AppInfo): string {
-        if (!info.remote) {
+        if (info.remote == 0) {
             return this.getAppLocalPath(info);
         }
         else {
@@ -626,7 +592,8 @@ export class AppManager {
 
     public getAppUrl(info: AppInfo): string {
         let url = this.getAppPath(info);
-        if (!info.remote) {
+        if (info.remote == 0) {
+            //TODO: need to check
             url = /*"file://" + */url;
         }
         return url;
@@ -646,8 +613,7 @@ export class AppManager {
         }
 
         if (this.isLauncher(id)) {
-            let launcherInfo = await this.getLauncherInfo();
-            id = launcherInfo.app_id;
+            id = (await this.getLauncherInfo()).app_id;
         }
 
         return this.checkPath(this.pathInfo.dataPath + id + "/");
@@ -663,8 +629,7 @@ export class AppManager {
         }
 
         if (this.isLauncher(id)) {
-            let launcherInfo = await this.getLauncherInfo();
-            id = launcherInfo.app_id;
+            id = (await this.getLauncherInfo()).app_id;
         }
         return this.checkPath(this.pathInfo.tempPath + id + "/");
     }
@@ -677,19 +642,19 @@ export class AppManager {
         return this.pathInfo.configPath;
     }
 
-
     public getIconUrl(info: AppInfo, iconSrc: string): string {
+        //TODO: diff with java
         let url = this.getAppLocalPath(info);
         return this.resetPath(url, iconSrc);
     }
 
-    /*public String[] getIconUrls(AppInfo info) {
-        String[] iconPaths = new String[info.icons.size()];
-        for (int i = 0; i < info.icons.size(); i++) {
-            iconPaths[i] = getIconUrl(info, info.icons.get(i).src);
+    public getIconUrls(info: AppInfo) {
+        let iconPaths: string[] = [];
+        for (var i = 0; i < info.icons.length; i++) {
+            iconPaths[i] = this.getIconUrl(info, info.icons[i].src);
         }
         return iconPaths;
-    }*/
+    }
 
     public resetPath(dir: string, origin: string): string {
         if (origin.indexOf("http://") != 0 && origin.indexOf("https://") != 0 && origin.indexOf("file:///") != 0) {
@@ -701,125 +666,480 @@ export class AppManager {
         return origin;
     }
 
-    /*
-     * debug: from CLI to debug dapp
-     */
-    /*public AppInfo install(String url, boolean update, boolean fromCLI) throws Exception  {
-        AppInfo info = shareInstaller.install(url, update);
+    public install(url: string, update: boolean, fromCLI: boolean) {
+        let info = this.shareInstaller.install(url, update);
         if (info != null) {
-            refreashInfos();
+            this.refreashInfos();
 
             if (info.launcher == 1) {
-                sendRefreshList("launcher_upgraded", info, fromCLI);
+                this.sendRefreshList("launcher_upgraded", info, fromCLI);
             }
             else {
-                sendRefreshList("installed", info, fromCLI);
+                this.sendRefreshList("installed", info, fromCLI);
             }
         }
 
         return info;
     }
 
-    public void unInstall(String id, boolean update) throws Exception {
-        await close(id);
-        AppInfo info = appInfos.get(id);
-        shareInstaller.unInstall(info, update);
-        refreashInfos();
+    public unInstall(id: string, update: boolean) {
+        this.closeAllModes(id);
+        let info = this.appInfos.get(id);
+        this.shareInstaller.unInstall(info, update);
+        this.refreashInfos();
         if (!update) {
-           if (info.built_in == 1) {
-               installBuiltInApp("www/built-in/", info.app_id, 0);
-               refreashInfos();
-           }
-           sendRefreshList("unInstalled", info, false);
-        }
-    }
-
-    public WebViewFragment getFragmentById(String id) {
-        if (isLauncher(id)) {
-            id = LAUNCHER;
-        }
-
-        FragmentManager manager = activity.getSupportFragmentManager();
-        List<Fragment> fragments = manager.getFragments();
-        for (int i = 0; i < fragments.size(); i++) {
-            Fragment fragment = fragments.get(i);
-            if (fragment instanceof WebViewFragment) {
-                WebViewFragment webViewFragment = (WebViewFragment)fragment;
-                if (webViewFragment.id.equals(id)) {
-                    return webViewFragment;
-                }
+            if (info.built_in == 1) {
+                this.installBuiltInApp("built-in", info.app_id, 0);
+                this.refreashInfos();
             }
+            this.sendRefreshList("unInstalled", info, false);
         }
-        return null;
     }
-*/
+
+    public getFragmentById(modeId: string): any {
+        //TODO: migrate from java
+    }
+
     public switchContent(fragment: any, id: string) {
         notImplemented("switchContent");
-        /*FragmentManager manager = activity.getSupportFragmentManager();
-        FragmentTransaction transaction = manager.beginTransaction();
-        if ((curFragment != null) && (curFragment != fragment)) {
-            transaction.hide(curFragment);
-        }
-        if (curFragment != fragment) {
-            if (!fragment.isAdded()) {
-                transaction.add(R.id.content, fragment, id);
-            }
-            else if (curFragment != fragment) {
-                transaction.setCustomAnimations(android.R.animator.fade_in, android.R.animator.fade_out)
-                        .show(fragment);
-            }
-//            transaction.addToBackStack(null);
-            transaction.commit();
-        }
-
-        curFragment = fragment;
-
-        runningList.remove(id);
-        runningList.add(0, id);
-        lastList.remove(id);
-        lastList.add(0, id);*/
     }
 
     private hideFragment(fragment: any, id: string) {
         // TODO - No way to deal with browser views Z-ordering for now - find a solution.
         notImplemented("hideFragment")
-
-        /*FragmentManager manager = activity.getSupportFragmentManager();
-        FragmentTransaction transaction = manager.beginTransaction();
-        if (!fragment.isAdded()) {
-            transaction.add(R.id.content, fragment, id);
-        }
-        transaction.hide(fragment);
-        transaction.commit();
-
-        runningList.add(0, id);
-        lastList.add(1, id);*/
-    }
-/*
-    Boolean isCurrentFragment(WebViewFragment fragment) {
-        return (fragment == curFragment);
     }
 
-    public boolean doBackPressed() {
-        if (launcherInfo == null || curFragment == null || isLauncher(curFragment.id) || isDIDSession(curFragment.id)) {
+    private isCurrentFragment(fragment: any): boolean {
+        //TODO: migrate from java
+        return false;
+    }
+
+    public doBackPressed(): boolean {
+        if (this.launcherInfo == null || this.curFragment == null || this.isLauncher(this.curFragment.modeId)) {
             return true;
         }
         else {
-            switchContent(getFragmentById(launcherInfo.app_id), launcherInfo.app_id);
+            this.switchContent(this.getFragmentById(this.launcherInfo.app_id), this.launcherInfo.app_id);
             try {
-                AppManager.getShareInstance().sendLauncherMessageMinimize(curFragment.id);
-            } catch (Exception e) {
-                e.printStackTrace();
+                AppManager.getSharedInstance().sendLauncherMessageMinimize(this.curFragment.modeId);
+            } catch (e) {
+                Log.e(AppManager.LOG_TAG, e);
             }
             return false;
         }
     }
-*/
+
+    public getIdbyStartupMode(id: string, mode: string, serviceName: String): string {
+        if (mode != AppManager.STARTUP_APP) {
+            id += "#" + mode;
+            if (mode == AppManager.STARTUP_SERVICE && serviceName != null) {
+                id += ":" + serviceName;
+            }
+        }
+        return id;
+    }
+
+    //TODO: need fragment
+    public async start(packageId: string, mode: string, serviceName: string) {
+        console.log("AppManager - start - id: "+packageId);
+        let info = await this.getAppInfo(packageId);
+        if (info == null) {
+            throw new Error("No such app ("+packageId+")!");
+        }
+
+        if (mode == AppManager.STARTUP_SERVICE && serviceName == null) {
+            throw new Error("No service name!");
+        }
+
+        let id = this.getIdbyStartupMode(packageId, mode, serviceName);
+
+        let runningApp = this.runningApps[id];
+        if (runningApp == null) {
+            await this.createAppForLaunch(info);
+            if (!this.isLauncher(id)) {
+                this.sendRefreshList("started", info, false);
+            }
+
+            if (!this.getAppVisible(id, mode)) {
+                this.showActivityIndicator(true);
+                this.hideFragment(runningApp, id);
+            }
+        }
+
+        if (this.getAppVisible(id, mode)) {
+            this.switchContent(runningApp, id);
+            this.showActivityIndicator(false);
+        }
+    }
+
+    private showActivityIndicator(show: boolean) {
+        notImplemented("showActivityIndicator");
+    }
+
+    public closeAllModes(packageId: string) {
+        for (let mode of AppManager.startupModes) {
+            try {
+                if (mode == AppManager.STARTUP_SERVICE) {
+                    this.closeAppAllServices(packageId);
+                }
+                else {
+                    this.close(packageId, mode, null);
+                }
+            }
+            catch (e) {
+                Log.e(AppManager.LOG_TAG, e);
+            }
+        }
+    }
+
+    public closeAppAllServices(packageId: string) {
+        let info = this.getAppInfo(packageId);
+        if (info == null) {
+            throw new Error("No such app!");
+        }
+
+        //TODO: migrate from java
+        /*FragmentManager manager = activity.getSupportFragmentManager();
+        List<Fragment> fragments = manager.getFragments();
+        for (int i = 0; i < fragments.size(); i++) {
+            Fragment fragment = fragments.get(i);
+            if (fragment instanceof WebViewFragment) {
+                WebViewFragment webViewFragment = (WebViewFragment)fragment;
+                if (webViewFragment.modeId.startsWith(packageId + "#service:")) {
+                    closeFragment(info, webViewFragment);
+                }
+            }
+        }*/
+    }
+
+    public closeAllServices() {
+        //TODO: implement
+    }
+
+    public async close(id: string, mode: string, serivceName: string) {
+        if (this.isLauncher(id)) {
+            throw new Error("Launcher can't close!");
+        }
+
+        let info = await this.getAppInfo(id);
+        if (info == null) {
+            throw new Error("No such app!");
+        }
+
+        if (mode == AppManager.STARTUP_SERVICE && serivceName == null) {
+            throw new Error("No service name!");
+        }
+
+        if (mode == AppManager.STARTUP_APP) {
+            this.setAppVisible(id, info.start_visible);
+        }
+
+        //TODO: change to fragment
+        if (!this.runningApps[id]) {
+            return;
+        }
+
+        //TODO: place in closeFragment
+        this.window.removeBrowserView(BrowserView.fromId(this.runningApps[id].browserViewID));
+        this.lastList.splice(this.lastList.indexOf(id), 1);
+        this.runningList.splice(this.lastList.indexOf(id), 1);
+        delete this.runningApps[id];
+
+        this.sendRefreshList("closed", info, false);
+    }
+
+    public closeFragment(info: AppInfo, fragment: any) {
+        //TODO: implement
+    }
+
+    public async loadLauncher() {
+        await this.start(AppManager.LAUNCHER, AppManager.STARTUP_APP, null);
+    }
+
+    public checkInProtectList(uri: string) {
+        let info = this.shareInstaller.getInfoFromUrl(uri);
+        if (info != null && info.app_id != "") {
+             //TODO: migrate from java
+        }
+    }
+
+    private installUri(uri: string, dev: boolean) {
+        try {
+            if (dev && PreferenceManager.getSharedInstance().getDeveloperMode()) {
+                this.install(uri, true, dev);
+            }
+            else {
+                this.checkInProtectList(uri);
+                this.sendInstallMsg(uri);
+            }
+        }
+        catch (e) {
+            //TODO: Utility.alertPrompt("Install Error", e.getLocalizedMessage(), this.activity);
+        }
+    }
+
+    public setInstallUri(uri: string, dev: boolean) {
+        if (uri == null) return;
+
+        if (this.launcherReady || dev) {
+            this.installUri(uri, dev);
+        }
+        else {
+            this.installUriList.push(new InstallInfo(uri, dev));
+        }
+    }
+
+    public setIntentUri(uri: string) {
+        if (uri == null) return;
+
+        if (this.launcherReady) {
+            //TODO: IntentManager.getShareInstance().doIntentByUri(uri);
+        }
+        else {
+            this.intentUriList.push(uri);
+        }
+    }
+
+    public isLauncherReady(): boolean {
+        return this.launcherReady;
+    }
+
+    public setLauncherReady() {
+        this.launcherReady = true;
+
+        for (var i = 0; i < this.installUriList.length; i++) {
+            let info = this.installUriList[i];
+            this.sendInstallMsg(info.uri);
+        }
+
+        for (var i = 0; i < this.intentUriList.length; i++) {
+            let uri = this.intentUriList[i];
+            //TODO: IntentManager.getShareInstance().doIntentByUri(uri);
+        }
+    }
+
+    public sendLauncherMessage(type: number, msg: string, fromId: string) {
+        this.sendMessage(AppManager.LAUNCHER, type, msg, fromId);
+    }
+
+    public sendLauncherMessageMinimize(fromId: string) {
+        this.sendLauncherMessage(AppManager.MSG_TYPE_INTERNAL, "{\"action\":\"minimize\"}", fromId);
+    }
+
+    private sendInstallMsg(uri: string) {
+        let msg = "{\"uri\":\"" + uri + "\", \"dev\":\"false\"}";
+        try {
+            this.sendLauncherMessage(AppManager.MSG_TYPE_EX_INSTALL, msg, "system");
+        }
+        catch (e) {
+            Log.e(AppManager.LOG_TAG, e);
+        }
+    }
+
+    public sendRefreshList(action: string, info: AppInfo, fromCLI: boolean) {
+        try {
+            if (info != null) {
+                this.sendLauncherMessage(AppManager.MSG_TYPE_IN_REFRESH,
+                        "{\"action\":\"" + action + "\", \"id\":\"" + info.app_id + "\" , \"name\":\"" + info.name + "\", \"debug\":" + fromCLI + "}", "system");
+            }
+            else {
+                this.sendLauncherMessage( AppManager.MSG_TYPE_IN_REFRESH,
+                    "{\"action\":\"" + action + "\"}", "system");
+            }
+        }
+        catch (e) {
+            Log.e(AppManager.LOG_TAG, e);
+        }
+    }
+
+    //TODO: diff with java
+    public sendMessage(toId: string, type: number, msg: string, fromId: string) {
+        if (this.signIning) return;
+
+        let runningApp = this.runningApps[toId];
+        if (runningApp) {
+            //console.log("Sending message to app id "+runningApp.appInfo.app_id, msg, fromId);
+            let appManagerPlugin = runningApp.pluginInstances["AppManager"] as AppManagerPlugin
+            appManagerPlugin.onReceive(msg, type, fromId);
+        }
+        else {
+            throw new Error(toId + " isn't running!");
+        }
+    }
+
+    public broadcastMessage(type: number, msg: string, fromId: string) {
+        //TODO: implement
+    }
+
+    public getPluginAuthority(id: string, plugin: string): number {
+        for (let item of AppManager.defaultPlugins) {
+            if (item == plugin) {
+                return AppInfo.AUTHORITY_ALLOW;
+            }
+        }
+
+        let info = this.appInfos.get(id);
+        if (info != null) {
+            for (let pluginAuth of info.plugins) {
+                if (pluginAuth.plugin == plugin) {
+                    return pluginAuth.authority;
+                }
+            }
+        }
+        return AppInfo.AUTHORITY_NOEXIST;
+    }
+
+    public getUrlAuthority(id: string, url: string): number {
+        let info = this.appInfos.get(id);
+        if (info != null) {
+            for (let urlAuth of info.urls) {
+                if (urlAuth.url == url) {
+                    return urlAuth.authority;
+                }
+            }
+        }
+        return AppInfo.AUTHORITY_NOEXIST;
+    }
+
+    public getIntentAuthority(id: string, url: string): number {
+        let info = this.appInfos.get(id);
+        if (info != null) {
+            for (let urlAuth of info.intents) {
+                if (urlAuth.url == url) {
+                    return urlAuth.authority;
+                }
+            }
+        }
+        return AppInfo.AUTHORITY_NOEXIST;
+    }
+
+    public async setPluginAuthority(id: string, plugin: string, authority: number) {
+        let info = this.appInfos.get(id);
+        if (info == null) {
+            throw new Error("No such app!");
+        }
+
+        for (let pluginAuth of info.plugins) {
+            if (pluginAuth.plugin == plugin) {
+                let count = await this.dbAdapter.updatePluginAuth(info.tid, plugin, authority);
+                if (count > 0) {
+                    pluginAuth.authority = authority;
+                    this.sendRefreshList("authorityChanged", info, false);
+                }
+                return;
+            }
+        }
+        throw new Error("The plugin isn't in list!");
+    }
+
+    public async setUrlAuthority(id: string, url: string, authority: number) {
+        let info = this.appInfos.get(id);
+        if (info == null) {
+            throw new Error("No such app!");
+        }
+
+        for (let urlAuth of info.urls) {
+            if (urlAuth.url == url) {
+                let count = await this.dbAdapter.updateURLAuth(info.tid, url, authority);
+                if (count > 0) {
+                    urlAuth.authority = authority;
+                    this.sendRefreshList("authorityChanged", info, false);
+                }
+                return;
+            }
+        }
+        throw new Error("The plugin isn't in list!");
+    }
+
+    private static print(msg: string) {
+        //TODO: check if print function required
+    }
+
+    private urlLock: LockObj = new LockObj();
+    private pluginLock: LockObj = new LockObj();
+
+    public runAlertPluginAuth(info: AppInfo, plugin: string, originAuthority: number): number {
+        try {
+            this.pluginLock.authority = this.getPluginAuthority(info.app_id, plugin);
+            if (this.pluginLock.authority != originAuthority) {
+                return this.pluginLock.authority;
+            }
+            this.alertPluginAuth(info, plugin, this.pluginLock);
+            
+            if (this.pluginLock.authority == originAuthority) {
+                //TODO: pluginLock.wait();
+            }
+        } catch (e) {
+            Log.e(AppManager.LOG_TAG, e);
+            return originAuthority;
+        }
+        return this.pluginLock.authority;
+    }
+
+    public alertPluginAuth(info: AppInfo, plugin: string, lock: LockObj) {
+        //TODO: implement
+    }
+
+    public runAlertUrlAuth(info: AppInfo, url: string, originAuthority: number): number {
+        //TODO: implement
+        return this.urlLock.authority;
+    }
+
+    public alertUrlAuth() {
+        //TODO: implement
+    }
+
+    public getAppIdList(): string[] {
+        let ids: string[] = [];
+        for (var i = 0; i < this.appList.length; i++) {
+            ids[i] = this.appList[i].app_id;
+        }
+        return ids;
+    }
+
+    public getAppInfoList(): AppInfo[] {
+        return this.appList;
+    }
+
+    public getRunningList(): string[] {
+        return this.runningList;
+    }
+
+    public getServiceRunningList(appId: string): string[] {
+        let list = new Array<string>();
+        let prefix = appId + "#service:";
+        for (let id of this.serviceRunningList) {
+            if (id.startsWith(prefix)) {
+                list.push(id.substring(prefix.length));
+            }
+        }
+        return list;
+    }
+
+    public getAllServiceRunningList(): string[] {
+        return this.serviceRunningList;
+    }
+
+    public getLastList(): string[]  {
+        return this.lastList;
+    }
+
+    public flingTheme() {
+        //TODO: implement
+    }
+
+    public onConfigurationChanged() {
+        //TODO: check if need in ts
+    }
+
+    public onRequestPermissionResult() {
+        //TODO: check if need in ts
+    }
+
+
+
 
     public findRunningAppByCallerID(browserViewCallerID: number) {
-        //console.debug("Looking for running app with browser view id "+browserViewCallerID);
-        //console.debug("Running apps:", this.runningApps);
-
         for (let appId in this.runningApps) {
             if (this.runningApps[appId].browserViewID == browserViewCallerID)
                 return this.runningApps[appId];
@@ -827,18 +1147,18 @@ export class AppManager {
         return null;
     }
 
-    public handleIPCCall(event: Electron.IpcMainInvokeEvent, pluginName: string, methodName: string, fullMethodName: string, success: SuccessCallback, error: ErrorCallback, args: any) {
-        console.log("handle "+fullMethodName, args);
+    public async handleIPCCall(event: Electron.IpcMainInvokeEvent, pluginName: string, methodName: string, fullMethodName: string, success: SuccessCallback, error: ErrorCallback, args: any) {
+        //console.log("handle "+fullMethodName, args);
     
         let callerWebContents = event.sender;
         let callerBrowserView = BrowserView.fromWebContents(callerWebContents)
 
-        console.log("Caller ID: "+callerBrowserView.id)
+        //console.log("Caller ID: "+callerBrowserView.id)
 
         // Retrieve related running app based on caller id
         let runningApp = this.findRunningAppByCallerID(callerBrowserView.id);
         if (runningApp) {
-            console.log("Found running app to handle IPC "+fullMethodName);
+            //console.log("Found running app to handle IPC "+fullMethodName);
 
             (runningApp.pluginInstances[pluginName] as any)[methodName](success, error, args);
         }
@@ -937,39 +1257,7 @@ export class AppManager {
 
     // TODO: Apply all of this android method to interceptFileProtocol()
     remapUri() {
-        /*String url = uri.toString();
-        if (isChangeIconPath && url.startsWith("icon://")) {
-            String str = url.substring(7);
-            int index = str.indexOf("/");
-            if (index > 0) {
-                String app_id = str.substring(0, index);
-                AppInfo info = appManager.getAppInfo(app_id);
-                if (info != null) {
-                    index = Integer.valueOf(str.substring(index + 1));
-                    AppInfo.Icon icon = info.icons.get(index);
-                    url = appManager.getIconUrl(info, icon.src);
-                }
-            }
-        }
-        else if ("asset".equals(uri.getScheme())) {;
-            url = "file:///android_asset/www" + uri.getPath();
-        }
-        else if (url.startsWith("trinity:///asset/")) {
-            AppInfo info = appManager.getAppInfo(this.appId);
-            url = appManager.getAppUrl(info) + url.substring(17);
-        }
-        else if (url.startsWith("trinity:///data/")) {
-            url = appManager.getDataUrl(this.appId) + url.substring(16);
-        }
-        else if (url.startsWith("trinity:///temp/")) {
-            url = appManager.getTempUrl(this.appId) + url.substring(16);
-        }
-        else {
-            return null;
-        }
-
-        uri = Uri.parse(url);
-        return uri;*/
+    
     }
 
     private async createAppForLaunch(appInfo: AppInfo) {
@@ -1004,497 +1292,95 @@ export class AppManager {
         runningApp.titleBar.setVisible();
     }
 
-    public async start(id: string) {
-        let info = await this.getAppInfo(id);
-        if (info == null) {
-            throw new Error("No such app ("+id+")!");
+}
+
+export class InstallInfo {
+    public uri: string;
+    public dev: boolean;
+
+    constructor(uri: string, dev: boolean) {
+        this.uri = uri;
+        this.dev = dev;
+    }
+}
+
+export class LockObj {
+    public authority: number = AppInfo.AUTHORITY_NOINIT;
+    public isUiThread: boolean = false;
+}
+
+export class AppPathInfo {
+    public appsPath: string = null;
+    public dataPath: string = null;
+    public configPath: string = null;
+    public tempPath: string = null;
+    public databasePath: string = null;
+
+    constructor(basePath: string) {
+        let baseDir = app.getAppPath();
+        if (basePath != null) {
+            baseDir = baseDir + "/" + basePath;
+        }
+        this.appsPath = baseDir + "/apps/";
+        this.dataPath = baseDir + "/data/";
+        this.configPath = baseDir + "/config/";
+        this.tempPath = baseDir + "/temp/";
+        this.databasePath = baseDir + "/database/";
+
+        if (!existsSync(this.appsPath)) {
+            mkdirSync(this.appsPath, { recursive: true });
         }
 
-        let runningApp = this.runningApps[id];
-        if (runningApp == null) {
-            await this.createAppForLaunch(info);
-            if (!this.isLauncher(id)) {
-                this.sendRefreshList("started", info, false);
-            }
-
-            if (!this.getAppVisible(id)) {
-                this.showActivityIndicator(true);
-                this.hideFragment(runningApp, id);
-            }
+        if (!existsSync(this.dataPath)) {
+            mkdirSync(this.dataPath, { recursive: true });
         }
 
-        if (this.getAppVisible(id)) {
-            this.switchContent(runningApp, id);
-            this.showActivityIndicator(false);
+        if (!existsSync(this.configPath)) {
+            mkdirSync(this.configPath, { recursive: true });
+        }
+
+        if (!existsSync(this.tempPath)) {
+            mkdirSync(this.tempPath, { recursive: true });
+        }
+
+        if (!existsSync(this.databasePath)) {
+            mkdirSync(this.databasePath, { recursive: true });
+        }
+    }
+}
+
+//TODO: place in other file
+export class RunningApp {
+    appInfo: AppInfo;
+    browserViewID: number;
+    runtime: TrinityRuntime;
+    pluginInstances: { [key: string] : TrinityPlugin };
+    titleBar: TitleBar;
+
+    private constructor(appInfo: AppInfo, browserViewID: number, runtime: TrinityRuntime, titleBar: TitleBar) {
+        this.browserViewID = browserViewID;
+        this.appInfo = appInfo;
+        this.runtime = runtime;
+        this.titleBar = titleBar;
+    }
+
+    private async createPluginInstances() {
+        // Create plugin instances fo this app
+        this.pluginInstances = {};
+        for (let pluginName of Object.keys(this.runtime.plugins)) {
+            //console.log("pluginName", pluginName)
+            let plugin = this.runtime.plugins[pluginName];
+            let pluginInstance = plugin.instanceCreationCallback(this.appInfo.app_id);
+            this.pluginInstances[pluginName] = pluginInstance;
+
+            await pluginInstance.setInfo(this.appInfo)
         }
     }
 
-    private showActivityIndicator(show: boolean) {
-        notImplemented("showActivityIndicator");
-        /*activity.runOnUiThread((Runnable) () -> {
-            if (curFragment.titlebar != null) {
-                if (show) {
-                    curFragment.titlebar.showActivityIndicator(TitleBarActivityType.LAUNCH, activity.getResources().getString(R.string.app_starting));
-                } else {
-                    curFragment.titlebar.hideActivityIndicator(TitleBarActivityType.LAUNCH);
-                }
-            }
-        });*/
+    public static async create(appInfo: AppInfo, browserViewID: number, runtime: TrinityRuntime, titleBar: TitleBar): Promise<RunningApp> {
+        let app = new RunningApp(appInfo, browserViewID, runtime, titleBar);
+        await app.createPluginInstances();
+        titleBar.setRunningApp(app);
+        return app;
     }
-
-    public async close(id: string) {
-        if (this.isLauncher(id)) {
-            throw new Error("Launcher can't close!");
-        }
-
-        let info = await this.getAppInfo(id);
-        if (info == null) {
-            throw new Error("No such app!");
-        }
-
-        if (!this.runningApps[id]) {
-            return;
-        }
-
-        this.setAppVisible(id, info.start_visible);
-
-        console.log("PARTIALLY IMPLEMENTED - close")
-
-        /* TODO
-        IntentManager.getShareInstance().removeAppFromIntentList(id);
-
-        if (fragment == curFragment) {
-            if (lastList.size() > 1) {
-                String id2 = lastList.get(1);
-                WebViewFragment fragment2 = getFragmentById(id2);
-                if (fragment2 == null) {
-                    fragment2 = getFragmentById(LAUNCHER);
-                    if (fragment2 == null) {
-                        throw new Exception("RT inner error!");
-                    }
-                }
-                switchContent(fragment2, id2);
-            }
-        }
-        */
-
-        this.window.removeBrowserView(BrowserView.fromId(this.runningApps[id].browserViewID));
-        this.lastList.splice(this.lastList.indexOf(id), 1);
-        this.runningList.splice(this.lastList.indexOf(id), 1);
-        delete this.runningApps[id];
-
-        this.sendRefreshList("closed", info, false);
-    }
-
-    public async loadLauncher() {
-        await this.start(AppManager.LAUNCHER);
-    }
-
-   /* public void checkInProtectList(String uri) throws Exception {
-        AppInfo info = shareInstaller.getInfoFromUrl(uri);
-        if (info != null && info.app_id != "" ) {
-            String[] protectList = ConfigManager.getShareInstance().getStringArrayValue(
-                    "dapp.protectList", new String[0]);
-            for (String item : protectList) {
-                if (item.equalsIgnoreCase(info.app_id)) {
-                    throw new Exception("Don't allow install '" + info.app_id + "' by the third party app.");
-                }
-            }
-        }
-    }
-
-    private void installUri(String uri, boolean dev) {
-        try {
-            if (dev && PreferenceManager.getShareInstance().getDeveloperMode()) {
-                install(uri, true, dev);
-            }
-            else {
-                checkInProtectList(uri);
-                sendInstallMsg(uri);
-            }
-        }
-        catch (Exception e) {
-            Utility.alertPrompt("Install Error", e.getLocalizedMessage(), this.activity);
-        }
-    }
-
-    public void setInstallUri(String uri, boolean dev) {
-        if (uri == null) return;
-
-        if (launcherReady || dev) {
-            installUri(uri, dev);
-        }
-        else {
-            installUriList.add(new InstallInfo(uri, dev));
-        }
-    }
-
-    public void setIntentUri(Uri uri) {
-        if (uri == null) return;
-
-        if (launcherReady) {
-            IntentManager.getShareInstance().doIntentByUri(uri);
-        }
-        else {
-            intentUriList.add(uri);
-        }
-    }
-
-    public boolean isLauncherReady() {
-        return launcherReady;
-    }*/
-
-    public setLauncherReady() {
-        notImplemented("setLauncherReady");
-        /*launcherReady = true;
-
-        for (int i = 0; i < installUriList.size(); i++) {
-            InstallInfo info = installUriList.get(i);
-            sendInstallMsg(info.uri);
-        }
-
-        for (int i = 0; i < intentUriList.size(); i++) {
-            Uri uri = intentUriList.get(i);
-            IntentManager.getShareInstance().doIntentByUri(uri);
-        }*/
-    }
-
-    public sendLauncherMessage(type: number, msg: string, fromId: string) {
-        this.sendMessage(AppManager.LAUNCHER, type, msg, fromId);
-    }
-
-    /*public void sendLauncherMessageMinimize(String fromId) throws Exception {
-        sendLauncherMessage(AppManager.MSG_TYPE_INTERNAL,
-                "{\"action\":\"minimize\"}", fromId);
-    }
-
-    private void sendInstallMsg(String uri) {
-        String msg = "{\"uri\":\"" + uri + "\", \"dev\":\"false\"}";
-        try {
-            sendLauncherMessage(MSG_TYPE_EX_INSTALL, msg, "system");
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-    }*/
-
-    public sendRefreshList(action: string, info: AppInfo, fromCLI: boolean) {
-        try {
-            if (info != null) {
-                this.sendLauncherMessage(AppManager.MSG_TYPE_IN_REFRESH,
-                        "{\"action\":\"" + action + "\", \"id\":\"" + info.app_id + "\" , \"name\":\"" + info.name + "\", \"debug\":" + fromCLI + "}", "system");
-            }
-            else {
-                this.sendLauncherMessage( AppManager.MSG_TYPE_IN_REFRESH,
-                    "{\"action\":\"" + action + "\"}", "system");
-            }
-        }
-        catch (e) {
-            Log.e(AppManager.LOG_TAG, e);
-        }
-    }
-
-    public sendMessage(toId: string, type: number, msg: string, fromId: string) {
-        if (this.signIning) return;
-
-        let runningApp = this.runningApps[toId];
-        if (runningApp) {
-            console.log("Sending message to app id "+runningApp.appInfo.app_id, msg, fromId);
-            let appManagerPlugin = runningApp.pluginInstances["AppManager"] as AppManagerPlugin
-            appManagerPlugin.onReceive(msg, type, fromId);
-        }
-        else {
-            throw new Error(toId + " isn't running!");
-        }
-    }
-
-    /*public void broadcastMessage(int type, String msg, String fromId) {
-        FragmentManager manager = activity.getSupportFragmentManager();
-        List<Fragment> fragments = manager.getFragments();
-
-        for (int i = 0; i < fragments.size(); i++) {
-            WebViewFragment fragment = (WebViewFragment)fragments.get(i);
-            if (fragment != null && fragment.appView != null) {
-                fragment.basePlugin.onReceive(msg, type, fromId);
-            }
-        }
-    }
-
-    public int getPluginAuthority(String id, String plugin) {
-        for (String item : defaultPlugins) {
-            if (item.equals(plugin)) {
-                return AppInfo.AUTHORITY_ALLOW;
-            }
-        }
-
-        AppInfo info = appInfos.get(id);
-        if (info != null) {
-            for (AppInfo.PluginAuth pluginAuth : info.plugins) {
-                if (pluginAuth.plugin.equals(plugin)) {
-                    return pluginAuth.authority;
-                }
-            }
-        }
-        return AppInfo.AUTHORITY_NOEXIST;
-    }
-
-    public int getUrlAuthority(String id, String url) {
-        AppInfo info = appInfos.get(id);
-        if (info != null) {
-            for (AppInfo.UrlAuth urlAuth : info.urls) {
-                if (urlAuth.url.equals(url)) {
-                    return urlAuth.authority;
-                }
-            }
-        }
-        return AppInfo.AUTHORITY_NOEXIST;
-    }
-
-    public int getIntentAuthority(String id, String url) {
-        AppInfo info = appInfos.get(id);
-        if (info != null) {
-            for (AppInfo.UrlAuth urlAuth : info.intents) {
-                if (urlAuth.url.equals(url)) {
-                    return urlAuth.authority;
-                }
-            }
-        }
-        return AppInfo.AUTHORITY_NOEXIST;
-    }
-
-    public void setPluginAuthority(String id, String plugin, int authority) throws Exception {
-        AppInfo info = appInfos.get(id);
-        if (info == null) {
-            throw new Exception("No such app!");
-        }
-
-        for (AppInfo.PluginAuth pluginAuth : info.plugins) {
-            if (pluginAuth.plugin.equals(plugin)) {
-                long count = dbAdapter.updatePluginAuth(info.tid, plugin, authority);
-                if (count > 0) {
-                    pluginAuth.authority = authority;
-                    sendRefreshList("authorityChanged", info, false);
-                }
-                return;
-            }
-        }
-        throw new Exception("The plugin isn't in list!");
-    }
-
-    public void setUrlAuthority(String id, String url, int authority)  throws Exception {
-        AppInfo info = appInfos.get(id);
-        if (info == null) {
-            throw new Exception("No such app!");
-        }
-
-        for (AppInfo.UrlAuth urlAuth : info.urls) {
-            if (urlAuth.url.equals(url)) {
-                long count = dbAdapter.updateURLAuth(info.tid, url, authority);
-                if (count > 0) {
-                    urlAuth.authority = authority;
-                    sendRefreshList("authorityChanged", info, false);
-                }
-                return ;
-            }
-        }
-        throw new Exception("The plugin isn't in list!");
-    }
-
-    private static void print(String msg) {
-        String name = Thread.currentThread().getName();
-        System.out.println(name + ": " + msg);
-    }
-
-    private class LockObj {
-        int authority = AppInfo.AUTHORITY_NOINIT;
-        boolean isUiThread = false;
-    }
-    private LockObj urlLock = new LockObj();
-    private LockObj pluginLock = new LockObj();
-
-    public synchronized int runAlertPluginAuth(AppInfo info, String plugin, int originAuthority) {
-        try {
-            synchronized (pluginLock) {
-                pluginLock.authority = getPluginAuthority(info.app_id, plugin);
-                if (pluginLock.authority != originAuthority) {
-                    return pluginLock.authority;
-                }
-                activity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        alertPluginAuth(info, plugin, pluginLock);
-                    }
-                });
-
-                if (pluginLock.authority == originAuthority) {
-                    pluginLock.wait();
-                }
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return originAuthority;
-        }
-        return pluginLock.authority;
-    }
-
-    public void alertPluginAuth(AppInfo info, String plugin, LockObj lock) {
-        AlertDialog.Builder ab = new AlertDialog.Builder(activity);
-        ab.setTitle("Plugin authority request");
-        ab.setMessage("App:'" + info.name + "' request plugin:'" + plugin + "' access authority.");
-        ab.setIcon(android.R.drawable.ic_dialog_info);
-        ab.setCancelable(false);
-
-        ab.setPositiveButton("Allow", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                try {
-                    setPluginAuthority(info.app_id, plugin, AppInfo.AUTHORITY_ALLOW);
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-                synchronized (lock) {
-                    lock.authority = AppInfo.AUTHORITY_ALLOW;
-                    lock.notify();
-                }
-            }
-        });
-        ab.setNegativeButton("Refuse", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                try {
-                    setPluginAuthority(info.app_id, plugin, AppInfo.AUTHORITY_DENY);
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-                synchronized (lock) {
-                    lock.authority = AppInfo.AUTHORITY_DENY;
-                    lock.notify();
-                }
-            }
-        });
-        ab.show();
-    }
-
-    public synchronized int runAlertUrlAuth(AppInfo info, String url, int originAuthority) {
-        try {
-            synchronized (urlLock) {
-                urlLock.authority = getUrlAuthority(info.app_id, url);
-                if (urlLock.authority != originAuthority) {
-                    return urlLock.authority;
-                }
-
-                urlLock.isUiThread = Looper.myLooper() == Looper.getMainLooper();
-
-                activity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        alertUrlAuth(info, url, urlLock);
-                    }
-                });
-
-                if (!urlLock.isUiThread && urlLock.authority == originAuthority) {
-                    urlLock.wait();
-                }
-            }
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return originAuthority;
-        }
-        return urlLock.authority;
-    }
-
-    public void alertUrlAuth(AppInfo info, String url, LockObj lock) {
-        new UrlAuthorityDialog.Builder(activity)
-                .setData(url, info)
-                .setOnAcceptClickedListener(() -> {
-                    try {
-                        setUrlAuthority(info.app_id, url, AppInfo.AUTHORITY_ALLOW);
-                    }
-                    catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    synchronized (lock) {
-                        lock.authority = AppInfo.AUTHORITY_ALLOW;
-                        lock.notify();
-                    }
-                })
-                .setOnDenyClickedListener(() -> {
-                    try {
-                        setUrlAuthority(info.app_id, url, AppInfo.AUTHORITY_DENY);
-                    }
-                    catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    synchronized (lock) {
-                        lock.authority = AppInfo.AUTHORITY_DENY;
-                        lock.notify();
-                    }
-                })
-                .show();
-    }
-
-    public String[] getAppIdList() {
-        String[] ids = new String[appList.length];
-        for (int i = 0; i < appList.length; i++) {
-            ids[i] = appList[i].app_id;
-        }
-        return ids;
-    }
-*/
-    public getAppInfoList(): AppInfo[] {
-        return this.appList;
-    }
-
-    public getRunningList(): string[] {
-        return this.runningList;
-    }
-
-    public getLastList(): string[]  {
-        return this.lastList;
-    }
-
-/*
-    public void flingTheme() {
-        if (curFragment == null) {
-            return;
-        }
-
-        if (curFragment.titlebar.getVisibility() == View.VISIBLE) {
-            curFragment.titlebar.setVisibility(View.GONE);
-        } else {
-//            fragment.titlebar.bringToFront();//for qrscanner
-            curFragment.titlebar.setVisibility(View.VISIBLE);
-        }
-    }
-
-    public void onConfigurationChanged(Configuration newConfig) {
-        FragmentManager manager = activity.getSupportFragmentManager();
-        List<Fragment> fragments = manager.getFragments();
-
-        for (int i = 0; i < fragments.size(); i++) {
-            WebViewFragment fragment = (WebViewFragment)fragments.get(i);
-            if (fragment != null && fragment.appView != null) {
-                PluginManager pm = fragment.appView.getPluginManager();
-                if (pm != null) {
-                    pm.onConfigurationChanged(newConfig);
-                }
-            }
-        }
-    }
-
-    public void onRequestPermissionResult(int requestCode, String permissions[],
-                                           int[] grantResults) throws JSONException {
-        FragmentManager manager = activity.getSupportFragmentManager();
-        List<Fragment> fragments = manager.getFragments();
-
-        for (int i = 0; i < fragments.size(); i++) {
-            WebViewFragment fragment = (WebViewFragment)fragments.get(i);
-            if (fragment != null) {
-                fragment.onRequestPermissionResult(requestCode, permissions, grantResults);
-            }
-        }
-    }*/
 }

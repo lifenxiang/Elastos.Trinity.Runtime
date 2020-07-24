@@ -405,7 +405,7 @@ export class AppInstaller {
     }*/
 
     public deleteAllFiles(root: string): boolean {
-        console.log("NOT IMPLEMENTED - deleteAllFiles")
+        //console.log("NOT IMPLEMENTED - deleteAllFiles")
         /*if (!root.exists()) {
             return false;
         }
@@ -427,6 +427,14 @@ export class AppInstaller {
         root.delete();
 */
         return true;
+    }
+
+    public install(url: string, update: boolean): AppInfo {
+        return null;
+    }
+
+    public getInfoFromUrl(uri: string): AppInfo {
+        return null;
     }
 
     public unInstall(info: AppInfo, update: boolean) {
@@ -475,7 +483,7 @@ export class AppInstaller {
         return false;
     }
 
-    public getInfoByManifest(path: string, isLauncher: boolean): AppInfo {
+    public getInfoByManifest(path: string, launcher: number): AppInfo {
         let manifestPath = pathJoin(path, "manifest.json");
         if (!existsSync(manifestPath)) {
             path = path + "assets/";
@@ -485,7 +493,7 @@ export class AppInstaller {
             }
         }
         let input = require(manifestPath);
-        let info = this.parseManifest(input, isLauncher);
+        let info = this.parseManifest(input, launcher);
         manifestPath = path + "manifest.i18n";
         if (existsSync(manifestPath)) {
             input = require(manifestPath);
@@ -510,7 +518,7 @@ export class AppInstaller {
         }
     }
 
-    public parseManifest(inputStream: Object, isLauncher: boolean): AppInfo {
+    public parseManifest(inputStream: Object, launcher: number): AppInfo {
         let appInfo = new AppInfo();
 
         let json = Utility.getJsonFromFile(inputStream);
@@ -528,7 +536,7 @@ export class AppInstaller {
             appInfo.remote = 0;
         }
 
-        if (!isLauncher) {
+        if (!launcher) {
             if ("icons" in json) {
                 let array = json["icons"] as any[];
                 for (let i = 0; i < array.length; i++) {
@@ -695,7 +703,7 @@ export class AppInstaller {
         }
 
         appInfo.install_time = Math.round(new Date().getTime()/1000);
-        appInfo.launcher = isLauncher ? 1 : 0;
+        appInfo.launcher = launcher;
 
         return appInfo;
     }

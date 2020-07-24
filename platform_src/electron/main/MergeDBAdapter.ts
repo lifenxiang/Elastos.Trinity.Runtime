@@ -37,11 +37,11 @@ export class MergeDBAdapter {
     public async addAppInfo(info: AppInfo, isShare: boolean): Promise<boolean> {
         if (info != null) {
             if (isShare || info.built_in == 1 || this.userDBAdapter == null) {
-                console.log("Adding app info to BASE DB")
+                //console.log("Adding app info to BASE DB")
                 return await this.baseDBAdapter.addAppInfo(info);
             }
             else {
-                console.log("Adding app info to USER DB")
+                //console.log("Adding app info to USER DB")
                 return await this.userDBAdapter.addAppInfo(info);
             }
         }
@@ -73,7 +73,7 @@ export class MergeDBAdapter {
         if (this.userDBAdapter != null) {
             infos = await this.userDBAdapter.getAppInfos();
         }
-        console.log("getAppInfos after USER db:", infos.length);
+        //console.log("getAppInfos after USER db:", infos.length);
 
         for (let info of infos) {
             info.share = false;
@@ -81,7 +81,7 @@ export class MergeDBAdapter {
         }
 
         let baseInfos = await this.baseDBAdapter.getAppInfos();
-        console.log("getAppInfos after BASE db:", baseInfos.length);
+        //console.log("getAppInfos after BASE db:", baseInfos.length);
         for (let baseInfo of baseInfos) {
             let needAdd = true;
             for (let info of infos) {
@@ -219,7 +219,7 @@ export class MergeDBAdapter {
         }
     }
 
-    public async getPreference(key: string): Promise<Preference> {
+    public async getPreference(key: string): Promise<any> {
         if (this.userDBAdapter != null) {
             return this.userDBAdapter.getPreference(key);
         }
@@ -228,7 +228,7 @@ export class MergeDBAdapter {
         }
     }
 
-    public async getPreferences(): Promise<Preference[]> {
+    public async getPreferences(): Promise<any> {
         if (this.userDBAdapter != null) {
             return this.userDBAdapter.getPreferences();
         }
