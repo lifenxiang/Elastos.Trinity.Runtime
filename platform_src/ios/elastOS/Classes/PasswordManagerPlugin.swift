@@ -102,8 +102,19 @@ class PasswordManagerPlugin : TrinityPlugin {
     @objc public func getPasswordInfo(_ command: CDVInvokedUrlCommand) {
         do {
             if let key = command.arguments[0] as? String {
+                let optionsJson = command.arguments[1] as? Dictionary<String, Any>
+                var options: PasswordGetInfoOptions? = nil
+
+                if optionsJson != nil {
+                    options = PasswordGetInfoOptions.fromDictionary(optionsJson!)
+                }
+
+                if options == nil {
+                    options = PasswordGetInfoOptions() // default options
+                }
+                
                 var result = Dictionary<String, Any>()
-                try PasswordManager.getSharedInstance().getPasswordInfo(key: key, did: did, appID: appId, onPasswordInfoRetrieved: { info in
+                try PasswordManager.getSharedInstance().getPasswordInfo(key: key, did: did, appID: appId, options: options!, onPasswordInfoRetrieved: { info in
                     
                     if info != nil {
                         result["passwordInfo"] = info!.asDictionary()

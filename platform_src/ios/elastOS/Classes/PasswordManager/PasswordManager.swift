@@ -152,6 +152,7 @@ public class PasswordManager {
      * @returns The password info, or null if nothing was found.
      */
     public func getPasswordInfo(key: String, did: String?, appID: String,
+                                options: PasswordGetInfoOptions,
                                 onPasswordInfoRetrieved: @escaping (_ password: PasswordInfo?)->Void,
                                 onCancel: @escaping ()->Void,
                                 onError: @escaping (_ error: String)->Void) throws {
@@ -160,6 +161,12 @@ public class PasswordManager {
         let actualAppID = getActualAppID(appID)
 
         checkMasterPasswordCreationRequired(did: actualDID, onMasterPasswordCreated: {
+            // In case caller doesn't want to show the password prompt if the database is locked, we return a cancellation exception.
+            if !self.isDatabaseLoaded(did: actualDID) && !options.promptPasswordIfLocked {
+                onCancel()
+                return
+            }
+            
             self.loadDatabase(did: actualDID, onDatabaseLoaded: {
                 do {
                     let info = try self.getPasswordInfoReal(key: key, did: actualDID, appID: actualAppID)
