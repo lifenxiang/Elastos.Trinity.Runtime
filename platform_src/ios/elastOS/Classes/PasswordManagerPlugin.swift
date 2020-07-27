@@ -79,7 +79,7 @@ class PasswordManagerPlugin : TrinityPlugin {
                 let passwordInfo = try PasswordInfoBuilder.buildFromType(jsonObject: info)
                     
                 var result = Dictionary<String, Any>()
-                PasswordManager.getSharedInstance().setPasswordInfo(info: passwordInfo, did: did, appID: appId, onPasswordInfoSet: {
+                try PasswordManager.getSharedInstance().setPasswordInfo(info: passwordInfo, did: did, appID: appId, onPasswordInfoSet: {
                     
                     result["couldSet"] = true
                     self.success(command, result)
@@ -141,24 +141,29 @@ class PasswordManagerPlugin : TrinityPlugin {
     
     @objc public func getAllPasswordInfo(_ command: CDVInvokedUrlCommand) {
         var result = Dictionary<String, Any>()
-        PasswordManager.getSharedInstance().getAllPasswordInfo(did: did, appID: appId, onAllPasswordInfoRetrieved: { infos in
-            
-            var allPasswordInfo = Array<Dictionary<String, Any>>()
-            for info in infos {
-                if let jsonInfo = info.asDictionary() {
-                    allPasswordInfo.append(jsonInfo)
+        do {
+            try PasswordManager.getSharedInstance().getAllPasswordInfo(did: did, appID: appId, onAllPasswordInfoRetrieved: { infos in
+                
+                var allPasswordInfo = Array<Dictionary<String, Any>>()
+                for info in infos {
+                    if let jsonInfo = info.asDictionary() {
+                        allPasswordInfo.append(jsonInfo)
+                    }
                 }
-            }
-            
-            result["allPasswordInfo"] = allPasswordInfo
-            
-            self.success(command, result)
-            
-        }, onCancel: {
-            self.error(command, self.buildCancellationError())
-        }, onError: { error in
-            self.error(command, self.buildGenericError(message: error))
-        })
+                
+                result["allPasswordInfo"] = allPasswordInfo
+                
+                self.success(command, result)
+                
+            }, onCancel: {
+                self.error(command, self.buildCancellationError())
+            }, onError: { error in
+                self.error(command, self.buildGenericError(message: error))
+            })
+        }
+        catch (let error) {
+            self.error(command, buildGenericError(message: error.localizedDescription))
+        }
     }
     
     @objc public func deletePasswordInfo(_ command: CDVInvokedUrlCommand) {
@@ -245,17 +250,27 @@ class PasswordManagerPlugin : TrinityPlugin {
     }
     
     @objc public func lockMasterPassword(_ command: CDVInvokedUrlCommand) {
-        PasswordManager.getSharedInstance().lockMasterPassword(did: did)
+        do {
+            try PasswordManager.getSharedInstance().lockMasterPassword(did: did)
 
-        let result = Dictionary<String, Any>()
-        self.success(command, result)
+            let result = Dictionary<String, Any>()
+            self.success(command, result)
+        }
+        catch (let error) {
+            self.error(command, buildGenericError(message: error.localizedDescription))
+        }
     }
     
     @objc public func deleteAll(_ command: CDVInvokedUrlCommand) {
-        PasswordManager.getSharedInstance().deleteAll(did: did)
+        do {
+            try PasswordManager.getSharedInstance().deleteAll(did: did)
 
-        let result = Dictionary<String, Any>()
-        self.success(command, result)
+            let result = Dictionary<String, Any>()
+            self.success(command, result)
+        }
+        catch (let error) {
+            self.error(command, buildGenericError(message: error.localizedDescription))
+        }
     }
 
     @objc public func setUnlockMode(_ command: CDVInvokedUrlCommand) {
@@ -265,7 +280,12 @@ class PasswordManagerPlugin : TrinityPlugin {
         }
         
         if let unlockMode = PasswordUnlockMode(rawValue: unlockModeAsInt) {
-            PasswordManager.getSharedInstance().setUnlockMode(unlockMode: unlockMode, did: did, appID: appId)
+            do {
+                try PasswordManager.getSharedInstance().setUnlockMode(unlockMode: unlockMode, did: did, appID: appId)
+            }
+            catch (let error) {
+                self.error(command, buildGenericError(message: error.localizedDescription))
+            }
         }
         else {
             self.error(command, buildGenericError(message: "No known unlock mode for value \(unlockModeAsInt)"))

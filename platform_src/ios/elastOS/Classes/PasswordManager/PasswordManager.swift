@@ -115,9 +115,9 @@ public class PasswordManager {
     public func setPasswordInfo(info: PasswordInfo, did: String?, appID: String,
                                 onPasswordInfoSet: @escaping ()->Void,
                                 onCancel: @escaping ()->Void,
-                                onError: @escaping (_ error: String)->Void) {
+                                onError: @escaping (_ error: String)->Void) throws {
         
-        let actualDID = try! getActualDIDContext(currentDIDContext: did)
+        let actualDID = try getActualDIDContext(currentDIDContext: did)
         let actualAppID = getActualAppID(appID)
         
         checkMasterPasswordCreationRequired(did: actualDID, onMasterPasswordCreated: {
@@ -157,7 +157,7 @@ public class PasswordManager {
                                 onCancel: @escaping ()->Void,
                                 onError: @escaping (_ error: String)->Void) throws {
         
-        let actualDID = try! getActualDIDContext(currentDIDContext: did)
+        let actualDID = try getActualDIDContext(currentDIDContext: did)
         let actualAppID = getActualAppID(appID)
         
         checkMasterPasswordCreationRequired(did: actualDID, onMasterPasswordCreated: {
@@ -197,9 +197,9 @@ public class PasswordManager {
     public func getAllPasswordInfo(did: String?, appID: String,
                                    onAllPasswordInfoRetrieved: @escaping (_ info: [PasswordInfo])->Void,
                                    onCancel: @escaping ()->Void,
-                                   onError: @escaping (_ error: String)->Void) {
+                                   onError: @escaping (_ error: String)->Void) throws {
         
-        let actualDID = try! getActualDIDContext(currentDIDContext: did)
+        let actualDID = try getActualDIDContext(currentDIDContext: did)
         let actualAppID = getActualAppID(appID)
         
         if (!appIsPasswordManager(appId: actualAppID)) {
@@ -238,7 +238,7 @@ public class PasswordManager {
                                    onCancel: @escaping ()->Void,
                                    onError: @escaping (_ error: String)->Void) throws {
         
-        let actualDID = try! getActualDIDContext(currentDIDContext: did)
+        let actualDID = try getActualDIDContext(currentDIDContext: did)
         let actualAppID = getActualAppID(appID)
         let actualTargetAppID = getActualAppID(targetAppID)
         
@@ -290,7 +290,7 @@ public class PasswordManager {
                                      onCancel: @escaping ()->Void,
                                      onError: @escaping (_ error: String)->Void) throws {
         
-        let actualDID = try! getActualDIDContext(currentDIDContext: did)
+        let actualDID = try getActualDIDContext(currentDIDContext: did)
         let actualAppID = getActualAppID(appID)
         
         if !appIsPasswordManager(appId: actualAppID) {
@@ -347,8 +347,8 @@ public class PasswordManager {
      * This API re-locks the passwords database and further requests from applications to this password
      * manager will require user to provide his master password again.
      */
-    public func lockMasterPassword(did: String) {
-        let actualDID = try! getActualDIDContext(currentDIDContext: did)
+    public func lockMasterPassword(did: String) throws {
+        let actualDID = try getActualDIDContext(currentDIDContext: did)
         
         lockDatabase(did: actualDID)
     }
@@ -357,8 +357,8 @@ public class PasswordManager {
      * Deletes all password information for the active DID session. The encrypted passwords database
      * is deleted without any way to recover it.
      */
-    public func deleteAll(did: String?) {
-        let actualDID = try! getActualDIDContext(currentDIDContext: did)
+    public func deleteAll(did: String?) throws {
+        let actualDID = try getActualDIDContext(currentDIDContext: did)
 
         // Lock currently opened database
         lockDatabase(did: actualDID)
@@ -379,8 +379,8 @@ public class PasswordManager {
      *
      * @param unlockMode Unlock strategy to use.
      */
-    public func setUnlockMode(unlockMode: PasswordUnlockMode, did: String?, appID: String) {
-        let actualDID = try! getActualDIDContext(currentDIDContext: did)
+    public func setUnlockMode(unlockMode: PasswordUnlockMode, did: String?, appID: String) throws {
+        let actualDID = try getActualDIDContext(currentDIDContext: did)
         let actualAppID = getActualAppID(appID)
         
         if (!appIsPasswordManager(appId: actualAppID)) {
@@ -391,13 +391,13 @@ public class PasswordManager {
         saveToPrefs(did: actualDID, key: PasswordManager.PREF_KEY_UNLOCK_MODE, value: unlockMode.rawValue)
 
         // if the mode becomes UNLOCK_EVERY_TIME, we lock the database
-        if (getUnlockMode(did: actualDID) != .UNLOCK_EVERY_TIME && unlockMode == PasswordUnlockMode.UNLOCK_EVERY_TIME) {
+        if (try getUnlockMode(did: actualDID) != .UNLOCK_EVERY_TIME && unlockMode == PasswordUnlockMode.UNLOCK_EVERY_TIME) {
             lockDatabase(did: actualDID)
         }
     }
 
-    private func getUnlockMode(did: String) -> PasswordUnlockMode {
-        let actualDID = try! getActualDIDContext(currentDIDContext: did)
+    private func getUnlockMode(did: String) throws -> PasswordUnlockMode {
+        let actualDID = try getActualDIDContext(currentDIDContext: did)
         
         let unlockModeAsInt = getPrefsInt(did: actualDID, key: PasswordManager.PREF_KEY_UNLOCK_MODE, defaultValue: PasswordUnlockMode.UNLOCK_FOR_A_WHILE.rawValue)
         return PasswordUnlockMode(rawValue: unlockModeAsInt) ?? PasswordUnlockMode.UNLOCK_FOR_A_WHILE
@@ -536,7 +536,11 @@ public class PasswordManager {
      * for security).
      */
     private func sessionExpired(did: String) -> Bool {
-        if getUnlockMode(did: did) == .UNLOCK_EVERY_TIME {
+        guard let unlockMode = try? getUnlockMode(did: did) else {
+            return true
+        }
+        
+        if unlockMode == .UNLOCK_EVERY_TIME {
             return true
         }
 

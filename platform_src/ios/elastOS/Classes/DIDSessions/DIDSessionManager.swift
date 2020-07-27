@@ -75,7 +75,7 @@ public class DIDSessionManager {
     public func signOut() throws {
         if let signedInIdentity = try? getSignedInIdentity() {
             // Lock password manager session database
-            PasswordManager.getSharedInstance().lockMasterPassword(did: signedInIdentity.didString)
+            try PasswordManager.getSharedInstance().lockMasterPassword(did: signedInIdentity.didString)
         }
             
         try dbAdapter.setDIDSessionSignedInIdentity(entry: nil)

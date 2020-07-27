@@ -21,8 +21,6 @@
 * SOFTWARE.
 */
 
-// TODO: When did sessions are ready, call ContactNotifier.getSharedInstance() as soon as a DID session starts, to initialize carrier early.
-
 import ElastosCarrierSDK
 import ElastosDIDSDK
 

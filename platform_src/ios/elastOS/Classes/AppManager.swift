@@ -257,6 +257,14 @@ class AppManager: NSObject {
         refreashInfos();
         startStartupServices();
         sendRefreshList("initiated", nil);
+        
+        do {
+            _ = try ContactNotifier.getSharedInstance(did: did!)
+        }
+        catch (let error) {
+            print("Unable to initialize contact notifier with error:")
+            print(error)
+        }
     }
 
     private func startStartupServices() {
