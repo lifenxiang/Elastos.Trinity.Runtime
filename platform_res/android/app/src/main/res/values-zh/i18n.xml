@@ -35,6 +35,9 @@
 
     <string name="app_starting">正在启动</string>
 
+    <string name="notification_contact_added">联系人已添加</string>
+    <string name="notification_contact_request">联系人请求</string>
+    <string name="notification_contact_invitation_accepted">联系人邀请已接受</string>
     <string name="notification_name_was_added_new">刚刚被添加为新联系人。 触摸即可查看他/她的个人资料。</string>
     <string name="notification_someone_was_added_new">有人刚刚被添加为新联系人。 触摸即可查看他/她的个人资料。</string>
     <string name="notification_name_want_add">想将您添加为联系人。 轻触以查看更多详细信息。</string>

@@ -341,13 +341,13 @@ public class ContactNotifier {
                                         if (name != null) {
                                             // Save contact name to database for better display later on
                                             addedContact.setName(name);
-                                            sendLocalNotification(did,"newcontact-"+did, "Contact added", name + context.getString(R.string.notification_name_was_added_new), targetUrl, FRIENDS_APP_PACKAGE_ID);
+                                            sendLocalNotification(did,"newcontact-"+did, context.getString(R.string.notification_contact_added), name + context.getString(R.string.notification_name_was_added_new), targetUrl, FRIENDS_APP_PACKAGE_ID);
                                             notificationSent = true;
                                         }
                                     }
 
                                     if (!notificationSent) {
-                                        sendLocalNotification(did,"newcontact-"+did, "Contact added", context.getString(R.string.notification_someone_was_added_new), targetUrl, FRIENDS_APP_PACKAGE_ID);
+                                        sendLocalNotification(did,"newcontact-"+did, context.getString(R.string.notification_contact_added), context.getString(R.string.notification_someone_was_added_new), targetUrl, FRIENDS_APP_PACKAGE_ID);
                                     }
                                 });
                             }
@@ -369,9 +369,9 @@ public class ContactNotifier {
                         String targetUrl = "https://scheme.elastos.org/viewfriendinvitation?did="+did+"&invitationid="+invitationID;
 
                         if (name != null)
-                            sendLocalNotification(did,"contactreq-"+did, "Contact request", name + context.getString(R.string.notification_name_want_add), targetUrl, FRIENDS_APP_PACKAGE_ID);
+                            sendLocalNotification(did,"contactreq-"+did, context.getString(R.string.notification_contact_request), name + context.getString(R.string.notification_name_want_add), targetUrl, FRIENDS_APP_PACKAGE_ID);
                         else
-                            sendLocalNotification(did,"contactreq-"+did, "Contact request",  context.getString(R.string.notification_someone_want_add), targetUrl, FRIENDS_APP_PACKAGE_ID);
+                            sendLocalNotification(did,"contactreq-"+did, context.getString(R.string.notification_contact_request), context.getString(R.string.notification_someone_want_add), targetUrl, FRIENDS_APP_PACKAGE_ID);
                     });
                 }
             }
@@ -482,10 +482,10 @@ public class ContactNotifier {
             if (name != null) {
                 // Save name to database for later use
                 addedContact.setName(name);
-                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, "Contact invitation accepted",name + context.getString(R.string.notification_name_accept_invitation), targetUrl, FRIENDS_APP_PACKAGE_ID);
+                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, context.getString(R.string.notification_contact_invitation_accepted),name + context.getString(R.string.notification_name_accept_invitation), targetUrl, FRIENDS_APP_PACKAGE_ID);
             }
             else {
-                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, "Contact invitation accepted", context.getString(R.string.notification_someone_accept_invitation), targetUrl, FRIENDS_APP_PACKAGE_ID);
+                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, context.getString(R.string.notification_contact_invitation_accepted), context.getString(R.string.notification_someone_accept_invitation), targetUrl, FRIENDS_APP_PACKAGE_ID);
             }
 
             // Notify the listeners

@@ -35,11 +35,14 @@
 
     <string name="app_starting">Starting</string>
 
-    <string name="notification_name_was_added_new"> was just added as a new contact. Touch to view his/her profile.</string>
+    <string name="notification_contact_added">Contact added</string>
+    <string name="notification_contact_request">Contact request</string>
+    <string name="notification_contact_invitation_accepted">Contact invitation accepted</string>
+    <string name="notification_name_was_added_new">&#160;was just added as a new contact. Touch to view his/her profile.</string>
     <string name="notification_someone_was_added_new">Someone was just added as a new contact. Touch to view his/her profile.</string>
-    <string name="notification_name_want_add"> wants to add you as a contact. Touch to view more details.</string>
+    <string name="notification_name_want_add">&#160;wants to add you as a contact. Touch to view more details.</string>
     <string name="notification_someone_want_add">Someone wants to add you as a contact. Touch to view more details.</string>
-    <string name="notification_name_accept_invitation"> has accepted your invitation. Touch to view details.</string>
+    <string name="notification_name_accept_invitation">&#160;has accepted your invitation. Touch to view details.</string>
     <string name="notification_someone_accept_invitation">Your friend has accepted your invitation. Touch to view details.</string>
 
 </resources>
