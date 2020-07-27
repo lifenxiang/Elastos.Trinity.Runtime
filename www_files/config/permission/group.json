@@ -81,6 +81,14 @@
         "PasswordManagerPlugin": ["*"],
         "$user": {}
     },
+    "dappstore": {
+        "AppManager": [
+            "getAppInfos",
+            "getAppList",
+            "getAppInfo"
+        ],
+        "$user": {}
+    },
     "user": {
         "AppManager": [
             "getVersion",
