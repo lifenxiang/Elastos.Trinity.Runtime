@@ -91,6 +91,7 @@ public class PasswordManager {
     private var appManager: AppManager? = nil
     private var databasesInfo = Dictionary<String, PasswordDatabaseInfo>()
     private var virtualDIDContext: String? = nil
+    private var activeMasterPasswordPrompt: PopupDialog? = nil
 
     init() {
         self.appManager = AppManager.getShareInstance();
@@ -457,6 +458,12 @@ public class PasswordManager {
                 lockDatabase(did: did)
             }
             
+            // First make sure to cancel any on going popup instance.
+            if activeMasterPasswordPrompt != nil {
+                activeMasterPasswordPrompt!.dismiss()
+                activeMasterPasswordPrompt = nil
+            }
+            
             // Master password is locked - prompt it to user
             let prompterController = MasterPasswordPrompterAlertController(nibName: "MasterPasswordPrompter", bundle: Bundle.main)
             
@@ -464,13 +471,14 @@ public class PasswordManager {
             prompterController.setPasswordManager(self)
             prompterController.setPreviousAttemptWasWrong(isPasswordRetry)
 
-            let popup = PopupDialog(viewController: prompterController, buttonAlignment: .horizontal, transitionStyle: .fadeIn, preferredWidth: 340, tapGestureDismissal: false, panGestureDismissal: false, hideStatusBar: false, completion: nil)
+            activeMasterPasswordPrompt = PopupDialog(viewController: prompterController, buttonAlignment: .horizontal, transitionStyle: .fadeIn, preferredWidth: 340, tapGestureDismissal: false, panGestureDismissal: false, hideStatusBar: false, completion: nil)
 
-            popup.view.backgroundColor = UIColor.clear // For rounded corners
-            self.appManager!.mainViewController.present(popup, animated: false, completion: nil)
+            activeMasterPasswordPrompt!.view.backgroundColor = UIColor.clear // For rounded corners
+            self.appManager!.mainViewController.present(activeMasterPasswordPrompt!, animated: false, completion: nil)
 
             prompterController.setOnPasswordTypedListener { password, shouldSavePasswordToBiometric in
-                popup.dismiss()
+                self.activeMasterPasswordPrompt!.dismiss()
+                self.activeMasterPasswordPrompt = nil
                 
                 do {
                     // Happens in case the password could not be retrieved
@@ -519,12 +527,14 @@ public class PasswordManager {
             }
             
             prompterController.setOnCancelListener {
-                popup.dismiss()
+                self.activeMasterPasswordPrompt!.dismiss()
+                self.activeMasterPasswordPrompt = nil
                 onCancel()
             }
             
             prompterController.setOnErrorListener { error in
-                popup.dismiss()
+                self.activeMasterPasswordPrompt!.dismiss()
+                self.activeMasterPasswordPrompt = nil
                 onError(error)
             }
         }

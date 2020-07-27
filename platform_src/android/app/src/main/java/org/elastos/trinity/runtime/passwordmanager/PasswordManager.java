@@ -56,6 +56,7 @@ public class PasswordManager {
     private AppManager appManager;
     private HashMap<String, PasswordDatabaseInfo> databasesInfo = new HashMap<>();
     private String virtualDIDContext = null;
+    private MasterPasswordPrompter.Builder activeMasterPasswordPrompt = null;
 
     private interface BasePasswordManagerListener {
         void onCancel();
@@ -514,8 +515,15 @@ public class PasswordManager {
                 }
 
                 // Master password is locked - prompt it to user
-                new MasterPasswordPrompter.Builder(activity, did, this)
+                // First make sure to cancel any on going popup instance.
+                if (activeMasterPasswordPrompt != null) {
+                    activeMasterPasswordPrompt.cancel();
+                    activeMasterPasswordPrompt = null;
+                }
+
+                activeMasterPasswordPrompt = new MasterPasswordPrompter.Builder(activity, did, this)
                         .setOnNextClickedListener((password, shouldSavePasswordToBiometric) -> {
+                            activeMasterPasswordPrompt = null;
                             try {
                                 loadEncryptedDatabase(did, password);
                                 if (isDatabaseLoaded(did)) {
@@ -565,8 +573,14 @@ public class PasswordManager {
                                 }
                             }
                         })
-                        .setOnCancelClickedListener(listener::onCancel)
-                        .setOnErrorListener(listener::onError)
+                        .setOnCancelClickedListener(() -> {
+                            activeMasterPasswordPrompt = null;
+                            listener.onCancel();
+                        })
+                        .setOnErrorListener((err) -> {
+                            activeMasterPasswordPrompt = null;
+                            listener.onError(err);
+                        })
                         .prompt(isPasswordRetry);
             }
         }
