@@ -4,6 +4,8 @@ public class NotificationRequest {
     public var key: String? = nil
     /** Title to be displayed as the main message on the notification. */
     public var title: String? = nil
+    /** Detailed message for this notification. */
+    public var message: String? = nil
     /** Intent URL emitted when the notification is clicked. */
     public var url: String? = nil
     /** Contact DID emitting this notification, in case of a remotely received notification. */
@@ -18,6 +20,10 @@ public class NotificationRequest {
 
         notif.key = obj["key"] as? String
         notif.title = obj["title"] as? String
+        
+        if obj.keys.contains("message") {
+            notif.message = obj["message"] as? String
+        }
 
         if obj.keys.contains("url") {
             notif.url = obj["url"] as? String

@@ -42,6 +42,7 @@ public class RemoteNotificationCommand : CarrierCommand {
             request["source"] = "contact_notifier_plugin" // purely informative
             request["key"] = notificationRequest.key
             request["title"] = notificationRequest.title
+            request["message"] = notificationRequest.message
 
             if (notificationRequest.url != nil) {
                 request["url"] = notificationRequest.url!

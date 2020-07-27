@@ -62,6 +62,7 @@ public class NotificationManager {
         let notification: Notification = try self.dbAdapter!.addNotification(didSessionDID: self.didSessionDID,
                                             key: notificationRequest.key!,
                                             title: notificationRequest.title!,
+                                            message: notificationRequest.message!,
                                             url: notificationRequest.url ?? "",
                                             emitter:notificationRequest.emitter ?? "",
                                             appId: appId)

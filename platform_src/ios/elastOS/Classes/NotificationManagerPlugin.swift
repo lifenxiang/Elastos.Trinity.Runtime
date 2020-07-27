@@ -100,11 +100,6 @@ class NotificationManagerPlugin : TrinityPlugin {
             let notificationRequestAsJson = command.arguments[0] as! Dictionary<String, Any>
 
             if let notificationRequest = NotificationRequest.fromJSONObject(notificationRequestAsJson) {
-                if (notificationRequest == nil) {
-                    self.error(command, "sendNotification", "Invalid parameter")
-                    return
-                }
-
                 try getNotifier().sendNotification(notificationRequest: notificationRequest, appId: appId)
                 self.success(command)
             }

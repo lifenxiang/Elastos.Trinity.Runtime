@@ -23,7 +23,7 @@
 import SQLite
 
 public class NMDatabaseHelper : SQLiteOpenHelper {
-    private static let DATABASE_VERSION = 2
+    private static let DATABASE_VERSION = 3
 
     private static let LOG_TAG = "NotificationDBHelper"
 
@@ -36,6 +36,7 @@ public class NMDatabaseHelper : SQLiteOpenHelper {
     public static let DID_SESSION_DID = "didsessiondid"
     public static let KEY = "notificationkey"
     public static let TITLE = "title";
+    public static let MESSAGE = "message";
     public static let URL = "url"
     public static let EMITTER = "emitter"
     public static let APP_ID = "appid"
@@ -53,6 +54,7 @@ public class NMDatabaseHelper : SQLiteOpenHelper {
             NMDatabaseHelper.DID_SESSION_DID + " varchar(128), " +
             NMDatabaseHelper.KEY + " varchar(128), " +
             NMDatabaseHelper.TITLE + " varchar(128), " +
+            NMDatabaseHelper.MESSAGE + " varchar(256), " +
             NMDatabaseHelper.URL + " varchar(128), " +
             NMDatabaseHelper.EMITTER + " varchar(128), " +
             NMDatabaseHelper.APP_ID + " varchar(128), " +
@@ -64,18 +66,32 @@ public class NMDatabaseHelper : SQLiteOpenHelper {
         // Use the if (old < N) format to make sure users get all upgrades even if they
         // directly upgrade from vN to v(N+5)
         if (oldVersion < 2) {
-            Log.d(NMDatabaseHelper.LOG_TAG, "Upgrading database to v2");
-            upgradeToV2(db: db);
+            Log.d(NMDatabaseHelper.LOG_TAG, "Upgrading database to v2")
+            upgradeToV2(db: db)
+        }
+        if (oldVersion < 3) {
+            Log.d(NMDatabaseHelper.LOG_TAG, "Upgrading database to v3")
+            upgradeToV3(db: db)
         }
     }
 
     // 20200601 - Added contact name and avatar
     private func upgradeToV2(db: Connection) {
         do {
-            var strSQL = "ALTER TABLE " + NMDatabaseHelper.NOTIFICATION_TABLE + " ADD COLUMN " + NMDatabaseHelper.DID_SESSION_DID + " varchar(128); "
+            let strSQL = "ALTER TABLE " + NMDatabaseHelper.NOTIFICATION_TABLE + " ADD COLUMN " + NMDatabaseHelper.DID_SESSION_DID + " varchar(128); "
             try db.execute(strSQL)
         }
         catch (let error) {
+            print(error)
+        }
+    }
+    
+    // 20200721 - Added message field
+    private func upgradeToV3(db: Connection) {
+        do {
+            let strSQL = "ALTER TABLE " + NMDatabaseHelper.NOTIFICATION_TABLE + " ADD COLUMN " + NMDatabaseHelper.MESSAGE + " varchar(256); "
+            try db.execute(strSQL)
+        } catch (let error) {
             print(error)
         }
     }

@@ -159,7 +159,7 @@ public class PasswordManager {
         
         let actualDID = try! getActualDIDContext(currentDIDContext: did)
         let actualAppID = getActualAppID(appID)
-
+        
         checkMasterPasswordCreationRequired(did: actualDID, onMasterPasswordCreated: {
             // In case caller doesn't want to show the password prompt if the database is locked, we return a cancellation exception.
             if !self.isDatabaseLoaded(did: actualDID) && !options.promptPasswordIfLocked {

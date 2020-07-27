@@ -539,15 +539,15 @@ public class ContactNotifier {
     }
 
     void sendLocalNotification(String relatedRemoteDID, String key, String title, String message, String url, String appId) {
-        NotificationRequest testNotif = new NotificationRequest();
-        testNotif.key = key;
-        testNotif.title = title;
-        testNotif.message = message;
-        testNotif.emitter = relatedRemoteDID;
-        testNotif.url = url;
+        NotificationRequest notification = new NotificationRequest();
+        notification.key = key;
+        notification.title = title;
+        notification.message = message;
+        notification.emitter = relatedRemoteDID;
+        notification.url = url;
         try {
             // NOTE: appid can't be null because the notification manager uses it for several things.
-            NotificationManager.getSharedInstance(this.didSessionDID).sendNotification(testNotif, appId);
+            NotificationManager.getSharedInstance(this.didSessionDID).sendNotification(notification, appId);
         } catch (Exception e) {
             e.printStackTrace();
         }

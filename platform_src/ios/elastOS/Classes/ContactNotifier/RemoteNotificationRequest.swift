@@ -25,8 +25,10 @@ public class RemoteNotificationRequest {
     public var key: String? = nil
     /** Package ID of the sending app. */
     public var appId: String? = nil
-    /** Title to be displayed as the main message on the notification. */
+    /** Title that highlights the notification main purpose. */
     public var title: String? = nil
+    /** Main message content  */
+    public var message: String? = nil
     /** Intent URL emitted when the notification is clicked. */
     public var url: String? = nil
 
@@ -43,7 +45,13 @@ public class RemoteNotificationRequest {
             notif.appId = obj["appId"] as? String
         }
         
-        notif.title = obj["title"] as? String
+        if obj.keys.contains("title") {
+            notif.title = obj["title"] as? String
+        }
+        
+        if obj.keys.contains("message") {
+            notif.message = obj["message"] as? String
+        }
         
         if obj.keys.contains("url") {
             notif.url = obj["url"] as? String
