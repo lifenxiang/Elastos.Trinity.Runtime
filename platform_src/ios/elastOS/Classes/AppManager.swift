@@ -257,7 +257,7 @@ class AppManager: NSObject {
         refreashInfos();
         startStartupServices();
         sendRefreshList("initiated", nil);
-        
+
         do {
             _ = try ContactNotifier.getSharedInstance(did: did!)
         }
@@ -560,17 +560,18 @@ class AppManager: NSObject {
 //        Log.d("AppManager", "Entering installBuiltInApp path=" + appPath + " id=" + id +" launcher=" + launcher);
 
         let originPath = getAbsolutePath(appPath + id);
-        var path = originPath;
+        var path = originPath + "/assets/manifest.json";
         let fileManager = FileManager.default;
-        var ret = fileManager.fileExists(atPath: path + "/assets/manifest.json");
+        var ret = fileManager.fileExists(atPath: path);
         if (!ret) {
-            ret = fileManager.fileExists(atPath: path + "/manifest.json");
+            path = originPath + "/manifest.json";
+            ret = fileManager.fileExists(atPath: path);
             guard ret else {
                 fatalError("installBuiltInApp error: Can't find manifest.json in / or /assets/, do not install this dapp.")
             }
         }
 
-        let builtInInfo = try shareInstaller.parseManifest(path + "/manifest.json", launcher)!;
+        let builtInInfo = try shareInstaller.parseManifest(path, launcher)!;
         let installedInfo = getAppInfo(id);
         var needInstall = true;
 

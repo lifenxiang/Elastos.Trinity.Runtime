@@ -346,11 +346,11 @@
     }
 
     func getInfoByManifest(_ path: String, _ launcher: Bool = false) throws -> AppInfo? {
-        var dir = path;
+        var dir = path + "/assets";
         let fileManager = FileManager.default;
         var ret = fileManager.fileExists(atPath: dir + "/manifest.json")
         if (!ret) {
-            dir = dir + "/assets";
+            dir = path;
             ret = fileManager.fileExists(atPath: dir + "/manifest.json");
             guard ret else {
                 try deleteAllFiles(path);
@@ -596,7 +596,7 @@
                 }
             }
         }
-        
+
 
         let startup_services = json["startup_service"] as? [String];
         if (startup_services != nil) {
