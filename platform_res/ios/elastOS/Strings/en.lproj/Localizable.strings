@@ -36,6 +36,9 @@
 
 "app_starting" = "Starting";
 
+"notification_contact_added" = "Contact added";
+"notification_contact_request" = "Contact request";
+"notification_contact_invitation_accepted" = "Contact invitation accepted";
 "notification_name_was_added_new" = " was just added as a new contact. Touch to view his/her profile.";
 "notification_someone_was_added_new" = "Someone was just added as a new contact. Touch to view his/her profile.";
 "notification_name_want_add" = " wants to add you as a contact. Touch to view more details.";

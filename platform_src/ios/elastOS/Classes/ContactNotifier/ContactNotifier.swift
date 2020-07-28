@@ -337,13 +337,13 @@ public class ContactNotifier {
                                         if name != nil {
                                             // Save contact name to database for better display later on
                                             addedContact.setName(name)
-                                            self.notifier.sendLocalNotification(relatedRemoteDID: did,key: "newcontact-"+did, title: "Contact added", message: "\(name!)" + "notification_name_was_added_new".localized, url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
+                                            self.notifier.sendLocalNotification(relatedRemoteDID: did,key: "newcontact-"+did, title: "notification_contact_added".localized, message: "\(name!)" + "notification_name_was_added_new".localized, url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
                                             notificationSent = true
                                         }
                                     }
 
                                     if !notificationSent {
-                                        self.notifier.sendLocalNotification(relatedRemoteDID: did,key: "newcontact-"+did, title:"Contact added", message: "notification_someone_was_added_new".localized, url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
+                                        self.notifier.sendLocalNotification(relatedRemoteDID: did,key: "newcontact-"+did, title:"notification_contact_added".localized, message: "notification_someone_was_added_new".localized, url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
                                     }
                                 }
                                 catch (let error) {
@@ -366,10 +366,10 @@ public class ContactNotifier {
                             let targetUrl = "https://scheme.elastos.org/viewfriendinvitation?did=(did)&invitationid=\(String(describing: invitationID))"
 
                             if name != nil {
-                                self.notifier.sendLocalNotification(relatedRemoteDID: did,key: "contactreq-\(did)", title: "Contact request", message: "\(name!)" + "notification_name_want_add".localized, url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
+                                self.notifier.sendLocalNotification(relatedRemoteDID: did,key: "contactreq-\(did)", title: "notification_contact_request".localized, message: "\(name!)" + "notification_name_want_add".localized, url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
                             }
                             else {
-                                self.notifier.sendLocalNotification(relatedRemoteDID: did,key: "contactreq-\(did)", title: "Contact request", message: "notification_someone_want_add".localized, url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
+                                self.notifier.sendLocalNotification(relatedRemoteDID: did,key: "contactreq-\(did)", title: "notification_contact_request".localized, message: "notification_someone_want_add".localized, url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
                             }
                         }
                     }
@@ -472,10 +472,10 @@ public class ContactNotifier {
                 if name != nil {
                     // Save name to database for later use
                     addedContact.setName(name)
-                    self.sendLocalNotification(relatedRemoteDID: invitation.did,key: "friendaccepted-"+invitation.did, title: "Contact invitation accepted", message: "\(name!)" + "notification_name_accept_invitation".localized, url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
+                    self.sendLocalNotification(relatedRemoteDID: invitation.did,key: "friendaccepted-"+invitation.did, title: "notification_contact_invitation_accepted".localized, message: "\(name!)" + "notification_name_accept_invitation".localized, url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
                 }
                 else {
-                    self.sendLocalNotification(relatedRemoteDID: invitation.did,key: "friendaccepted-"+invitation.did, title: "Contact invitation accepted", message: "notification_someone_accept_invitation".localized, url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
+                    self.sendLocalNotification(relatedRemoteDID: invitation.did,key: "friendaccepted-"+invitation.did, title: "notification_contact_invitation_accepted".localized, message: "notification_someone_accept_invitation".localized, url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
                 }
 
                 // Notify the listeners
