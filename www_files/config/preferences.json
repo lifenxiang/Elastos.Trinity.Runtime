@@ -6,7 +6,6 @@
     "chain.network.type": "MainNet",
     "chain.network.config": "",
     "chain.network.configurl": "",
-    "did.resolver": "http://api.elastos.io:20606",
     "mainchain.rpcapi": "http://api.elastos.io:20336",
     "sidechain.id.rpcapi": "http://api.elastos.io:20606",
     "sidechain.eth.rpcapi": "https://mainrpc.elaeth.io"

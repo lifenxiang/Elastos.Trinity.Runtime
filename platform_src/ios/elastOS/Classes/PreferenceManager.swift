@@ -40,11 +40,11 @@ import Foundation
         // Make some services ready
         let darkMode = getBoolValue("ui.darkmode", false)
         prepareUIStyling(useDarkMode: darkMode)
-        
+
         // Language
         applyLanguageForI18N()
     }
-    
+
     private func applyLanguageForI18N() {
         let lang = try? getCurrentLocale()
         UserDefaults.standard.set(lang, forKey: "i18n_language")
@@ -205,7 +205,7 @@ import Foundation
     func getNativeSystemVersion() throws -> String {
         let infoDictionary = Bundle.main.infoDictionary
         let majorVersion = infoDictionary? ["CFBundleShortVersionString"] as? String;
-        
+
         //check version
         let json = try dbAdapter.getPreference("version");
         var version: String? = nil
@@ -222,7 +222,7 @@ import Foundation
 
         return majorVersion!;
     }
-    
+
     func getVersion() -> String {
         var version = "";
         if (defaultPreferences["version"] != nil) {
@@ -240,7 +240,7 @@ import Foundation
      }
 
     @objc func getDIDResolver() -> String {
-       return getStringValue("did.resolver", "http://api.elastos.io:20606");
+       return getStringValue("sidechain.id.rpcapi", "http://api.elastos.io:20606");
     }
 
     @objc func getStringValue(_ key: String, _ defaultValue: String) -> String {
@@ -300,7 +300,7 @@ import Foundation
     private func prepareUIStyling(useDarkMode: Bool) {
         UIStyling.prepare(useDarkMode: useDarkMode)
     }
-    
+
     public func getDeveloperInstallVerify() -> Bool {
         if (getDeveloperMode()) {
             return getBoolValue("developer.install.verifyDigest", true);
