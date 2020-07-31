@@ -167,10 +167,12 @@ public class IntentManager {
                         fragment.basePlugin.onReceiveIntentResponse(info);
                     }
                 }
-                intentContextList.remove(entry.getKey());
+                iterator.remove();
+//                intentContextList.remove(entry.getKey());
             }
             else if (info.fromId.equals((id))) {
-                intentContextList.remove(entry.getKey());
+                iterator.remove();
+//                intentContextList.remove(entry.getKey());
                 if (info.filter.startupMode.equals(AppManager.STARTUP_INTENT)
                         || info.filter.startupMode.equals(AppManager.STARTUP_SILENCE)) {
                     appManager.close(info.filter.packageId, info.filter.startupMode, info.filter.serviceName);

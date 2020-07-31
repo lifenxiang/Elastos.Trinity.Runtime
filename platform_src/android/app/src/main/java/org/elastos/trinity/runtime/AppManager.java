@@ -846,11 +846,15 @@ public class AppManager {
             return true;
         }
         else {
-            switchContent(getFragmentById(launcherInfo.app_id), launcherInfo.app_id);
-            try {
-                AppManager.getShareInstance().sendLauncherMessageMinimize(curFragment.modeId);
-            } catch (Exception e) {
-                e.printStackTrace();
+            if ((curFragment != null)  && (curFragment.titlebar != null)) {
+                curFragment.titlebar.handleOuterLeftClicked();
+            } else {
+                switchContent(getFragmentById(launcherInfo.app_id), launcherInfo.app_id);
+                try {
+                    AppManager.getShareInstance().sendLauncherMessageMinimize(curFragment.modeId);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
             return false;
         }

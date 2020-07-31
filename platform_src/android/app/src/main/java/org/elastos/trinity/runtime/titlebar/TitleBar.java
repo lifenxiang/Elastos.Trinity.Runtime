@@ -498,7 +498,7 @@ public class TitleBar extends FrameLayout {
         }
     }
 
-    private void handleOuterLeftClicked() {
+    public void handleOuterLeftClicked() {
         if (currentNavigationIconIsVisible) {
             // Action handled by runtime: minimize, or close
             if (currentNavigationMode == TitleBarNavigationMode.CLOSE) {
