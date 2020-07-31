@@ -206,7 +206,7 @@ public class PasswordManager {
                     public void onError(String error) {
                         listener.onError(error);
                     }
-                }, false);
+                }, false, options.forceMasterPasswordPrompt);
             }
 
             @Override
@@ -506,8 +506,12 @@ public class PasswordManager {
     }
 
     private void loadDatabase(String did, OnDatabaseLoadedListener listener, boolean isPasswordRetry) {
+        loadDatabase(did, listener, isPasswordRetry, false);
+    }
+
+    private void loadDatabase(String did, OnDatabaseLoadedListener listener, boolean isPasswordRetry, boolean forcePasswordPrompt) {
         try {
-            if (isDatabaseLoaded(did) && !sessionExpired(did)) {
+            if (isDatabaseLoaded(did) && !sessionExpired(did) && !forcePasswordPrompt) {
                 listener.onDatabaseLoaded();
             } else {
                 if (sessionExpired(did)) {
@@ -525,7 +529,11 @@ public class PasswordManager {
                         .setOnNextClickedListener((password, shouldSavePasswordToBiometric) -> {
                             activeMasterPasswordPrompt = null;
                             try {
+                                // Force loading the database even if it's already loaded. That's the way to check if the
+                                // possibly forced password input is right or not. Reloading the database will not break
+                                // anything.
                                 loadEncryptedDatabase(did, password);
+
                                 if (isDatabaseLoaded(did)) {
                                     // User chose to enable biometric authentication (was not enabled before). So we save the
                                     // master password to the biometric crypto space.

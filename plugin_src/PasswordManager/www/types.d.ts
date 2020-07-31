@@ -201,6 +201,14 @@ declare namespace PasswordManagerPlugin {
          * getPasswordInfo() fails silently and throws a cancellation exception. Default: true.
          */
         promptPasswordIfLocked?: boolean
+
+        /**
+         * Forces the user to re-enter his master password for the current operation, even if the database
+         * is already unlocked. This is useful for security reasons, for example for payments, when we want to 
+         * confirm that the acting user is really the device owner.
+         * Default: false.
+         */
+        forceMasterPasswordPrompt?: boolean
     }
 
     /** The provided password is invalid */
