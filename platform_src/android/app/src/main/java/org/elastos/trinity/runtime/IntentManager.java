@@ -567,6 +567,10 @@ public class IntentManager {
             // The intent was sent by a trinity dapp, inside trinity, so we call the intent response callback
             if (fragment != null) {
                 info.params = intentResult.payloadAsString();
+                // If the called dapp has generated a JWT as output, we pass the decoded payload to the calling dapp
+                // for convenience, but we also forward the raw JWT as this is required in some cases.
+                if (intentResult.isAlreadyJWT())
+                    info.responseJwt = intentResult.jwt;
                 fragment.basePlugin.onReceiveIntentResponse(info);
             }
         }

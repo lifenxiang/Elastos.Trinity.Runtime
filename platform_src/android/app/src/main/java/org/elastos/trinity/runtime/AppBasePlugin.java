@@ -575,6 +575,9 @@ public class AppBasePlugin extends TrinityPlugin {
                 obj.put("result", "null");
             }
             obj.put("from", info.toId);
+            if (info.responseJwt != null)
+                obj.put("responseJWT", info.responseJwt);
+
             PluginResult result = new PluginResult(PluginResult.Status.OK, obj);
             result.setKeepCallback(false);
             info.callbackContext.sendPluginResult(result);

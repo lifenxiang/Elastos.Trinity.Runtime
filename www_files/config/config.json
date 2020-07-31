@@ -14,6 +14,7 @@
         "org.elastos.trinity.dapp.qrcodescanner"
     ],
     "url.authority.whitelist": [
+        "org.elastos.trinity.dapp.wallet",
         "org.elastos.trinity.dapp.settings",
         "org.elastos.trinity.dapp.dappstore"
     ],
