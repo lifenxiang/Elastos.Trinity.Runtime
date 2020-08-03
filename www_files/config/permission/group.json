@@ -113,7 +113,8 @@
             "getStartupMode",
             "startBackgroundService",
             "stopBackgroundService",
-            "getRunningServiceList"
+            "getRunningServiceList",
+            "getBuildInfo"
         ],
         "PasswordManagerPlugin": [
             "setPasswordInfo",

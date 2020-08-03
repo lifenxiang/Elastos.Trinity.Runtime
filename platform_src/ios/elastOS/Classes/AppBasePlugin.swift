@@ -221,7 +221,7 @@
             self.error(command, error.localizedDescription);
         }
     }
-    
+
     private func startByMode(_ command: CDVInvokedUrlCommand,
         _ startupMode: String) {
         let id = command.arguments[0] as? String ?? "";
@@ -458,7 +458,7 @@
             self.error(command, "Invalid id.")
             return
         }
-        
+
         if (toId.hasPrefix("#")) {
             if (toId.hasPrefix("#service:") || AppManager.isStartupMode(toId.subStringFrom(index: 1))) {
                 toId = appId + toId;
@@ -821,7 +821,7 @@
             self.error(command, "'" + startupMode + "' mode can't setVisible.");
             return;
         }
-        
+
         if (visible != "hide") {
             visible = "show";
         }
@@ -952,7 +952,7 @@
         AppManager.getShareInstance().broadcastMessage(type, msg, getModeId());
         self.success(command, "ok");
     }
-    
+
     @objc func getStartupMode(_ command: CDVInvokedUrlCommand) {
         var ret = [String : String]();
         ret["startupMode"] = self.startupMode;
@@ -964,7 +964,7 @@
 
     @objc func startBackgroundService(_ command: CDVInvokedUrlCommand) {
         let serviceName = command.arguments[0] as? String ?? "";
-        
+
         do {
             try AppManager.getShareInstance().start(packageId, AppManager.STARTUP_SERVICE, serviceName);
             self.success(command, "ok");
@@ -977,7 +977,7 @@
 
     @objc func stopBackgroundService(_ command: CDVInvokedUrlCommand) {
         let serviceName = command.arguments[0] as? String ?? "";
-        
+
         do {
             try AppManager.getShareInstance().close(packageId, AppManager.STARTUP_SERVICE, serviceName);
             self.success(command, "ok");
@@ -1025,5 +1025,19 @@
         let list = AppManager.getShareInstance().getAllServiceRunningList();
         self.success(command, retAsArray: filterList(list));
     }
-    
+
+    @objc func getBuildInfo(_ command: CDVInvokedUrlCommand) {
+        var ret = [String : String]();
+
+        let type = ConfigManager.getShareInstance().getStringValue("build.type", "elastOS");
+        ret["type"] = type;
+
+        let variant = ConfigManager.getShareInstance().getStringValue("build.variant", "");
+        ret["variant"] = variant;
+
+        ret["platform"] = "ios";
+
+        self.success(command, retAsDict: ret);
+    }
+
  }

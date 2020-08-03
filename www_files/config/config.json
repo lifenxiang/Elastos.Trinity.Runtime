@@ -28,5 +28,7 @@
     "native.dapps.mode": false,
     "native.dapps": {
         "org.elastos.trinity.dapp.wallet": "WalletMainViewController"
-    }
+    },
+    "build.type": "elastOS",
+    "build.variant": ""
 }

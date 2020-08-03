@@ -181,7 +181,9 @@ public class AppBasePlugin extends TrinityPlugin {
                     this.getAllRunningServiceList(callbackContext);
                     break;
 
-
+                case "getBuildInfo":
+                    this.getBuildInfo(callbackContext);
+                    break;
 
                 default:
                     return false;
@@ -848,6 +850,19 @@ public class AppBasePlugin extends TrinityPlugin {
     protected void getAllRunningServiceList(CallbackContext callbackContext) {
         String[] ids = appManager.getAllServiceRunningList();
         JSONArray ret = jsonIdList(ids);
+        callbackContext.success(ret);
+    }
+
+    protected void getBuildInfo(CallbackContext callbackContext) throws Exception {
+        JSONObject ret = new JSONObject();
+        String type = ConfigManager.getShareInstance().getStringValue("build.type", "elastOS");
+        ret.put("type", type);
+
+        String variant = ConfigManager.getShareInstance().getStringValue("build.variant", "");
+        ret.put("variant", variant);
+
+        ret.put("platform", "android");
+
         callbackContext.success(ret);
     }
 

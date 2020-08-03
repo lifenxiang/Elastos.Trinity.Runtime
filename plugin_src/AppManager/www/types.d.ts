@@ -276,7 +276,6 @@ declare namespace AppManagerPlugin {
         appId?: string
     }
 
-
     /**
      * Information about startup.
      */
@@ -286,6 +285,19 @@ declare namespace AppManagerPlugin {
         /** If startup mode is service, it will be return */
         serviceName?: string
     }
+
+    /**
+     * Information about build.
+     */
+    type BuildInfo = {
+        /** elastOS | native */
+        type: string
+        variant: string
+        /** android | ios | windows | linux | macos */
+        platform: string
+    }
+
+
     /**
      * The class representing dapp manager for launcher.
      */
@@ -692,5 +704,12 @@ declare namespace AppManagerPlugin {
          * @param onSuccess  The function to call when success,the param is a dapp mode id '[packageId]#service:[serviceName]' list.
          */
         getAllRunningServiceList(onSuccess:(ids: string[])=>void);
+
+        /**
+         * Get build info.
+         *
+         * @param onSuccess  Callback returning the  {type: value, variant: value, platform: value}.
+         */
+        getBuildInfo(onSuccess:(info: BuildInfo)=>void);
     }
 }

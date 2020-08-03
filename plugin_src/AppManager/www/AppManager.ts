@@ -276,6 +276,10 @@ class AppManagerImpl implements AppManagerPlugin.AppManager {
     getAllRunningServiceList(onSuccess:(ids: string[])=>void) {
         exec(onSuccess, null, 'AppManager', 'getAllRunningServiceList', []);
     }
+
+    getBuildInfo(onSuccess:(info: AppManagerPlugin.BuildInfo)=>void) {
+        exec(onSuccess, null, 'AppManager', 'getBuildInfo', []);
+    }
 }
 
 function jsonInfo(info) {
