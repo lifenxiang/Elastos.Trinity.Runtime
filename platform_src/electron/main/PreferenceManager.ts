@@ -73,9 +73,6 @@ export class PreferenceManager {
     public async getPreferences(): Promise<any> {
         let values = await this.dbAdapter.getPreferences();
 
-        console.log("asd - values");
-        console.log(values);
-
         this.defaultPreferences.forEach((value: any, key: string) => {
             if (values[key] == null) {
                 values[key] = value;
@@ -105,6 +102,7 @@ export class PreferenceManager {
     }
 
     public setPreference(key: string, value: any) {
+        console.log("setPreference key: "+key+", value: "+value);
         if (!this.isAllowSetPreference(key)) {
             Log.e(PreferenceManager.LOG_TAG, "setPreference error: " + key + " can't be set!");
             return;

@@ -10,10 +10,12 @@ import { PreferenceManager } from "./PreferenceManager";
 import { IdentityEntry } from "./didsessions/IdentityEntry";
 import { TrinityPlugin, SuccessCallback, ErrorCallback } from './TrinityPlugin';
 import { TrinityRuntime } from './Runtime';
-import { TitleBar } from './TitleBar';
+import { TitleBar } from './titlebar/TitleBar';
 import { notImplemented } from './Utility';
-import { AppManagerPlugin } from './plugins_main/AppManagerPluginMain';
 import { UIStyling } from './UIStyling';
+import { ConfigManager } from './ConfigManager';
+import { WebViewFragment } from './WebViewFragment';
+import { AppBasePlugin } from './AppBasePlugin';
 
 export class AppManager {
     private static LOG_TAG = "AppManager";
@@ -75,10 +77,11 @@ export class AppManager {
 
     private static appManager: AppManager;
     private runtime: TrinityRuntime; //TODO: diff with java
-    private curFragment: any = null; //TODO: change type
-    private window: BrowserWindow = null
+    private curFragment: WebViewFragment = null; //TODO: change type
+    public fragments = new Map<number, WebViewFragment>();
+    public fragmentIds = new Map<string, number>();
+    public window: BrowserWindow = null;
     dbAdapter: MergeDBAdapter = null;
-    runningApps: { [key:string]: RunningApp }; //TODO: diff with java
 
 
     private basePathInfo: AppPathInfo = null;
@@ -115,7 +118,6 @@ export class AppManager {
 
         this.window = window;
         this.runtime = runtime;
-        this.runningApps = {};
 
         this.basePathInfo = new AppPathInfo(null);
         this.pathInfo = this.basePathInfo;
@@ -341,14 +343,14 @@ export class AppManager {
     }
 
     private async installBuiltInApp(path: string, id: string, launcher: number) {
-        Log.d("AppManager", "Entering installBuiltInApp relativeRootPath="+path+" id="+id+" launcher="+launcher);
+        //Log.d("AppManager", "Entering installBuiltInApp relativeRootPath="+path+" id="+id+" launcher="+launcher);
 
         path = path + id;
         let input = this.getAssetsFile(path + "/manifest.json");
         if (input == null) {
             input = this.getAssetsFile(path + "/assets/manifest.json");
             if (input == null) {
-                Log.e("AppManager", "No manifest found, returning");
+                //Log.e("AppManager", "No manifest found, returning");
                 return;
             }
         }
@@ -359,26 +361,26 @@ export class AppManager {
         if (installedInfo != null) {
             let versionChanged = PreferenceManager.getSharedInstance().versionChanged;
             if (versionChanged || builtInInfo.version_code > installedInfo.version_code) {
-                Log.d("AppManager", "built in version > installed version: uninstalling installed");
+                //Log.d("AppManager", "built in version > installed version: uninstalling installed");
                 this.shareInstaller.unInstall(installedInfo, true);
             }
             else {
-                Log.d("AppManager", "Built in version <= installed version, No need to install");
+                //Log.d("AppManager", "Built in version <= installed version, No need to install");
                 needInstall = false;
             }
         }
         else {
-            Log.d("AppManager", "No installed info found");
+            //Log.d("AppManager", "No installed info found");
         }
 
         if (needInstall) {
-            Log.d("AppManager", "Needs install - copying assets and setting built-in to 1");
+            //Log.d("AppManager", "Needs install - copying assets and setting built-in to 1");
             this.shareInstaller.copyAssetsFolder(path, this.basePathInfo.appsPath + builtInInfo.app_id);
             builtInInfo.built_in = 1;
             await this.dbAdapter.addAppInfo(builtInInfo, true);
             if (launcher == 1) {
                 this.launcherInfo = null;
-                this.getLauncherInfo();
+                await this.getLauncherInfo();
             }
         }
     }
@@ -398,7 +400,7 @@ export class AppManager {
                 this.shareInstaller.renameFolder(launcher, this.basePathInfo.appsPath, this.launcherInfo.app_id);
                 await this.dbAdapter.addAppInfo(info, true);
                 this.launcherInfo = null;
-                this.getLauncherInfo();
+                await this.getLauncherInfo();
             }
 
             //TODO: diff with java
@@ -461,7 +463,7 @@ export class AppManager {
             }
 
             for (let i = 0; i < this.appList.length; i++) {
-                Log.d(AppManager.LOG_TAG, "save / app "+this.appList[i].app_id+" buildin "+this.appList[i].built_in);
+                //Log.d(AppManager.LOG_TAG, "save / app "+this.appList[i].app_id+" buildin "+this.appList[i].built_in);
                 if (this.appList[i].built_in != 1) {
                     continue;
                 }
@@ -484,6 +486,7 @@ export class AppManager {
     }
 
     public setAppVisible(id: string, visible: string) {
+        //Log.d(AppManager.LOG_TAG, "setAppVisible - id: "+id+", visible: "+visible);
         if (visible == "hide") {
             this.visibles.set(id, false);
         }
@@ -573,7 +576,7 @@ export class AppManager {
         }
     }
 
-    private getAppLocalPath(info: AppInfo): string {
+    public getAppLocalPath(info: AppInfo): string {
         let path = this.basePathInfo.appsPath;
         if (!info.share) {
             path = this.pathInfo.appsPath;
@@ -696,22 +699,90 @@ export class AppManager {
         }
     }
 
-    public getFragmentById(modeId: string): any {
-        //TODO: migrate from java
+    public getFragmentById(modeId: string): WebViewFragment {
+        if (this.isLauncher(modeId)) {
+            modeId = AppManager.LAUNCHER;
+        }
+
+        let browserViews = this.window.getBrowserViews();
+        for (var i = 0; i < browserViews.length; i++) {
+            let browserView = browserViews[i];
+            let fragment = this.fragments.get(browserView.id);
+            if (fragment instanceof WebViewFragment) {
+                let webViewfragment = fragment as WebViewFragment;
+                if (webViewfragment.modeId == modeId) {
+                    return webViewfragment;
+                }
+            }
+        }
+
+        /*this.fragments.forEach((value: WebViewFragment, key: number) => {
+            if (value.modeId == modeId) {
+                return value;
+            }
+        });*/
+
+        
+
+        return null;
     }
 
-    public switchContent(fragment: any, id: string) {
-        notImplemented("switchContent");
+    public async switchContent(fragment: WebViewFragment, id: string) {
+        console.log("AppManager - switchContent id: "+id);
+
+        /*if (this.curFragment != null) {
+            console.log("curFragment: "+this.curFragment.packageId);
+            console.log("fragment: "+fragment.packageId);
+            console.log("isCurrentFragment: "+this.isCurrentFragment(fragment));
+        }*/ 
+        if ((this.curFragment != null) && (this.curFragment != fragment)) {
+            console.log("AppManager - switchContent - hide curFragment");
+            this.curFragment.appView.setBounds({ x: 0, y: 0, width: 0, height: 0 });
+        }
+        if (this.curFragment != fragment) {
+            if (fragment.browserViewId == null) {
+                console.log("AppManager - switchContent - create view fragment");
+                await fragment.createView(this.runtime);
+            }
+            else if (this.curFragment != fragment) {
+                console.log("AppManager - switchContent - show fragment");
+                fragment.appView.setBounds({ x: 0, y: 64, width: 500, height: 800 });
+                fragment.titleBar.show();
+            }
+        }
+
+        this.curFragment = fragment;
+
+        this.runningList.splice(this.runningList.indexOf(id), 1);
+        this.runningList.unshift(id);
+        this.lastList.splice(this.lastList.indexOf(id), 1);
+        this.lastList.unshift(id);
     }
 
-    private hideFragment(fragment: any, id: string) {
+    public async hideFragment(fragment: WebViewFragment, startupMode: string, id: string) {
         // TODO - No way to deal with browser views Z-ordering for now - find a solution.
-        notImplemented("hideFragment")
+        console.log("AppManager - hideFragment id: "+id);
+        if (fragment.browserViewId == null) {
+            console.log("AppManager - hideFragment - create view fragment");
+            await fragment.createView(this.runtime);
+        }
+        
+        //this.window.removeBrowserView(fragment.appView);
+        fragment.appView.setBounds({ x: 0, y: 0, width: 0, height: 0 });
+        this.curFragment = this.getFragmentById(AppManager.LAUNCHER);
+        //this.sendRefreshList("closed", null, false);
+    
+        if (startupMode == AppManager.STARTUP_APP) {
+            this.runningList.unshift(id);
+            this.lastList[1] = id;
+        }
+        else if (startupMode == AppManager.STARTUP_SERVICE) {
+            this.serviceRunningList.unshift(id);
+        }
     }
 
-    private isCurrentFragment(fragment: any): boolean {
-        //TODO: migrate from java
-        return false;
+    private isCurrentFragment(fragment: WebViewFragment): boolean {
+        return (fragment == this.curFragment);
     }
 
     public doBackPressed(): boolean {
@@ -741,7 +812,6 @@ export class AppManager {
 
     //TODO: need fragment
     public async start(packageId: string, mode: string, serviceName: string) {
-        console.log("AppManager - start - id: "+packageId);
         let info = await this.getAppInfo(packageId);
         if (info == null) {
             throw new Error("No such app ("+packageId+")!");
@@ -752,22 +822,26 @@ export class AppManager {
         }
 
         let id = this.getIdbyStartupMode(packageId, mode, serviceName);
+        console.log("AppManager - start id: "+id);
 
-        let runningApp = this.runningApps[id];
-        if (runningApp == null) {
-            await this.createAppForLaunch(info);
-            if (!this.isLauncher(id)) {
+        let fragment = this.getFragmentById(id);
+        if (fragment == null) {
+            fragment = await WebViewFragment.newInstance(packageId, mode, serviceName);
+            if (!this.isLauncher(packageId)) {
+                console.log("AppManager - start - !this.isLauncher(packageId)");
                 this.sendRefreshList("started", info, false);
             }
 
-            if (!this.getAppVisible(id, mode)) {
+            if (!this.getAppVisible(packageId, mode)) {
+                console.log("AppManager - start - !this.getAppVisible(packageId, mode)");
                 this.showActivityIndicator(true);
-                this.hideFragment(runningApp, id);
+                this.hideFragment(fragment, mode, id);
             }
         }
 
-        if (this.getAppVisible(id, mode)) {
-            this.switchContent(runningApp, id);
+        if (this.getAppVisible(packageId, mode)) {
+            console.log("AppManager - start - this.getAppVisible(packageId, mode)");
+            this.switchContent(fragment, id);
             this.showActivityIndicator(false);
         }
     }
@@ -835,16 +909,22 @@ export class AppManager {
         }
 
         //TODO: change to fragment
-        if (!this.runningApps[id]) {
+        /*if (!this.runningApps[id]) {
             return;
-        }
+        }*/
 
         //TODO: place in closeFragment
-        this.window.removeBrowserView(BrowserView.fromId(this.runningApps[id].browserViewID));
+        /*this.window.removeBrowserView(BrowserView.fromId(this.runningApps[id].browserViewID));
         this.lastList.splice(this.lastList.indexOf(id), 1);
         this.runningList.splice(this.lastList.indexOf(id), 1);
-        delete this.runningApps[id];
+        delete this.runningApps[id];*/
 
+        this.window.removeBrowserView(BrowserView.fromId(this.fragmentIds.get(id)));
+        this.lastList.splice(this.lastList.indexOf(id), 1);
+        this.runningList.splice(this.lastList.indexOf(id), 1);
+        this.fragments.delete(this.fragmentIds.get(id));
+        this.fragmentIds.delete(id);
+        
         this.sendRefreshList("closed", info, false);
     }
 
@@ -859,7 +939,12 @@ export class AppManager {
     public checkInProtectList(uri: string) {
         let info = this.shareInstaller.getInfoFromUrl(uri);
         if (info != null && info.app_id != "") {
-             //TODO: migrate from java
+            let protectList: string[] = ConfigManager.getShareInstance().getStringArrayValue("dapp.protectList", []);
+            for (let item of protectList) {
+                if (item == info.app_id.toLocaleLowerCase()) {
+                    throw new Error("Don't allow install '" + info.app_id + "' by the third party app.");
+                }
+            }
         }
     }
 
@@ -956,7 +1041,20 @@ export class AppManager {
     public sendMessage(toId: string, type: number, msg: string, fromId: string) {
         if (this.signIning) return;
 
-        let runningApp = this.runningApps[toId];
+        //console.log("AppManager", "sendMessage toId: "+toId);
+
+        let fragment = this.fragments.get(this.fragmentIds.get(toId));
+        if (fragment) {
+            let appManagerPlugin = fragment.pluginInstances["AppManager"] as AppBasePlugin;
+            appManagerPlugin.onReceive(msg, type, fromId);
+            //fragment.basePlugin.onReceive(msg, type, fromId);
+        }
+        else {
+            throw new Error(toId + " isn't running!");
+        }
+
+        
+        /*let runningApp = this.runningApps[toId];
         if (runningApp) {
             //console.log("Sending message to app id "+runningApp.appInfo.app_id, msg, fromId);
             let appManagerPlugin = runningApp.pluginInstances["AppManager"] as AppManagerPlugin
@@ -964,7 +1062,9 @@ export class AppManager {
         }
         else {
             throw new Error(toId + " isn't running!");
-        }
+        }*/
+
+        
     }
 
     public broadcastMessage(type: number, msg: string, fromId: string) {
@@ -1140,18 +1240,28 @@ export class AppManager {
 
 
     public findRunningAppByCallerID(browserViewCallerID: number) {
-        for (let appId in this.runningApps) {
+        /*for (let appId in this.runningApps) {
             if (this.runningApps[appId].browserViewID == browserViewCallerID)
                 return this.runningApps[appId];
+        }
+        return null;*/
+
+        if (this.fragments.has(browserViewCallerID)) {
+            return this.fragments.get(browserViewCallerID);
         }
         return null;
     }
 
     public async handleIPCCall(event: Electron.IpcMainInvokeEvent, pluginName: string, methodName: string, fullMethodName: string, success: SuccessCallback, error: ErrorCallback, args: any) {
-        //console.log("handle "+fullMethodName, args);
+        /*console.log("handle "+fullMethodName, args);
+        if (fullMethodName == "AppManager-getAppInfos") {
+            let array = ConfigManager.getShareInstance().getStringArrayValue("dapp.protectList", []);
+            console.log(array);
+            console.log(array[0]);
+        }*/
     
         let callerWebContents = event.sender;
-        let callerBrowserView = BrowserView.fromWebContents(callerWebContents)
+        let callerBrowserView = BrowserView.fromWebContents(callerWebContents);
 
         //console.log("Caller ID: "+callerBrowserView.id)
 
@@ -1159,8 +1269,14 @@ export class AppManager {
         let runningApp = this.findRunningAppByCallerID(callerBrowserView.id);
         if (runningApp) {
             //console.log("Found running app to handle IPC "+fullMethodName);
-
+            /*for (let entry of runningApp.pluginEntries) {
+                console.log("pluginEntry: "+entry.service);
+                if (entry.service == pluginName) {
+                    (entry.plugin as any)[methodName](success, error, args);
+                }
+            }*/
             (runningApp.pluginInstances[pluginName] as any)[methodName](success, error, args);
+            
         }
         else {
             let msg = "No running app found to handle this IPC request!";
@@ -1169,127 +1285,10 @@ export class AppManager {
         }
     }
 
-    private setupSessionProtocolHandlers(ses: Session, appId: string, dappFilesPath: string) {
-        let wwwFilesPath = `${__dirname}`
-
-        ses.protocol.registerFileProtocol("trinityapp", async (request: Request, callback: (filePath: string)=>void) => {
-            //console.log("Handle FILE trinityapp:", request);
-
-            // Ex: request.url = trinityapp://index.html/
-            let redirectedFilePath: string;
-            if (request.url == "trinityapp://index.html/")
-                redirectedFilePath = dappFilesPath + "/index.html"
-            else {
-                redirectedFilePath = request.url.replace("trinityapp://index.html", "");
-                if (!redirectedFilePath.startsWith(dappFilesPath)) {
-                    let info = await this.getAppInfo(appId);
-                    redirectedFilePath = this.getAppUrl(info) + redirectedFilePath.substring(1);
-                }
-            }
-
-            //console.log("Redirecting to file path: "+redirectedFilePath);
-            callback(redirectedFilePath)
-        }, (err)=>{
-            if (err)
-                console.error("Asset intercept error:", err);
-        });
-
-        ses.protocol.interceptFileProtocol("asset", (request: Request, callback: (filePath: string)=>void) => {
-            //console.log("Intercepting ASSET request:", request.url);
-
-            let allowedUrls = [
-                "asset://www/cordova.js",
-                "asset://www/cordova_plugins.js"
-            ]
-
-            // Ex: request.url = asset://www/cordova.js
-            if (allowedUrls.indexOf(request.url) >= 0 || 
-                request.url.startsWith("asset://www/plugins"))
-                callback(wwwFilesPath + "/" + request.url.replace("asset://www/", ""));
-            else {
-                // All other file access are forbidden for now. For security: don't allow a generic access to
-                // the shared www folder.
-                callback(dappFilesPath + "/index.html"); // TMP TEST
-            }
-        }, (err)=>{
-            if (err)
-                console.error("Asset intercept error:", err);
-        });
-
-        ses.protocol.registerFileProtocol("icon", async (request: Request, callback: (filePath: string)=>void) => {
-            //console.log("Intercepting ASSET request:", request.url);
-
-            // Ex: request.url = icon://appid/iconindex
-            // TODO? if (isChangeIconPath && url.startsWith("icon://")) {
-                let str = request.url.substring(7);
-                let index = str.indexOf("/");
-                if (index > 0) {
-                    let app_id = str.substring(0, index);
-                    let info = await this.getAppInfo(app_id);
-                    if (info != null) {
-                        index = parseInt(str.substring(index + 1));
-                        let icon = info.icons[index];
-                        let url = this.getIconUrl(info, icon.src);
-                        callback(url);
-                        return;
-                    }
-                }
-
-                callback(null);
-            //}
-        }, (err)=>{
-            if (err)
-                console.error("Icon intercept error:", err);
-        });
-
-        /*ses.protocol.registerFileProtocol("icon", (request: Request, callback: (filePath: string)=>void) => {
-            console.log("ICON request:", request.url);
-
-            let parsedUrl = new URL(request.url);
-            console.log("parsedUrl", parsedUrl)
-
-            callback(null)
-        }, (err)=>{
-            if (err)
-                console.error("Icon intercept error:", err);
-        });*/
-    }
 
     // TODO: Apply all of this android method to interceptFileProtocol()
     remapUri() {
     
-    }
-
-    private async createAppForLaunch(appInfo: AppInfo) {
-        const partition = 'TODO-TEST-persist:example'+appInfo.app_id // TODO: SANDBOX PER DID/APPID
-        const ses = session.fromPartition(partition)
-
-        let dappFilesPath = this.getAppLocalPath(appInfo);
-
-        this.setupSessionProtocolHandlers(ses, appInfo.app_id, dappFilesPath);
-
-        let appView = new BrowserView({
-            webPreferences: {
-                nodeIntegration: false, // is default value after Electron v5
-                contextIsolation: true, // protect against prototype pollution
-                enableRemoteModule: false, // turn off remote
-                preload: pathJoin(app.getAppPath(), 'dapp_preload.js'),
-                partition: partition
-            }
-        })
-        this.window.addBrowserView(appView)
-        appView.setBounds({ x: 0, y: 64, width: 500, height: 800 })
-
-        // Create a title bar model to contol the shared title bar view
-        let runningApp = await RunningApp.create(appInfo, appView.id, this.runtime, new TitleBar(this.runtime.titleBarView));
-        this.runningApps[appInfo.app_id] = runningApp;
-        //console.log("runningApps:", this.runningApps)
-        Log.d(AppManager.LOG_TAG, "Started app "+appInfo.app_id+" with browser view id "+ runningApp.browserViewID);
-
-        appView.webContents.loadURL('trinityapp://index.html')
-        //appView.webContents.openDevTools({mode: "detach"});
-
-        runningApp.titleBar.setVisible();
     }
 
 }
@@ -1350,6 +1349,8 @@ export class AppPathInfo {
 }
 
 //TODO: place in other file
+
+/*
 export class RunningApp {
     appInfo: AppInfo;
     browserViewID: number;
@@ -1383,4 +1384,4 @@ export class RunningApp {
         titleBar.setRunningApp(app);
         return app;
     }
-}
+}*/

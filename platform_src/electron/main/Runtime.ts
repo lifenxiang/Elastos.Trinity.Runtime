@@ -5,7 +5,7 @@ const cdvElectronSettings = require('./cdv-electron-settings.json');
 import { AppManager } from './AppManager';
 import { TrinityPlugin } from './TrinityPlugin';
 import { Log } from './Log';
-import { TitleBarEventToMainProcess } from "./TitleBar";
+import { TitleBarEventToMainProcess } from "./titlebar/TitleBar";
 
 let runtimeInstance: TrinityRuntime = null;
 
@@ -21,6 +21,7 @@ type InvocationResult = {
 export class TrinityRuntime {
     private static LOG_TAG = "TrinityRuntime";
     plugins: { [key:string]: RegisteredPlugin };
+    plugins2: Map<string, RegisteredPlugin>;
     
     mainWindow: BrowserWindow = null;
     appManager: AppManager = null;
@@ -28,10 +29,11 @@ export class TrinityRuntime {
 
     private constructor() {
         this.plugins = {};
+        this.plugins2 = new Map<string, RegisteredPlugin>();
   
         ipcMain.addListener("titlebarevent", (event, titleBarEvent: TitleBarEventToMainProcess)=>{
             // TODO: "if sender == titlebar" only
-            console.log("GOT titlebarevent", event, titleBarEvent);
+            //console.log("GOT titlebarevent", event, titleBarEvent);
 
             this.dispatchTitleBarEvent(titleBarEvent);
         });
@@ -48,6 +50,10 @@ export class TrinityRuntime {
         this.plugins[pluginName] = {
             instanceCreationCallback: instanceCreationCallback
         }
+        let registeredPlugin: RegisteredPlugin = {
+            instanceCreationCallback: instanceCreationCallback
+        };
+        this.plugins2.set(pluginName, registeredPlugin);
     }
 
     // Plugin in main process -> handle IPC calls
@@ -117,9 +123,12 @@ export class TrinityRuntime {
                 enableRemoteModule: true,
                 partition: partition
             }
-        })
-        this.mainWindow.addBrowserView(this.titleBarView)
-        this.titleBarView.setBounds({ x: 0, y: 0, width: 500, height: 64 })
+        });
+        this.mainWindow.addBrowserView(this.titleBarView);
+        this.titleBarView.setBounds({ x: 0, y: 0, width: 500, height: 64 });
+
+        //dev mode
+        this.titleBarView.webContents.openDevTools({mode: "undocked"});
 
         //this.titleBarView.webContents.loadURL("http://localhost:8100"); // Ionic serve
         this.titleBarView.webContents.loadURL("file://"+pathJoin(__dirname,"/../../../platform_src/electron/titlebar/www/index.html"))
@@ -144,4 +153,5 @@ export class TrinityRuntime {
 // Embed all plugins main process files
 
 // TODO: FIND A WAY TO MAKE THIS DYNAMIC AND CLEAN
-require("./plugins_main/AppManagerPluginMain")
+require("./AppBasePlugin");
+require("./TitleBarPlugin");

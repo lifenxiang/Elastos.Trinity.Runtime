@@ -112,7 +112,5 @@
         <js-module src="src/electron/AppManagerPluginProxy.js" name="AppManagerPluginProxy">
             <runs />
         </js-module>
-
-        <hook type="after_plugin_add" src="hooks/electron/after_plugin_add.js" />
     </platform>
 </plugin>

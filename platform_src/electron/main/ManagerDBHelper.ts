@@ -30,7 +30,7 @@ export class ManagerDBHelper {
     private repositoryMap = new Map<string, Repository<any>>();
 
     constructor(dbPath: string) {
-        Log.d(ManagerDBHelper.LOG_TAG, "Creating DB connection: "+dbPath);
+        //Log.d(ManagerDBHelper.LOG_TAG, "Creating DB connection: "+dbPath);
         this.dbPath = dbPath;
     }
 

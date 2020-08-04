@@ -23,7 +23,7 @@ export class TrinityRuntimeHelper {
             exposedMethods[m] = async (success, error, args) => {
                 // Listen to async call responses
                 ipcRenderer.addListener(methodFullName+"-result", (event, resultArgs: InvocationResult)=>{
-                    console.log("RENDERER SIDE CALL TO "+methodFullName+"-result", resultArgs)
+                    //console.log("RENDERER SIDE CALL TO "+methodFullName+"-result", resultArgs)
                     if (resultArgs.errorResultArgs) {
                         error(resultArgs.errorResultArgs);
                     }

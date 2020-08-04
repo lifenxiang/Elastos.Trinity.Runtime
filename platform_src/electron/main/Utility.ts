@@ -49,5 +49,5 @@ export class Utility {
 }
 
 export function notImplemented(method: string) {
-    console.log("NOT IMPLEMENTED: "+method);
+    //console.log("NOT IMPLEMENTED: "+method);
 }
