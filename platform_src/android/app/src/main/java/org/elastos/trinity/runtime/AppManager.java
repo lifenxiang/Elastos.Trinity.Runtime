@@ -392,6 +392,8 @@ public class AppManager {
 
     public String getNativeAppPackageId() {
         return "org.elastos.trinity.dapp.wallet";
+        //return "org.elastos.trinity.dapp.did";
+        //return "org.elastos.trinity.dapp.passwordmanager";
         //return "org.elastos.trinity.dapp.settings";
         //return "tech.tuum.academy";
         //return "com.hyper.messenger";
