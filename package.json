@@ -15,7 +15,8 @@
     "mac": {
       "hardenedRuntime": true,
       "gatekeeperAssess": false
-    }
+    },
+	"asar": false
   },
   "dependencies": {
     "appmanager": "file:plugin_src/AppManager",

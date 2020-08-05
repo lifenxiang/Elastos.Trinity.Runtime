@@ -128,10 +128,12 @@ export class TrinityRuntime {
         this.titleBarView.setBounds({ x: 0, y: 0, width: 500, height: 64 });
 
         //dev mode
-        this.titleBarView.webContents.openDevTools({mode: "undocked"});
+        //this.titleBarView.webContents.openDevTools({mode: "undocked"});
 
         //this.titleBarView.webContents.loadURL("http://localhost:8100"); // Ionic serve
-        this.titleBarView.webContents.loadURL("file://"+pathJoin(__dirname,"/../../../platform_src/electron/titlebar/www/index.html"))
+        //console.log("titleBarPath: file://"+__dirname);
+        this.titleBarView.webContents.loadURL("file://"+pathJoin(__dirname, "shared-titlebar/index.html"));
+        //this.titleBarView.webContents.loadURL("file://"+pathJoin(__dirname,"/../../../platform_src/electron/titlebar/www/index.html"))
         //this.titleBarView.webContents.openDevTools({mode: "detach"});
     }
 
