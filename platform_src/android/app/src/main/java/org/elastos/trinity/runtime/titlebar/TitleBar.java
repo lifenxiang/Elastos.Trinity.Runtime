@@ -25,6 +25,7 @@ import android.widget.TextView;
 
 import org.elastos.trinity.runtime.AppInfo;
 import org.elastos.trinity.runtime.AppManager;
+import org.elastos.trinity.runtime.ConfigManager;
 import org.elastos.trinity.runtime.PreferenceManager;
 import org.elastos.trinity.runtime.R;
 
@@ -263,6 +264,11 @@ public class TitleBar extends FrameLayout {
     }
 
     public void showActivityIndicator(TitleBarActivityType activityType, String hintText) {
+        // NOTE: NON SENSE ON ANDROID - just kept to keep aligned code on android and ios.
+        // Don't show activity indicators on ios/itunes
+        if (ConfigManager.getShareInstance().getStringValue("build.variant", "").equals("itunesappstore"))
+            return;
+
         // Increase reference count for this progress animation type
         activityCounters.put(activityType, activityCounters.get(activityType) + 1);
         activityHintTexts.put(activityType, hintText);

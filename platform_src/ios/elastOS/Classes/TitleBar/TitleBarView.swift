@@ -300,6 +300,11 @@ class TitleBarView: UIView {
     }
 
     public func showActivityIndicator(activityType: TitleBarActivityType, hintText: String?) {
+        // Don't show activity indicators on ios/itunes
+        if ConfigManager.getShareInstance().getStringValue("build.variant", "") == "itunesappstore" {
+            return
+        }
+        
         // Increase reference count for this progress animation type
         activityCounters[activityType] = activityCounters[activityType]! + 1
         activityHintTexts[activityType] = hintText
