@@ -873,7 +873,7 @@ public class AppBasePlugin extends TrinityPlugin {
 
     @Override
     public Boolean shouldAllowNavigation(String url) {
-        if (appManager.isLauncher(this.appId) || appManager.isDIDSession(this.appId)) {
+        if (appManager.isLauncher(this.appId) || appManager.isDIDSession(this.appId) || ConfigManager.getShareInstance().isNativeBuild()) {
             return true;
         }
         else if (checkIntentScheme(url)) {

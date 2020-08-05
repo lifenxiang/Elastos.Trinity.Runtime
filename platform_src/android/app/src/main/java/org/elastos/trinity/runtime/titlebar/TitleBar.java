@@ -25,6 +25,7 @@ import android.widget.TextView;
 
 import org.elastos.trinity.runtime.AppInfo;
 import org.elastos.trinity.runtime.AppManager;
+import org.elastos.trinity.runtime.ConfigManager;
 import org.elastos.trinity.runtime.PreferenceManager;
 import org.elastos.trinity.runtime.R;
 
@@ -137,6 +138,10 @@ public class TitleBar extends FrameLayout {
             setBackgroundColor("#f8f8ff");
             setForegroundMode(TitleBarForegroundMode.DARK);
         }
+
+        // Hide the navigation mode icon in native mode.
+        if (ConfigManager.getShareInstance().isNativeBuild())
+            setNavigationIconVisibility(false);
 
         setAnimationHintText(null);
 

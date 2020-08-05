@@ -102,6 +102,9 @@ public class AuthorityPlugin extends CordovaPlugin {
     }
 
     private boolean checkApiPermission(String action, CallbackContext callbackContext) {
+        if (ConfigManager.getShareInstance().isNativeBuild())
+            return true;
+
         boolean ret = permissionGroup.getApiPermission(pluginName, action);
         if (!ret) {
             String errorMessage = "## '" + pluginName + "." + action + "()' is not allowed in permissions!";
@@ -113,6 +116,9 @@ public class AuthorityPlugin extends CordovaPlugin {
     }
 
     private boolean checkAuthority(String action, CallbackContext callbackContext) {
+        if (ConfigManager.getShareInstance().isNativeBuild())
+            return true;
+
         if (originalPlugin != null) {
             int authority = ApiAuthorityManager.getShareInstance().getApiAuthority(
                                     viewFragment.appInfo, pluginName, action);

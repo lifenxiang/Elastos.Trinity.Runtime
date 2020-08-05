@@ -37,6 +37,7 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 
+import org.apache.cordova.LOG;
 import org.apache.cordova.PluginManager;
 import org.elastos.trinity.runtime.contactnotifier.ContactNotifier;
 import org.elastos.trinity.runtime.didsessions.DIDSessionManager;
@@ -133,6 +134,7 @@ public class AppManager {
 
     private AppInfo launcherInfo;
     private AppInfo diddessionInfo;
+    private AppInfo nativeAppInfo;
 
     private class InstallInfo {
         String uri;
@@ -200,6 +202,9 @@ public class AppManager {
         AppManager.appManager = this;
         this.activity = activity;
 
+        // Define a better cordova log level during development of core features
+        LOG.setLogLevel(LOG.DEBUG);
+
         basePathInfo = new AppPathInfo(null);
         pathInfo = basePathInfo;
 
@@ -214,20 +219,32 @@ public class AppManager {
         saveBuiltInApps();
         refreashInfos();
 
-        IdentityEntry entry = null;
-        try {
-            entry = DIDSessionManager.getSharedInstance().getSignedInIdentity();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        if (entry != null) {
-            signIning = false;
-            did = entry.didString;
-            reInit(null);
-        } else {
+        if (!ConfigManager.getShareInstance().isNativeBuild()) {
+            IdentityEntry entry = null;
             try {
-                startDIDSession();
+                entry = DIDSessionManager.getSharedInstance().getSignedInIdentity();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            if (entry != null) {
+                signIning = false;
+                did = entry.didString;
+                reInit(null);
+            } else {
+                try {
+                    startDIDSession();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        else {
+            did = "dappasnativedid"; // Simulate a DID context for the native app
+
+            try {
+                // Will start the native app
+                reInit(null);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -280,7 +297,10 @@ public class AppManager {
         refreashInfos();
         getLauncherInfo();
         try {
-            loadLauncher();
+            if (!ConfigManager.getShareInstance().isNativeBuild())
+                loadLauncher();
+            else
+                start(getNativeAppPackageId(), STARTUP_APP, null);
         }
         catch (Exception e){
             e.printStackTrace();
@@ -289,10 +309,13 @@ public class AppManager {
         startStartupServices();
         sendRefreshList("initiated", null, false);
 
-        try {
-            ContactNotifier.getSharedInstance(activity, did);
-        } catch (Exception e) {
-            e.printStackTrace();
+        // No contact notifier in native mode.
+        if (!ConfigManager.getShareInstance().isNativeBuild()) {
+            try {
+                ContactNotifier.getSharedInstance(activity, did);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -365,6 +388,21 @@ public class AppManager {
     }
     public boolean isDIDSession(String appId) {
         return appId.equals("didsession") || appId.equals(getDIDSessionId());
+    }
+
+    public String getNativeAppPackageId() {
+        return "org.elastos.trinity.dapp.wallet";
+        //return "org.elastos.trinity.dapp.settings";
+        //return "tech.tuum.academy";
+        //return "com.hyper.messenger";
+        //return "org.elastos.trinity.launcher";
+        //return "org.elastos.trinity.dapp.didsession";
+    }
+
+    public AppInfo getNativeAppInfo() {
+        if (nativeAppInfo == null)
+            nativeAppInfo = dbAdapter.getAppInfo(getNativeAppPackageId());
+        return nativeAppInfo;
     }
 
     public AppInfo getDIDSessionAppInfo() {
@@ -572,6 +610,11 @@ public class AppManager {
         }
         else if (startupMode.equals(STARTUP_SERVICE) || startupMode.equals(STARTUP_SILENCE)) {
             return false;
+        }
+
+        // In native mode, the native app is forced to start visible.
+        if (id.equals(getNativeAppPackageId())) {
+            return true;
         }
 
         Boolean ret = visibles.get(id);
@@ -902,7 +945,7 @@ public class AppManager {
 
     private void showActivityIndicator(boolean show) {
         activity.runOnUiThread((Runnable) () -> {
-            if (curFragment.titlebar != null) {
+            if (curFragment != null && curFragment.titlebar != null) {
                 if (show) {
                     curFragment.titlebar.showActivityIndicator(TitleBarActivityType.LAUNCH, activity.getResources().getString(R.string.app_starting));
                 } else {
@@ -1026,7 +1069,8 @@ public class AppManager {
     }
 
     public void loadLauncher() throws Exception {
-        start(LAUNCHER, STARTUP_APP, null);
+        start(getNativeAppPackageId(), STARTUP_APP, null);
+        //start(LAUNCHER, STARTUP_APP, null);
     }
 
     public void checkInProtectList(String uri) throws Exception {

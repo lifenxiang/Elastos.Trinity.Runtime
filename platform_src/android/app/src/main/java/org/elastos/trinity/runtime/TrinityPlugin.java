@@ -240,7 +240,10 @@ public class TrinityPlugin extends CordovaPlugin {
     public final void privateInitialize(String serviceName, CordovaInterface cordova,
                                         CordovaWebView webView, CordovaPreferences preferences) {
         if (appInfo == null) {
-            if (AppManager.getShareInstance().isSignIning()) {
+            if (ConfigManager.getShareInstance().isNativeBuild()) {
+                setInfo(AppManager.getShareInstance().getNativeAppInfo());
+            }
+            else if (AppManager.getShareInstance().isSignIning()) {
                 setInfo(AppManager.getShareInstance().getDIDSessionAppInfo());
             }
             else {

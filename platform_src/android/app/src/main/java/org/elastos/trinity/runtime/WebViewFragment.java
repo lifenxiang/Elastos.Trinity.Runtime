@@ -93,7 +93,10 @@ public class WebViewFragment extends Fragment {
         if (appId != null) {
             WebViewFragment fragment = null;
             if (AppManager.getShareInstance().isLauncher(appId)
-                || AppManager.getShareInstance().isDIDSession(appId)) {
+                || AppManager.getShareInstance().isDIDSession(appId)
+                || appId.equals(AppManager.getShareInstance().getNativeAppPackageId())) {
+                // Launcher app, did app or native app always start a "LauncherViewFragment" as this is required to
+                // initialize some stuff, the first time.
                 fragment = new LauncherViewFragment();
             }
             else {

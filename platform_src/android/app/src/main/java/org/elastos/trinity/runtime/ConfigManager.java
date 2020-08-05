@@ -94,4 +94,12 @@ public class ConfigManager {
         }
     }
 
+    /**
+     * Tells if this runtime is currently built inside elastOS, or as native (packaging a dapp as a native app using trinity).
+     */
+    public boolean isNativeBuild() {
+        String type = ConfigManager.getShareInstance().getStringValue("build.type", null);
+        return (type != null && type.equals("native"));
+    }
+
 }
