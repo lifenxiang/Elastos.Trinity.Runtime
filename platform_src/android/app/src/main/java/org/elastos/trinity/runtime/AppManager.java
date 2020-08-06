@@ -33,6 +33,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
@@ -297,13 +298,21 @@ public class AppManager {
     }
 
     private void startStartupServices() {
+        final int FIRST_SERVICE_START_DELAY = 5000;
+        final int DELAY_BETWEEN_EACH_SERVICE = 5000;
+
+        // Start services one after another, with an arbitrary (for now, to keep things simple) delay between starts
+        int nextDelay = FIRST_SERVICE_START_DELAY;
         for (AppInfo info : appList) {
             for (AppInfo.StartupService service : info.startupServices) {
-                try {
-                    start(info.app_id, STARTUP_SERVICE, service.name);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                new Handler().postDelayed(() -> {
+                    try {
+                        start(info.app_id, STARTUP_SERVICE, service.name);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }, nextDelay);
+                nextDelay += DELAY_BETWEEN_EACH_SERVICE;
             }
         }
     }

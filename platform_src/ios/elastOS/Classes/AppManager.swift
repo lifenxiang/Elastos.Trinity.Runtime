@@ -268,14 +268,22 @@ class AppManager: NSObject {
     }
 
     private func startStartupServices() {
+        let FIRST_SERVICE_START_DELAY = 5000
+        let DELAY_BETWEEN_EACH_SERVICE = 5000
+        
+        // Start services one after another, with an arbitrary (for now, to keep things simple) delay between starts
+        var nextDelay = FIRST_SERVICE_START_DELAY
         for info in appList {
             for service in info.startupServices {
-                do {
-                    try start(info.app_id, AppManager.STARTUP_SERVICE, service.name);
-                }
-                catch let error {
-                    print("startStartupServices error: \(error)");
-                }
+                DispatchQueue(label: "service \(info.app_id)").asyncAfter(deadline: .now() + .milliseconds(nextDelay), execute: {
+                    do {
+                        try self.start(info.app_id, AppManager.STARTUP_SERVICE, service.name);
+                    }
+                    catch let error {
+                        print("startStartupServices error: \(error)");
+                    }
+                })
+                nextDelay += DELAY_BETWEEN_EACH_SERVICE
             }
         }
     }
