@@ -897,7 +897,7 @@ public class AppManager {
                 sendRefreshList("started", info, false);
             }
 
-            if (!getAppVisible(packageId, mode)) {
+            if (mode.equals(STARTUP_APP) && !getAppVisible(packageId, mode)) {
                 showActivityIndicator(true);
                 hideFragment(fragment, mode, id);
             }
