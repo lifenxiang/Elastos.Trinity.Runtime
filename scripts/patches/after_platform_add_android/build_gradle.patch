@@ -44,9 +44,9 @@
              targetSdkVersion cdvTargetSdkVersion
          }
 +
-+        targetSdkVersion 28
++        targetSdkVersion 29
 +        versionCode 10009
-+        versionName "1.2.4"
++        versionName "1.2.4.d"
 +    }
 +
 +    sourceSets {
