@@ -46,7 +46,7 @@
 +
 +        targetSdkVersion 29
 +        versionCode 10009
-+        versionName "1.2.4.d"
++        versionName "1.2.4"
 +    }
 +
 +    sourceSets {
