@@ -629,10 +629,10 @@ function group_get_groups(argv) {
     carrier.getGroups(success, error);
 }
 
-var fileTransfer = null ;
 function new_file_transfer(argv){
+    var _carrier = carrier;
     var success = function(mFileTransfer) {
-        fileTransfer = mFileTransfer ;
+        _carrier.ft = mFileTransfer ;
         display_others_msg("There are "+JSON.stringify(fileTransfer));
     };
     var error = function (error) {
@@ -640,16 +640,20 @@ function new_file_transfer(argv){
     };
 
     var friendId = argv[1];
-    var fileId = argv[2];
-    var filename = argv[3];
-    var size = argv[4];
 
-    var fileTransferInfo = new Object();
-    fileTransferInfo.filename = filename ;
-    fileTransferInfo.fileId = fileId ;
-    fileTransferInfo.size = size ;
+    var fileTransferInfo = null;
+    if (argv.length > 2) {
+        var fileId = argv[2];
+        var filename = argv[3];
+        var size = argv[4];
 
-    carrier.newFileTransfer(friendId, fileTransferInfo, fileTransferCallbacks, success, error);
+        fileTransferInfo = new Object();
+        fileTransferInfo.filename = filename ;
+        fileTransferInfo.fileId = fileId ;
+        fileTransferInfo.size = size ;
+    }
+
+    _carrier.newFileTransfer(friendId, fileTransferInfo, fileTransferCallbacks, success, error);
 }
 
 function ft_generate_fileId(argv){
@@ -667,9 +671,9 @@ function ft_get_fileid(argv){
     var error = function (error) {
        display_others_msg("ft_get_fileid failed: " + error + ".");
     };
-    if (fileTransfer){
+    if (carrier.ft){
         var filename = argv[1];
-        fileTransfer.getFileId(filename, success, error);
+        carrier.ft.getFileId(filename, success, error);
     } else {
         display_others_msg("please create file transfer firstly");
     }
@@ -682,9 +686,9 @@ function ft_get_filename(argv){
     var error = function (error) {
        display_others_msg("ft_get_filename failed: " + error + ".");
     };
-    if (fileTransfer){
+    if (carrier.ft){
         var fileId = argv[1];
-        fileTransfer.getFileName(fileId, success, error);
+        carrier.ft.getFileName(fileId, success, error);
     } else {
         display_others_msg("please create file transfer firstly");
     }
@@ -697,8 +701,8 @@ function ft_connect(argv){
     var error = function (error) {
        display_others_msg("ft_connect failed: " + error + ".");
     };
-    if (fileTransfer){
-        fileTransfer.connect(success, error);
+    if (carrier.ft){
+        carrier.ft.connect(success, error);
     } else {
         display_others_msg("please create file transfer firstly");
     }
@@ -711,8 +715,8 @@ function ft_accept_connect(argv){
     var error = function (error) {
        display_others_msg("ft_accept_connect failed: " + error + ".");
     };
-    if (fileTransfer){
-        fileTransfer.acceptConnect(success , error);
+    if (carrier.ft){
+        carrier.ft.acceptConnect(success , error);
     } else {
         display_others_msg("please create file transfer firstly");
     }
@@ -725,7 +729,7 @@ function ft_add_file(argv){
     var error = function (error) {
        display_others_msg("ft_add_file failed: " + error + ".");
     };
-    if (fileTransfer){
+    if (carrier.ft){
         var fileId = argv[1];
         var filename = argv[2];
         var size = argv[3];
@@ -735,7 +739,7 @@ function ft_add_file(argv){
         fileTransferInfo.fileId = fileId ;
         fileTransferInfo.size = size ;
 
-        fileTransfer.addFile(fileTransferInfo, success, error);
+        carrier.ft.addFile(fileTransferInfo, success, error);
     } else {
         display_others_msg("please create file transfer firstly");
     }
@@ -748,9 +752,9 @@ function ft_pull_data(argv){
     var error = function (error) {
        display_others_msg("ft_pull_data failed: " + error + ".");
     };
-    if (fileTransfer){
+    if (carrier.ft){
         var fileId = argv[1];
-        fileTransfer.pullData(fileId , 0, success, error);
+        carrier.ft.pullData(fileId , 0, success, error);
     } else {
         display_others_msg("please create file transfer firstly");
     }
@@ -764,10 +768,10 @@ function ft_write_data(argv){
     var error = function (error) {
        display_others_msg("ft_write_data failed: " + error + ".");
     };
-    if (fileTransfer){
+    if (carrier.ft){
         var fileId = argv[1];
         var data = argv[2];
-        fileTransfer.writeData(fileId, data, success, error);
+        carrier.ft.writeData(fileId, data, success, error);
     } else {
         display_others_msg("please create file transfer firstly");
     }
@@ -780,9 +784,9 @@ function ft_send_finish(argv){
     var error = function (error) {
        display_others_msg("ft_send_finish failed: " + error + ".");
     };
-    if (fileTransfer){
+    if (carrier.ft){
         var fileId = argv[1];
-        fileTransfer.sendFinish(fileId, success , error);
+        carrier.ft.sendFinish(fileId, success , error);
     } else {
         display_others_msg("please create file transfer firstly");
     }
@@ -795,11 +799,11 @@ function ft_cancel(argv){
     var error = function (error) {
        display_others_msg("ft_cancel failed: " + error + ".");
     };
-    if (fileTransfer){
+    if (carrier.ft){
         var fileId = argv[1];
         var status = argv[2];
         var reason = argv[3];
-        fileTransfer.cancelTransfer(fileId, status, reason, success, error);
+        carrier.ft.cancelTransfer(fileId, status, reason, success, error);
     } else {
         display_others_msg("please create file transfer firstly");
     }
@@ -812,9 +816,9 @@ function ft_pend(argv){
     var error = function (error) {
        display_others_msg("ft_pend failed: " + error + ".");
     };
-    if (fileTransfer){
+    if (carrier.ft){
         var fileId = argv[1];
-        fileTransfer.pendTransfer(fileId, success, error);
+        carrier.ft.pendTransfer(fileId, success, error);
     } else {
         display_others_msg("please create file transfer firstly");
     }
@@ -827,9 +831,9 @@ function ft_resume(argv){
     var error = function (error) {
        display_others_msg("ft_resume failed: " + error + ".");
     };
-    if (fileTransfer){
+    if (carrier.ft){
         var fileId = argv[1];
-        fileTransfer.resumeTransfer(fileId, success, error);
+        carrier.ft.resumeTransfer(fileId, success, error);
     } else {
         display_others_msg("please create file transfer firstly");
     }
@@ -1813,7 +1817,8 @@ function manager_connect_request_callback(event){
     var msg = "Got file transfer manager connect request callback response .<br/>"
         + "if you want connect file transfer .<br/>"
         + "Please enter the following command .<br/> "
-        + "ftnew " + event.from +" "+event.info.fileId+ " "+event.info.filename+" "+event.info.size ;
+        + "ftnew " + event.from;
+
     display_others_msg(msg);
 }
 
