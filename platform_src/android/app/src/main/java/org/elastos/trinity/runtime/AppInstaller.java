@@ -50,6 +50,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class AppInstaller {
+    private static final String LOG_TAG = "AppInstaller";
 
     final String[] pluginWhitelist = {
             "device",
@@ -757,6 +758,7 @@ public class AppInstaller {
 
         if (json.has("startup_service")) {
             JSONArray array = json.getJSONArray("startup_service");
+            Log.d(LOG_TAG, "Manifest parser: parsing services for "+appInfo.app_id+". "+array.length()+" services found");
             for (int i = 0; i < array.length(); i++) {
                 String name = array.getString(i);
                 appInfo.addStartService(name);

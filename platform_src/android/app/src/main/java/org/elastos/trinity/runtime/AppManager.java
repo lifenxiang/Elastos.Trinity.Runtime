@@ -301,13 +301,19 @@ public class AppManager {
         final int FIRST_SERVICE_START_DELAY = 5000;
         final int DELAY_BETWEEN_EACH_SERVICE = 5000;
 
+        Log.d(TAG, "Starting startup services");
+
         // Start services one after another, with an arbitrary (for now, to keep things simple) delay between starts
         int nextDelay = FIRST_SERVICE_START_DELAY;
         for (AppInfo info : appList) {
+            Log.d(TAG, "Startup service - checking if app "+info.app_id+" has services to start");
             for (AppInfo.StartupService service : info.startupServices) {
+                Log.d(TAG, "Startup service - App "+info.app_id+" - starting service "+service.name);
                 new Handler().postDelayed(() -> {
                     try {
+                        Log.d(TAG, "Startup service - App "+info.app_id+" - service "+service.name + " - before start");
                         start(info.app_id, STARTUP_SERVICE, service.name);
+                        Log.d(TAG, "Startup service - App "+info.app_id+" - service "+service.name + " - after start");
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -315,6 +321,8 @@ public class AppManager {
                 nextDelay += DELAY_BETWEEN_EACH_SERVICE;
             }
         }
+
+        Log.d(TAG, "Finished starting startup services");
     }
 
     private void closeAllApps() throws Exception {

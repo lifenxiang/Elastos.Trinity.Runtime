@@ -26,12 +26,15 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import org.json.JSONObject;
 
  public class ManagerDBAdapter {
-    ManagerDBHelper helper;
-    Context context;
+     private static final String LOG_TAG = "ManagerDBAdapter";
+
+     ManagerDBHelper helper;
+     Context context;
 
      public ManagerDBAdapter(Context context, String dbPath)
      {
@@ -264,6 +267,8 @@ import org.json.JSONObject;
             String[] idArg = {info.app_id};
             String[] columns6 = {AppInfo.STARTUP_SERVICE};
             cursor1 = db.query(ManagerDBHelper.SERVICE_TABLE, columns6,AppInfo.APP_ID + "=?", idArg,null,null,null);
+            Log.d(LOG_TAG, "DBAdapter getInfo: adding services to app info, from database, for "+info.app_id);
+
             while (cursor1.moveToNext()) {
                 info.addStartService(cursor1.getString(cursor1.getColumnIndex(AppInfo.STARTUP_SERVICE)));
             }

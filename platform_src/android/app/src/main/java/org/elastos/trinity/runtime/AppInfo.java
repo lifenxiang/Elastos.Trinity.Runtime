@@ -24,10 +24,12 @@
  package org.elastos.trinity.runtime;
 
  import android.graphics.drawable.Icon;
+ import android.util.Log;
 
  import java.util.ArrayList;
 
  public class AppInfo {
+     private static final String LOG_TAG = "AppInfo";
 
      public static final String TID = "tid";
      public static final String APP_TID = "app_tid";
@@ -261,6 +263,7 @@
      }
 
      public void addStartService(String name) {
+         Log.d(LOG_TAG, "Adding service with name "+name+" for app_id "+app_id);
          startupServices.add(new StartupService(name));
      }
  }
