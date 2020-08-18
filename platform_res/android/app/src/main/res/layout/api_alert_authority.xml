@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:padding="10dp">
 
         <ImageView
             android:id="@+id/ivAppIcon"
@@ -36,7 +36,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:padding="15dp">
 
         <TextView
             android:id="@+id/lblTitle"
@@ -46,7 +46,7 @@
             android:fontFamily="sans-serif-black"
             android:text="@string/api_perm_title"
             android:textAlignment="center"
-            android:textSize="16sp" />
+            android:textSize="14sp" />
 
         <TextView
             android:id="@+id/lblFeatureTitle"
@@ -54,13 +54,15 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:fontFamily="sans-serif-medium"
-            android:text="@string/api_perm_feature" />
+            android:text="@string/api_perm_feature"
+            android:textSize="13sp" />
 
         <TextView
             android:id="@+id/lblFeatureValue"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-light"
+            android:textSize="13sp"
             tools:text="The app can take pictures with the camera" />
 
         <TextView
@@ -69,14 +71,16 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:fontFamily="sans-serif-medium"
-            android:text="@string/api_perm_description" />
+            android:text="@string/api_perm_description"
+            android:textSize="13sp" />
 
         <TextView
             android:id="@+id/lblDescriptionValue"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-light"
-            android:text="Feature description in details" />
+            android:text="Feature description in details"
+            android:textSize="13sp" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -99,6 +103,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="0"
+                android:textSize="13sp"
                 tools:text="Risk" />
         </LinearLayout>
     </LinearLayout>
@@ -108,7 +113,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:orientation="horizontal"
-        android:padding="20dp">
+        android:padding="10dp">
 
         <androidx.cardview.widget.CardView
             android:id="@+id/cardDeny"
