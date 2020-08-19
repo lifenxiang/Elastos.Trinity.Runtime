@@ -52,6 +52,7 @@
     @objc dynamic var fromId: String;
     @objc dynamic var toId: String?;
     @objc dynamic var intentId: Int64 = 0;
+    @objc dynamic var silent: Bool = false;
     @objc dynamic var callbackId: String? = nil;
     @objc dynamic var callback: ((String, String?, String)->(Void))? = nil;
     
@@ -68,23 +69,24 @@
     var isDoingResponse = false;
 
     init(_ action: String, _ params: String?, _ fromId: String, _ toId: String?,
-         _ intentId: Int64) {
+         _ intentId: Int64, _ silent: Bool) {
         self.action = action;
         self.params = params;
         self.fromId = fromId;
         self.toId = toId;
         self.intentId = intentId;
+        self.silent = silent;
     }
 
     convenience init(_ action: String, _ params: String?, _ fromId: String, _ toId: String?,
-         _ intentId: Int64, _ callbackId: String?) {
-        self.init(action, params, fromId, toId, intentId);
+                     _ intentId: Int64, _ silent: Bool, _ callbackId: String?) {
+        self.init(action, params, fromId, toId, intentId, silent);
         self.callbackId = callbackId;
     }
 
     convenience init(_ action: String, _ params: String?, _ fromId: String, _ toId: String?,
-         _ intentId: Int64, _ callback: ((String, String?, String)->(Void))?) {
-        self.init(action, params, fromId, toId, intentId);
+                     _ intentId: Int64, _ silent: Bool, _ callback: ((String, String?, String)->(Void))?) {
+        self.init(action, params, fromId, toId, intentId, silent);
         self.callback = callback;
     }
 
@@ -488,7 +490,7 @@ class ShareIntentParams {
 
             let currentTime = Int64(Date().timeIntervalSince1970);
 
-            info = IntentInfo(action, nil, fromId, nil, currentTime);
+            info = IntentInfo(action, nil, fromId, nil, currentTime, false);
             if (params != nil && params!.count > 0) {
                 getParamsByUri(params!, info!);
             }
@@ -641,7 +643,7 @@ class ShareIntentParams {
 
         var viewController: TrinityViewController? = nil
         viewController = appManager.getViewControllerById(info!.fromId)
-        if (viewController != nil && viewController!.startupMode == AppManager.STARTUP_APP) {
+        if (!info!.silent && viewController != nil && viewController!.startupMode == AppManager.STARTUP_APP) {
             try self.appManager.start(info!.fromId, AppManager.STARTUP_APP, nil)
         }
 

@@ -71,14 +71,18 @@
     func sendIntent(_ action: String, _ params: String, _ options: [String: Any]?, _ callback: ((String, String?, String)->(Void))?) throws {
         let currentTime = Int64(Date().timeIntervalSince1970);
         var toId: String? = nil;
+        var silent: Bool? = false;
 
         if (options != nil) {
             if (options!["appId"] != nil) {
                 toId = options!["appId"] as? String ?? "";
             }
+            if (options!["silentResponse"] != nil) {
+                silent = options!["silentResponse"] as? Bool ?? false;
+            }
         }
 
-        let info = IntentInfo(action, params, getModeId(), toId, currentTime, callback);
+        let info = IntentInfo(action, params, getModeId(), toId, currentTime, silent!, callback);
         try? IntentManager.getShareInstance().doIntent(info);
     }
 
@@ -519,14 +523,18 @@
         let currentTime = Int64(Date().timeIntervalSince1970);
         let options = command.arguments[2] as? [String: Any] ?? nil
         var toId: String? = nil;
+        var silent: Bool? = false;
 
         if (options != nil) {
             if (options!["appId"] != nil) {
                 toId = options!["appId"] as? String ?? "";
             }
+            if (options!["silentResponse"] != nil) {
+                silent = options!["silentResponse"] as? Bool ?? false;
+            }
         }
 
-        let info = IntentInfo(action, params, getModeId(), toId, currentTime, command.callbackId);
+        let info = IntentInfo(action, params, getModeId(), toId, currentTime, silent!, command.callbackId);
 
         do {
             try IntentManager.getShareInstance().doIntent(info);

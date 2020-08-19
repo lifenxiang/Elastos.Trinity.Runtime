@@ -406,7 +406,7 @@ public class IntentManager {
             Set<String> set = uri.getQueryParameterNames();
             long currentTime = System.currentTimeMillis();
 
-            info = new IntentInfo(action, null, fromId, null, currentTime, null);
+            info = new IntentInfo(action, null, fromId, null, currentTime, false, null);
             if (set.size() > 0) {
                 getParamsByUri(uri, info);
             }
@@ -557,7 +557,7 @@ public class IntentManager {
         WebViewFragment fragment = null;
         if (info.fromId != null) {
             fragment = appManager.getFragmentById(info.fromId);
-            if (fragment != null && fragment.startupMode.equals(AppManager.STARTUP_APP)) {
+            if (!info.silent && fragment != null && fragment.startupMode.equals(AppManager.STARTUP_APP)) {
                 appManager.start(info.fromId, AppManager.STARTUP_APP, null);
             }
         }
