@@ -231,7 +231,7 @@ class AppManager: NSObject {
     private func reInit(_ sessionLanguage: String?) {
         curController = nil;
 
-        pathInfo = AppPathInfo(getDIDDir());
+        pathInfo = AppPathInfo(getDIDDir(self.did));
 
         dbAdapter.setUserDBAdapter(pathInfo?.databasePath);
 
@@ -270,7 +270,7 @@ class AppManager: NSObject {
     private func startStartupServices() {
         let FIRST_SERVICE_START_DELAY = 5000
         let DELAY_BETWEEN_EACH_SERVICE = 5000
-        
+
         // Start services one after another, with an arbitrary (for now, to keep things simple) delay between starts
         var nextDelay = FIRST_SERVICE_START_DELAY
         for info in appList {
@@ -373,12 +373,15 @@ class AppManager: NSObject {
         return did;
     }
 
-    func getDIDDir() -> String? {
-        var did = getDID();
+    func getDIDDir(_ did: String?) -> String? {
         if (did != nil) {
             did!.replacingOccurrences(of: ":", with: "_")
         }
         return did;
+    }
+
+    func getPathInfo(_ did: String) -> AppPathInfo {
+        return AppPathInfo(getDIDDir(did));
     }
 
     func getDBAdapter() -> MergeDBAdapter {
@@ -522,12 +525,16 @@ class AppManager: NSObject {
     }
 
     @objc func getDataPath(_ id: String) -> String {
+        return getDataPath(id, pathInfo!);
+    }
+
+    func getDataPath(_ id: String, _ pathInfo: AppPathInfo) -> String {
         var appId = id;
         if (isLauncher(appId)) {
             appId = getLauncherInfo()!.app_id;
         }
 
-        return checkPath(pathInfo!.dataPath + appId + "/");
+        return checkPath(pathInfo.dataPath + appId + "/");
     }
 
     @objc func getDataUrl(_ id: String) -> String {
@@ -535,12 +542,16 @@ class AppManager: NSObject {
     }
 
     @objc func getTempPath(_ id: String) -> String {
+        return getTempPath(id, pathInfo!);
+    }
+
+    func getTempPath(_ id: String, _ pathInfo: AppPathInfo) -> String {
         var appId = id;
         if (isLauncher(appId)) {
             appId = getLauncherInfo()!.app_id;
         }
 
-        return checkPath(pathInfo!.tempPath + appId + "/");
+        return checkPath(pathInfo.tempPath + appId + "/");
     }
 
     @objc func getTempUrl(_ id: String) -> String {

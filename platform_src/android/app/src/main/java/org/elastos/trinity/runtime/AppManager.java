@@ -226,7 +226,7 @@ public class AppManager {
         boolean darkMode = PreferenceManager.getShareInstance().getBooleanValue("ui.darkmode", false);
         UIStyling.prepare(darkMode);
 
-        if (entry != null) {
+         if (entry != null) {
             signIning = false;
             did = entry.didString;
             reInit(null);
@@ -242,7 +242,6 @@ public class AppManager {
 //            CLIService.getShareInstance().start();
         }
     }
-
 
     public static AppManager getShareInstance() {
         return AppManager.appManager;
@@ -264,7 +263,7 @@ public class AppManager {
     private void reInit(String sessionLanguage) {
         curFragment = null;
 
-        pathInfo = new AppPathInfo(getDIDDir());
+        pathInfo = new AppPathInfo(getDIDDir(did));
 
         dbAdapter.setUserDBAdapter(pathInfo.databasePath);
 
@@ -406,12 +405,15 @@ public class AppManager {
         return did;
     }
 
-    public String getDIDDir() {
-        String did = getDID();
+    public String getDIDDir(String did) {
         if (did != null) {
             did = did.replace(":", "_");
         }
         return did;
+    }
+
+    public AppPathInfo getPathInfo(String did) {
+        return new AppPathInfo(getDIDDir(did));
     }
 
     public MergeDBAdapter getDBAdapter() {
@@ -698,6 +700,10 @@ public class AppManager {
     }
 
     public String getDataPath(String id) {
+        return getDataPath(id, pathInfo);
+    }
+
+    public String getDataPath(String id, AppPathInfo pathInfo) {
         if (id == null) {
             return null;
         }
@@ -715,6 +721,10 @@ public class AppManager {
 
 
     public String getTempPath(String id) {
+        return getTempPath(id, pathInfo);
+    }
+
+    public String getTempPath(String id, AppPathInfo pathInfo) {
         if (id == null) {
             return null;
         }

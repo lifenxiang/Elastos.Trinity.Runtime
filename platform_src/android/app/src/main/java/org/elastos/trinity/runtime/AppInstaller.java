@@ -26,12 +26,21 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.net.Uri;
 import android.util.Log;
+import android.webkit.CookieManager;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
+import org.elastos.trinity.runtime.didsessions.DIDSessionManager;
+import org.elastos.trinity.runtime.didsessions.IdentityEntry;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -43,6 +52,7 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.TreeMap;
@@ -476,6 +486,45 @@ public class AppInstaller {
         return true;
     }
 
+    private void clearLocalStorage(String did, String packageId) {
+        String url = "http://" + Utility.getCustomHostname(did, packageId);
+
+        //Clear cookies
+        CookieManager cm = CookieManager.getInstance();
+        String cookies = cm.getCookie(url);
+        if (cookies != null) {
+            for (String cookie : cookies.split("; ")) {
+                cm.setCookie(url, cookie.split("=")[0] + "=");
+            }
+        }
+
+        appManager.activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                WebView wView = new WebView(appManager.activity);
+                WebSettings settings = wView.getSettings();
+                settings.setJavaScriptEnabled(true);
+                settings.setDatabaseEnabled(true);
+                settings.setDomStorageEnabled(true);
+                wView.setWebViewClient(new WebViewClient()
+                {
+                    @Override
+                    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                        String str = "<script>localStorage.clear();</script>";
+                        InputStream data = new ByteArrayInputStream(str.getBytes());
+                        WebResourceResponse response = new WebResourceResponse("text/html", "UTF-8", data);
+                        return response;
+                    }
+
+                });
+                wView.loadUrl(url);
+
+                wView.clearHistory();
+            }
+        });
+
+    }
+
     public void unInstall(AppInfo info, boolean update)  throws Exception {
         if (info == null) {
             throw new Exception("No such app!");
@@ -495,10 +544,17 @@ public class AppInstaller {
         deleteAllFiles(root);
         if (!update) {
             Log.d("AppInstaller", "unInstall() - update = false - deleting all files");
-            root = new File(appManager.getDataPath(info.app_id));
-            deleteAllFiles(root);
-            root = new File(appManager.getTempPath(info.app_id));
-            deleteAllFiles(root);
+            String packageId = info.app_id;
+            ArrayList<IdentityEntry> entries = DIDSessionManager.getSharedInstance().getIdentityEntries();
+            for (IdentityEntry entry: entries) {
+                String did = entry.didString;
+                AppManager.AppPathInfo pathInfo = appManager.getPathInfo(did);
+                root = new File(appManager.getDataPath(packageId, pathInfo));
+                deleteAllFiles(root);
+                root = new File(appManager.getTempPath(packageId, pathInfo));
+                deleteAllFiles(root);
+                clearLocalStorage(did, packageId);
+            }
         }
     }
 
