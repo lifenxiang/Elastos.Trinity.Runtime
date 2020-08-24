@@ -835,7 +835,7 @@ public class AppManager {
                         .show(fragment);
             }
 //            transaction.addToBackStack(null);
-            transaction.commit();
+            transaction.commitAllowingStateLoss();
         }
 
         curFragment = fragment;
