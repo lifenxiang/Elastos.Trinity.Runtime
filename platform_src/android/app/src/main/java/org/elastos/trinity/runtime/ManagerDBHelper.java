@@ -29,7 +29,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 public class ManagerDBHelper extends SQLiteOpenHelper {
-    private static final int DATABASE_VERSION = 6;
+    private static final int DATABASE_VERSION = 7;
 
     private static final String DATABASE_NAME = "manager.db";
     public static final String AUTH_PLUGIN_TABLE = "auth_plugin";
@@ -142,6 +142,7 @@ public class ManagerDBHelper extends SQLiteOpenHelper {
 
         strSQL = "create table " + APP_TABLE + "(tid integer primary key autoincrement, " +
                 AppInfo.APP_ID + " varchar(128) UNIQUE NOT NULL, " +
+                AppInfo.DID + " varchar(128), " +
                 AppInfo.VERSION + " varchar(32) NOT NULL, " +
                 AppInfo.VERSION_CODE + " integer, " +
                 AppInfo.NAME + " varchar(128) NOT NULL, " +
@@ -200,6 +201,10 @@ public class ManagerDBHelper extends SQLiteOpenHelper {
         if (oldVersion < 6) {
             Log.d("ManagerDBHelper", "Upgrading database to v6");
             upgradeToV6(db);
+        }
+        if (oldVersion < 7) {
+            Log.d("ManagerDBHelper", "Upgrading database to v7");
+            upgradeToV7(db);
         }
     }
 
@@ -270,6 +275,18 @@ public class ManagerDBHelper extends SQLiteOpenHelper {
             db.execSQL(strSQL);
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    // 20200825 - Added "did" field
+    private void upgradeToV7(SQLiteDatabase db) {
+        try {
+            String strSQL = "ALTER TABLE " + APP_TABLE + " ADD COLUMN " + AppInfo.DID + " varchar(128)";
+            db.execSQL(strSQL);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            // Do nothing, intercept SQL errors - in case we try to apply an upgrade again after a strange downgrade from android
+            // (happened to KP many times - unknown reason - 2020.03)
         }
     }
 

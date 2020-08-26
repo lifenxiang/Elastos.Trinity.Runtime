@@ -58,6 +58,7 @@ import org.json.JSONObject;
             SQLiteDatabase db = helper.getWritableDatabase();
             ContentValues contentValues = new ContentValues();
             contentValues.put(AppInfo.APP_ID, info.app_id);
+            contentValues.put(AppInfo.DID, info.did);
             contentValues.put(AppInfo.VERSION, info.version);
             contentValues.put(AppInfo.VERSION_CODE, info.version_code);
             contentValues.put(AppInfo.NAME, info.name);
@@ -172,7 +173,7 @@ import org.json.JSONObject;
 
     private AppInfo[] getInfos(String selection, String[] selectionArgs) {
         SQLiteDatabase db = helper.getWritableDatabase();
-        String[] columns = {AppInfo.TID, AppInfo.APP_ID, AppInfo.VERSION, AppInfo.VERSION_CODE, AppInfo.NAME, AppInfo.SHORT_NAME,
+        String[] columns = {AppInfo.TID, AppInfo.APP_ID, AppInfo.DID, AppInfo.VERSION, AppInfo.VERSION_CODE, AppInfo.NAME, AppInfo.SHORT_NAME,
                 AppInfo.DESCRIPTION, AppInfo.START_URL, AppInfo.START_VISIBLE, AppInfo.TYPE,
                 AppInfo.AUTHOR_NAME, AppInfo.AUTHOR_EMAIL, AppInfo.DEFAULT_LOCAL, AppInfo.BACKGROUND_COLOR,
                 AppInfo.THEME_DISPLAY, AppInfo.THEME_COLOR, AppInfo.THEME_FONT_NAME, AppInfo.THEME_FONT_COLOR,
@@ -185,6 +186,7 @@ import org.json.JSONObject;
             AppInfo info = new AppInfo();
             info.tid = cursor.getInt(cursor.getColumnIndex(AppInfo.TID));
             info.app_id = cursor.getString(cursor.getColumnIndex(AppInfo.APP_ID));
+            info.did = cursor.getString(cursor.getColumnIndex(AppInfo.DID));
             info.version = cursor.getString(cursor.getColumnIndex(AppInfo.VERSION));
             info.version_code = cursor.getInt(cursor.getColumnIndex(AppInfo.VERSION_CODE));
             info.name = cursor.getString(cursor.getColumnIndex(AppInfo.NAME));

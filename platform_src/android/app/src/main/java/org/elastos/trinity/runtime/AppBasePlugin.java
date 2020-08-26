@@ -359,6 +359,7 @@ public class AppBasePlugin extends TrinityPlugin {
         String dataUrl = appManager.getDataUrl(info.app_id);
         JSONObject ret = new JSONObject();
         ret.put("id", info.app_id);
+        ret.put("did", info.did);
         ret.put("version", info.version);
         ret.put("versionCode", info.version_code);
         ret.put("name", info.name);

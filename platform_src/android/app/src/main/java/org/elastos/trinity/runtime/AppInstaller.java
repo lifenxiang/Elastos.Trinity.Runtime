@@ -350,7 +350,7 @@ public class AppInstaller {
         AppInfo info = null;
         String downloadPkgPath = null;
         String originUrl = url;
-
+        String epkDid = null;
         sendInstallingMessage("start", "", originUrl);
 
         if (url.startsWith("asset://")) {
@@ -411,6 +411,16 @@ public class AppInstaller {
                 throw new Exception("Failed to verify EPK DID signature!");
             }
 
+            //Get did from did_url
+            int index = did_url.indexOf("/");
+            if (index == -1) {
+                index = did_url.indexOf("#");
+            }
+            if (index != -1) {
+                did_url = did_url.substring(0, index);
+            }
+            epkDid = did_url;
+
             Log.d("AppInstaller", "The EPK was signed by (Public Key): " + public_key);
             sendInstallingMessage("verified", "", originUrl);
         }
@@ -444,6 +454,10 @@ public class AppInstaller {
         else {
             Log.d("AppInstaller", "install() - No old info - nothing to uninstall or delete");
             info.built_in = 0;
+        }
+
+        if (epkDid != null) {
+            info.did = epkDid;
         }
 
         if (oldInfo != null && oldInfo.launcher == 1) {
@@ -819,6 +833,10 @@ public class AppInstaller {
                 String name = array.getString(i);
                 appInfo.addStartService(name);
             }
+        }
+
+        if (json.has(AppInfo.DID)) {
+            appInfo.did = json.getString(AppInfo.DID);
         }
 
         appInfo.install_time = System.currentTimeMillis() / 1000;
