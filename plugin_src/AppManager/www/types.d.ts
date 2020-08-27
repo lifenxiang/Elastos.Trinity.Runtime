@@ -166,6 +166,8 @@ declare namespace AppManagerPlugin {
     type AppInfo = {
         /** The app id. */
         id: string;
+        /** The app did. */
+        did: string;
         /** The app version. */
         version: string;
         /** The app version code. */
