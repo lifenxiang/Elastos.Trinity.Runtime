@@ -353,7 +353,7 @@ class ShareIntentParams {
             // Special case for the "share" action that is always handled by the native OS too.
             if (info.action != "share") {
                 if (filters.isEmpty) {
-                    throw AppError.error("Intent action \(info.action) isn't supported!");
+                    throw AppError.error("Intent action '\(info.action)' isn't supported!");
                 }
             }
 
@@ -385,6 +385,17 @@ class ShareIntentParams {
                     popupIntentChooser(info, filters);
                 }
             }
+        }
+        else if (info.filter == nil) {
+            let filters = try getIntentFilter(info.action);
+            for filter in filters {
+                if (info.toId!.starts(with: filter.packageId)) {
+                    info.filter = filter;
+                    try sendIntent(info);
+                    return;
+                }
+            }
+            throw AppError.error("The appid[\(info.toId)]'s intent action '\(info.action)' isn't supported!");
         }
         else {
             try sendIntent(info);

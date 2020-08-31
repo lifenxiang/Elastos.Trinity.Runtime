@@ -281,6 +281,17 @@ public class IntentManager {
                 }
             }
         }
+        else if (info.filter == null) {
+            IntentFilter[] filters = getIntentFilter(info.action);
+            for (IntentFilter filter : filters) {
+                if (info.toId.startsWith(filter.packageId)) {
+                    info.filter = filter;
+                    sendIntent(info);
+                    return;
+                }
+            }
+            throw new Exception("The appid[" + info.toId +"]'s intent action '"+ info.action + "' isn't supported!");
+        }
         else {
             sendIntent(info);
         }
