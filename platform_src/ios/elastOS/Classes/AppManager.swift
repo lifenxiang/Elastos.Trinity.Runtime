@@ -276,11 +276,14 @@ class AppManager: NSObject {
         for info in appList {
             for service in info.startupServices {
                 DispatchQueue(label: "service \(info.app_id)").asyncAfter(deadline: .now() + .milliseconds(nextDelay), execute: {
-                    do {
-                        try self.start(info.app_id, AppManager.STARTUP_SERVICE, service.name);
-                    }
-                    catch let error {
-                        print("startStartupServices error: \(error)");
+                    // Start must be called from the main thread
+                    DispatchQueue.main.async {
+                        do {
+                            try self.start(info.app_id, AppManager.STARTUP_SERVICE, service.name);
+                        }
+                        catch let error {
+                            print("startStartupServices error: \(error)");
+                        }
                     }
                 })
                 nextDelay += DELAY_BETWEEN_EACH_SERVICE
