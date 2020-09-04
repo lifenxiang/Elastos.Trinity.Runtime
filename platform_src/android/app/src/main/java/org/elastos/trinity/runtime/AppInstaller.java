@@ -77,6 +77,7 @@ public class AppInstaller {
     private MergeDBAdapter dbAdapter = null;
     private Context context = null;
     private AppManager appManager = null;
+    private WebView webView = null;
 
     private Random random =new Random();
 
@@ -515,25 +516,25 @@ public class AppInstaller {
         appManager.activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                WebView wView = new WebView(appManager.activity);
-                WebSettings settings = wView.getSettings();
-                settings.setJavaScriptEnabled(true);
-                settings.setDatabaseEnabled(true);
-                settings.setDomStorageEnabled(true);
-                wView.setWebViewClient(new WebViewClient()
-                {
-                    @Override
-                    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                        String str = "<script>localStorage.clear();</script>";
-                        InputStream data = new ByteArrayInputStream(str.getBytes());
-                        WebResourceResponse response = new WebResourceResponse("text/html", "UTF-8", data);
-                        return response;
-                    }
+                if (webView == null) {
+                    webView = new WebView(appManager.activity);
+                    WebSettings settings = webView.getSettings();
+                    settings.setJavaScriptEnabled(true);
+                    settings.setDatabaseEnabled(true);
+                    settings.setDomStorageEnabled(true);
+                    webView.setWebViewClient(new WebViewClient() {
+                        @Override
+                        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                            String str = "<script>localStorage.clear();</script>";
+                            InputStream data = new ByteArrayInputStream(str.getBytes());
+                            WebResourceResponse response = new WebResourceResponse("text/html", "UTF-8", data);
+                            return response;
+                        }
 
-                });
-                wView.loadUrl(url);
-
-                wView.clearHistory();
+                    });
+                }
+                webView.loadUrl(url);
+                webView.clearHistory();
             }
         });
 
