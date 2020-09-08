@@ -86,4 +86,9 @@ export class ManagerDBHelper {
     getRepository(table: string): Repository<any> {
         return this.repositoryMap.get(table);
     }
+
+    async closeConnection() {
+        await this.connection.close();
+        this.connection = null;
+    }
 }

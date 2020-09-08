@@ -164,7 +164,7 @@ export class WebViewFragment {
         // Create plugin instances fo this app
         this.pluginInstances = {};
         for (let pluginName of Object.keys(this.runtime.plugins)) {
-            //console.log("pluginName", pluginName)
+            console.log("pluginName", pluginName)
             let plugin = this.runtime.plugins[pluginName];
             let pluginInstance = plugin.instanceCreationCallback(this.appInfo.app_id);
             this.pluginInstances[pluginName] = pluginInstance;

@@ -16,7 +16,7 @@
       "hardenedRuntime": true,
       "gatekeeperAssess": false
     },
-	"asar": false
+    "asar": false
   },
   "dependencies": {
     "appmanager": "file:plugin_src/AppManager",

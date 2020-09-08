@@ -29,9 +29,8 @@ export class ManagerDBAdapter {
         this.helper = await ManagerDBHelper.newInstance(dbPath);
     }
 
-    public clean() {
-        // TODO SQLiteDatabase db = helper.getWritableDatabase();
-        // TODO helper.onUpgrade(db, 0, 1);
+    public async clean() {
+        await this.helper.closeConnection();
     }
 
     public async addAppInfo(info: AppInfo): Promise<boolean> {

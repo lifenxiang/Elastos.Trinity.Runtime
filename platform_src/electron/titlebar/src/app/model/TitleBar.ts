@@ -201,6 +201,14 @@ export class TitleBar {
         console.log("setIcon");
         let iconSlot = TitleBarIconSlot.fromId(data.iconSlot.value);
         let icon = TitleBarIcon.fromJSONObject(data.icon);
+        if (icon == null) {
+            console.log("icon is null");
+        }
+        else {
+            console.log("icon is not null");
+            console.log("isBuiltInIcon: "+icon.isBuiltInIcon());
+        }
+        
 
         switch (iconSlot.value) {
             case TitleBarIconSlot.OUTER_LEFT: {
@@ -300,10 +308,12 @@ export class TitleBar {
 
         // Inner left
         if (this.innerLeftIcon != null) {
+            console.log("innerLeft visible");
             this.btnInnerLeft.state.visibility = View.VISIBLE;
             this.setImageViewFromIcon(this.btnInnerLeft, this.innerLeftIcon);
         }
         else {
+            console.log("innerLeft gone");
             this.btnInnerLeft.state.visibility = View.GONE;
         }
 
@@ -431,11 +441,11 @@ export class TitleBar {
     }
 
     handleInnerLeftClicked() {
-        //this.handleIconClicked(this.innerLeftIcon);
+        this.handleIconClicked(this.innerLeftIcon);
     }
 
     handleInnerRightClicked() {
-        //this.handleIconClicked(this.innerRightIcon);
+        this.handleIconClicked(this.innerRightIcon);
     }
 
     handleOuterRightClicked() {
@@ -445,7 +455,7 @@ export class TitleBar {
         }
         else {
             // No menu items: this is a custom icon
-            //this.handleIconClicked(this.outerRightIcon);
+            this.handleIconClicked(this.outerRightIcon);
         }
     }
 }

@@ -46,6 +46,23 @@ declare namespace AppManagerPlugin {
 
     /**
      * @description
+     * Startup mode.
+     *
+     * @enum {number}
+     */
+    const enum StartupMode {
+        /** The app mode. */
+        APP = "app",
+        /** The service mode. */
+        SERVICE = "service",
+        /** The intent mode. It will be closed after sendIntentResponse */
+        INTENT = "intent",
+        /** The silence intent mode. It will be closed after sendIntentResponse */
+        SILENCE = "silence",
+    }
+
+    /**
+     * @description
      * Message type to send or receive.
      *
      * @enum {number}
@@ -230,7 +247,7 @@ declare namespace AppManagerPlugin {
         /** Unique intent ID that has to be sent back when sending the intent response. */
         intentId: Number;
         /** In case the intent comes from outside elastOS and was received as a JWT, this JWT is provided here. */
-        originalJwtRequest?: String;
+        originalJwtRequest?: string;
     }
 
     /**
@@ -258,6 +275,28 @@ declare namespace AppManagerPlugin {
         /** The target app package id, in case the intent should be sent to a specific app instead of being brodcast. */
         appId?: string
     }
+
+    /**
+     * Information about startup.
+     */
+    type StartupInfo = {
+        /** The start up mode */
+        startupMode: StartupMode
+        /** If startup mode is service, it will be return */
+        serviceName?: string
+    }
+
+    /**
+     * Information about build.
+     */
+    type BuildInfo = {
+        /** elastOS | native */
+        type: string
+        variant: string
+        /** android | ios | windows | linux | macos */
+        platform: string
+    }
+
 
     /**
      * The class representing dapp manager for launcher.
@@ -362,13 +401,16 @@ declare namespace AppManagerPlugin {
         /**
          * Send a message by id.
          *
+         * If prefix has '#', such as '#app', '#intent', '#silenc', '#service:[serviceName]',
+         * it will send to the package internal.
+         *
          * @param id         The dapp id. If null, the message is sent to all active dApps.
          * @param type       The message type.
          * @param msg        The message content.
          * @param onSuccess  The function to call when success.
          * @param onError    The function to call when error, the param is a String. Or set to null.
          */
-        sendMessage(id: string, type: MessageType, msg: string, onSuccess:()=>void, onError?:(err: string)=>void);
+        sendMessage(id: string, type: MessageType, msg: string, onSuccess?:()=>void, onError?:(err: string)=>void);
 
         /**
          * Broadcast a specific message to all running apps.
@@ -377,7 +419,7 @@ declare namespace AppManagerPlugin {
          * @param message    The message it self. Can be a simple string, JSON encoded string, etc.
          * @param onSuccess  The function to call when success.
          */
-        broadcastMessage(type: MessageType, message: string, onSuccess: () => void);
+        broadcastMessage(type: MessageType, message: string, onSuccess?:() => void);
 
         /**
          * Set listener for message callback.
@@ -476,7 +518,7 @@ declare namespace AppManagerPlugin {
 
         /**
          * @deprecated Replaced by getStartIntent() but this keeps receiving the start intent for some time for compatibility.
-         * 
+         *
          * Set intent listener for message callback.
          *
          * @param callback   The function receive the intent.
@@ -496,7 +538,7 @@ declare namespace AppManagerPlugin {
 
         /**
          * @deprecated Replaced by getStartMode() == INTENT
-         * 
+         *
          * Check is there is a pending intent for the current application. A pending intent is an action
          * requested by a third party application, launching the current application to execute a specific
          * action. In such case, when hasPendingIntent() is true, we want to directly show the appropriate
@@ -593,5 +635,81 @@ declare namespace AppManagerPlugin {
          * @param onError    Callback called in case of error.
          */
         resetPreferences(onSuccess?: () => void, onError?: (err: string) => void);
+
+        /**
+         * get startup mode.
+         *
+         * @param onSuccess  Callback called in case of success.
+         * @param onError    Callback called in case of error.
+         */
+        getStartupMode(onSuccess: (info: StartupInfo) => void, onError?: (err: string) => void);
+
+        /**
+         * Start a background service.
+         *
+         * @param serviceName The service name
+         * @param onSuccess  The function to call when success.
+         * @param onError    The function to call when error, the param is a String. Or set to null.
+         */
+        startBackgroundService(serviceName: string, onSuccess?:()=>void, onError?:(err: string)=>void);
+
+        /**
+         * Stop a background service.
+         *
+         * @param serviceName The service name
+         * @param onSuccess  The function to call when success.
+         * @param onError    The function to call when error, the param is a String. Or set to null.
+         */
+        stopBackgroundService(serviceName: string, onSuccess?:()=>void, onError?:(err: string)=>void);
+
+
+        /**
+         * Get self running service list.
+         *
+         * @param onSuccess  The function to call when success,the param is a service name list.
+         */
+        getRunningServiceList(onSuccess:(ids: string[])=>void);
+
+        /**
+         * Start a background service by appid..
+         *
+         * @param id         The dapp id.
+         * @param serviceName The service name
+         * @param onSuccess  The function to call when success.
+         * @param onError    The function to call when error, the param is a String. Or set to null.
+         */
+        startAppBackgroundService(id:string, serviceName: string, onSuccess?:()=>void, onError?:(err: string)=>void);
+
+        /**
+         * Stop a background service by appid.
+         *
+         * @param id         The dapp id.
+         * @param serviceName The service name
+         * @param onSuccess  The function to call when success.
+         * @param onError    The function to call when error, the param is a String. Or set to null.
+         */
+        stopAppBackgroundService(id:string, serviceName: string, onSuccess?:()=>void, onError?:(err: string)=>void);
+
+        /**
+         * Stop all background service.
+         *
+         * @param onSuccess  The function to call when success.
+         * @param onError    The function to call when error, the param is a String. Or set to null.
+         */
+        stopAllBackgroundService(onSuccess?:()=>void, onError?:(err: string)=>void);
+
+        /**
+         * Get all app running service list.
+         *
+         * @param onSuccess  The function to call when success,the param is a dapp mode id '[packageId]#service:[serviceName]' list.
+         */
+        getAllRunningServiceList(onSuccess:(ids: string[])=>void);
+
+        /**
+         * Get build info.
+         *
+         * @param onSuccess  Callback returning the  {type: value, variant: value, platform: value}.
+         */
+        getBuildInfo(onSuccess:(info: BuildInfo)=>void);
     }
 }

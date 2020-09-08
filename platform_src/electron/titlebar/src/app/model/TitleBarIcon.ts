@@ -47,6 +47,6 @@ export class TitleBarIcon {
     }
 
     public isBuiltInIcon(): boolean {
-        return this.builtInIcon ! = null;
+        return this.builtInIcon != null;
     }
 }

@@ -98,8 +98,6 @@ export class TitleBarPlugin extends TrinityPlugin {
         };
         let functionString = args[0] as string;
         this.getTitleBar().addOnItemClickedListener(functionString);
-
-        success();
     }
 
     private removeOnItemClickedListener(success: SuccessCallback, error: ErrorCallback, args: any) {
@@ -110,6 +108,7 @@ export class TitleBarPlugin extends TrinityPlugin {
     }
 
     private async setIcon(success: SuccessCallback, error: ErrorCallback, args: any) {
+        console.log("TitleBarPlugin - setIcon");
         let iconSlotAsInt = args[0] as number;
         let iconObj = args[1] == null ? null : args[1] as any;
 
@@ -154,8 +153,8 @@ export class TitleBarPlugin extends TrinityPlugin {
     }
 
     public onReceive(data: any) {
-        console.log("TitleBarPlugin - onReceive - appId: "+this.appId);
-        console.log(data);
+        //console.log("TitleBarPlugin - onReceive - appId: "+this.appId);
+        //console.log(data);
         this.itemClickListenerContext.success(data);
     }
 }
@@ -177,4 +176,4 @@ TrinityRuntime.getSharedInstance().createIPCDefinitionForMainProcess("TitleBarMa
     "setupMenuItems",
     "showActivityIndicator",
     "hideActivityIndicator"
-])
+]);

@@ -293,7 +293,7 @@ export class AppBasePlugin extends TrinityPlugin {
             error: error
         };
 
-        success();
+        //success();
 
         if (this.appManager.isLauncher(this.appId)) {
             this.appManager.setLauncherReady();
@@ -357,7 +357,7 @@ export class AppBasePlugin extends TrinityPlugin {
             success: success,
             error: error
         };
-        this.mIntentContext.success();
+        //this.mIntentContext.success();
         IntentManager.getShareInstance().setIntentReady(this.getModeId());
     }
 
@@ -745,4 +745,4 @@ TrinityRuntime.getSharedInstance().createIPCDefinitionForMainProcess("AppManager
     "stopAppBackgroundService",
     "stopAllBackgroundService",
     "getAllRunningServiceList"
-])
+]);

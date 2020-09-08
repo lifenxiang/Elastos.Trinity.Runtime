@@ -155,7 +155,7 @@ export class TitleBar {
     }
 
     public async setIcon(iconSlot: TitleBarIconSlot, icon: TitleBarIcon) {
-        //console.log("TitleBar - setIcon");
+        console.log("TitleBar - setIcon");
         let event: TitleBarEvent = {
             appViewId: this.fragment.browserViewId,
             method: "setIcon",
@@ -164,16 +164,21 @@ export class TitleBar {
                 icon: {}
             }
         };
-        if (icon.isBuiltInIcon()) {
-            event.data.icon = icon;
+        if (icon != null) {
+            if (icon.isBuiltInIcon()) {
+                event.data.icon = icon;
+            }
+            else {
+                let appInfo = await this.appManager.getAppInfo(this.appId);
+                appInfo.remote = 0;
+                let iconPath = this.appManager.getAppPath(appInfo) + icon.iconPath;
+                
+                icon.iconPath = iconPath;
+                event.data.icon = icon;
+            }
         }
         else {
-            let appInfo = await this.appManager.getAppInfo(this.appId);
-            appInfo.remote = 0;
-            let iconPath = this.appManager.getAppPath(appInfo) + icon.iconPath;
-            
-            icon.iconPath = iconPath;
-            event.data.icon = icon;
+            event.data.icon = null;
         }
         this.ipcUpdateTitleBar(event);
     }
@@ -266,6 +271,11 @@ export class TitleBar {
             }
             case "goToLauncher": {
                 console.log("handleTitleBarEvent - goToLauncher isLauncher: "+this.isLauncher);
+                let runningList = this.appManager.getRunningList();
+                console.log("runningApp size: "+runningList.length);
+                for (let runningApp of runningList) {
+                    console.log("runningApp: "+runningApp);
+                }
                 if (!this.isLauncher) {
                     await this.appManager.loadLauncher();
                     this.appManager.sendLauncherMessageMinimize(this.fragment.appInfo.app_id);
@@ -274,6 +284,11 @@ export class TitleBar {
             }
             case "onIconClicked": {
                 console.log("handleTitleBarEvent - onIconClicked");
+                let runningList = this.appManager.getRunningList();
+                console.log("runningApp size: "+runningList.length);
+                for (let runningApp of runningList) {
+                    console.log("runningApp: "+runningApp);
+                }
                 let titleBarManagerPlugin = this.fragment.pluginInstances["TitleBarManager"] as TitleBarPlugin;
                 titleBarManagerPlugin.onReceive(titleBarEvent.data.menuItem);
                 break;

@@ -16,6 +16,7 @@ import { UIStyling } from './UIStyling';
 import { ConfigManager } from './ConfigManager';
 import { WebViewFragment } from './WebViewFragment';
 import { AppBasePlugin } from './AppBasePlugin';
+import { DIDSessionManager } from './didsessions/DIDSessionManager';
 
 export class AppManager {
     private static LOG_TAG = "AppManager";
@@ -139,17 +140,20 @@ export class AppManager {
 
         let entry: IdentityEntry = null;
         //TODO: migrate from java
-        /*try {
-            entry = DIDSessionManager.getSharedInstance().getSignedInIdentity();
+        try {
+            entry = await (await DIDSessionManager.getSharedInstance()).getSignedInIdentity();
         }
-        catch (Exception e){
-            e.printStackTrace();
-        }*/
+        catch (e){
+            Log.e(AppManager.LOG_TAG, e);
+        }
 
         // TMP if (entry != null) {
-        if (true) { // TMP BPI FORCE LAUNCHER NOT DID SESSION
+        if (entry != null) {
+        //if (true) { // TMP BPI FORCE LAUNCHER NOT DID SESSION
             this.signIning = false;
-            this.did = "FAKEDIDFIXME" // TMP BPI entry.didString;
+            //this.did = "FAKEDIDFIXME" // TMP BPI entry.didString;
+            this.did = entry.didString;
+            console.log("AppManager - did: "+this.did);
             await this.reInit(null);
         }
         else {
@@ -200,6 +204,7 @@ export class AppManager {
 
         this.pathInfo = new AppPathInfo(this.getDIDDir());
 
+        console.log("AppManager - reInit - dbPath: "+this.pathInfo.databasePath);
         await this.dbAdapter.setUserDBAdapter(this.pathInfo.databasePath);
 
         // If we have received an optional language info, we set the DID session language preference with it.
@@ -760,7 +765,6 @@ export class AppManager {
     }
 
     public async hideFragment(fragment: WebViewFragment, startupMode: string, id: string) {
-        // TODO - No way to deal with browser views Z-ordering for now - find a solution.
         console.log("AppManager - hideFragment id: "+id);
         if (fragment.browserViewId == null) {
             console.log("AppManager - hideFragment - create view fragment");
@@ -769,7 +773,7 @@ export class AppManager {
         
         //this.window.removeBrowserView(fragment.appView);
         fragment.appView.setBounds({ x: 0, y: 0, width: 0, height: 0 });
-        this.curFragment = this.getFragmentById(AppManager.LAUNCHER);
+        //this.curFragment = this.getFragmentById(AppManager.LAUNCHER);
         //this.sendRefreshList("closed", null, false);
     
         if (startupMode == AppManager.STARTUP_APP) {
@@ -1253,8 +1257,8 @@ export class AppManager {
     }
 
     public async handleIPCCall(event: Electron.IpcMainInvokeEvent, pluginName: string, methodName: string, fullMethodName: string, success: SuccessCallback, error: ErrorCallback, args: any) {
-        /*console.log("handle "+fullMethodName, args);
-        if (fullMethodName == "AppManager-getAppInfos") {
+        //console.log("handle "+fullMethodName, args);
+        /*if (fullMethodName == "AppManager-getAppInfos") {
             let array = ConfigManager.getShareInstance().getStringArrayValue("dapp.protectList", []);
             console.log(array);
             console.log(array[0]);
@@ -1275,6 +1279,7 @@ export class AppManager {
                     (entry.plugin as any)[methodName](success, error, args);
                 }
             }*/
+            //console.log("handleIPCCall - fullMethodName: "+fullMethodName);
             (runningApp.pluginInstances[pluginName] as any)[methodName](success, error, args);
             
         }

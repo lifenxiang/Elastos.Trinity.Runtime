@@ -54,6 +54,10 @@ export class TrinityPlugin {
         return true;
     }
 
+    public getDataPath(): string {
+        return this.dataPath;
+    }
+
     //TODO: check canonicalPath
     private getCanonicalDir(path: string, header: string): string {
         /*File file = new File(path);

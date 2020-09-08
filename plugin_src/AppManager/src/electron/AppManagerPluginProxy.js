@@ -94,7 +94,7 @@ var AppManagerPluginProxy = {
     },
 
     setIntentListener: async function(success, error, opts) {
-        window.appManagerImpl.setIntentListener((args)=>{
+        window.appManagerImpl.setIntentListener((args) => {
             success(args, {keepCallback: true});
         }, error, opts);
     },
@@ -180,14 +180,3 @@ module.exports = AppManagerPluginProxy;
 
 require("cordova/exec/proxy").add("AppManager", AppManagerPluginProxy);
 
-/** TEMP STUBS BPI */
-require("cordova/exec/proxy").add("NotificationManagerPlugin", {
-    setNotificationListener: function(success, error, opts) { },
-    getNotifications: function(success, error, opts) { success({
-        notifications:[]
-    }) },
-});
-
-require("cordova/exec/proxy").add("DIDSessionManagerPlugin", {
-    getSignedInIdentity: function(success, error, opts) { success({did:"abcd"}) },
-});

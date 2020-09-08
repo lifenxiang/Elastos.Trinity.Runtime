@@ -86,6 +86,8 @@ export class TrinityRuntime {
             title: "elastOS"
         });
         this.mainWindow = new BrowserWindow(browserWindowOpts);
+        this.mainWindow.setMenu(null);
+        this.mainWindow.setTitle("elastOS");
         this.appManager = new AppManager(this.mainWindow, this);
 
         // Empty root layout
@@ -156,4 +158,8 @@ export class TrinityRuntime {
 
 // TODO: FIND A WAY TO MAKE THIS DYNAMIC AND CLEAN
 require("./AppBasePlugin");
+require("./DIDSessionManagerPlugin");
+require("./NotificationManagerPlugin");
+require("./PasswordManagerPlugin");
 require("./TitleBarPlugin");
+require("./plugins_main/Carrier/CarrierPlugin");

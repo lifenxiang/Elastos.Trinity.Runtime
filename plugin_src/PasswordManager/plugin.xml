@@ -20,4 +20,9 @@
             </feature>
         </config-file>
     </platform>
+	<platform name="electron">
+        <js-module src="src/electron/PasswordManagerPluginProxy.js" name="PasswordManagerPluginProxy">
+            <runs />
+        </js-module>
+    </platform>
 </plugin>

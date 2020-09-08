@@ -1,7 +1,7 @@
 {
     "scheme": "file",
     "browserWindow": {
-        "height": 864,
+        "height": 903,
         "webPreferences":{
             "devTools": true,
             "nodeIntegration": false

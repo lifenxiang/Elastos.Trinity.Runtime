@@ -51,4 +51,4 @@ contextBridge.exposeInMainWorld(
         "stopAllBackgroundService",
         "getAllRunningServiceList"
     ])
-  )
+ )

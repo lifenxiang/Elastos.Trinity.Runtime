@@ -30,6 +30,7 @@ export class MergeDBAdapter {
             this.userDBAdapter = await ManagerDBAdapter.newInstance(this.window, path);
         }
         else {
+            await this.userDBAdapter.clean();
             this.userDBAdapter = null;
         }
     }

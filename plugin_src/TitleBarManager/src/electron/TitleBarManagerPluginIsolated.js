@@ -18,4 +18,4 @@ contextBridge.exposeInMainWorld(
         "showActivityIndicator",
         "hideActivityIndicator"
     ])
-  )
+ )
