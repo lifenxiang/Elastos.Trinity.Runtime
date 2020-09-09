@@ -243,7 +243,7 @@ class TitleBarView: UIView {
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     private func darkModeUsed() -> Bool {
         return PreferenceManager.getShareInstance().getBoolValue("ui.darkmode", true)
     }
@@ -304,7 +304,7 @@ class TitleBarView: UIView {
         if ConfigManager.getShareInstance().getStringValue("build.variant", "") == "itunesappstore" {
             return
         }
-        
+
         // Increase reference count for this progress animation type
         activityCounters[activityType] = activityCounters[activityType]! + 1
         activityHintTexts[activityType] = hintText
@@ -576,8 +576,11 @@ class TitleBarView: UIView {
         else {
             // Custom app image, try to load it
             let appInfo = AppManager.getShareInstance().getAppInfo(appId!)!
+
+            let remotebackup = appInfo.remote;
             appInfo.remote = false // TODO - DIRTY! FIND A BETTER WAY TO GET THE REAL IMAGE PATH FROM JS PATH !
             let iconPath = AppManager.getShareInstance().getAppPath(appInfo) + icon.iconPath!
+            appInfo.remote = remotebackup;
 
             // Icon
             if let image = UIImage(contentsOfFile: iconPath) {
