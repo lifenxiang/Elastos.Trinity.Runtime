@@ -7,6 +7,7 @@ import { PreferenceManager } from './PreferenceManager';
 import { app } from 'electron';
 import { IntentInfo } from './IntentInfo';
 import { IntentManager } from './IntentManager';
+import { ConfigManager } from './ConfigManager';
 
 type CallbackContext = {
     success: SuccessCallback;
@@ -37,6 +38,7 @@ export class AppBasePlugin extends TrinityPlugin {
 
     private async startByMode(success: SuccessCallback, error: ErrorCallback, args: any, startupMode: string) {
         let id = args[0];
+        console.log("asd - AppBasePlugin - startByMode id:"+id);
         let service = null;
         if (startupMode == AppManager.STARTUP_SERVICE) {
             service = args[1];
@@ -70,19 +72,20 @@ export class AppBasePlugin extends TrinityPlugin {
 
     //TODO: sync with start
     protected async setVisible(success: SuccessCallback, error: ErrorCallback, args: any) {
-        let visible = args[0];
+        /*let visible = args[0] as string;
+        console.log("asd - AppBasePlugin - setVisible visible: "+visible);
 
-        /*if (this.startupMode != AppManager.STARTUP_APP) {
+        if (this.startupMode != AppManager.STARTUP_APP) {
             error("'" + this.startupMode + "' mode can't setVisible.");
             return;
         }
 
-        if (visible == null || !visible.equals("hide")) {
+        if (visible == null || visible != "hide") {
             visible = "show";
         }
 
         this.appManager.setAppVisible(this.appId, visible);
-        if (visible.equals("show")) {
+        if (visible == "show") {
             await this.appManager.start(this.appId, AppManager.STARTUP_APP, null);
         }
         else {
@@ -305,11 +308,12 @@ export class AppBasePlugin extends TrinityPlugin {
         if (this.mMessageContext == null)
             return;
         
-        this.mMessageContext.success({
+        let ret: any = {
             message: msg,
             type: type,
             from: from
-        });
+        };
+        this.mMessageContext.success(ret);
     }
 
     //TODO: adapt PluginResult
@@ -642,6 +646,19 @@ export class AppBasePlugin extends TrinityPlugin {
         success(ret);
     }
 
+    protected getBuildInfo(success: SuccessCallback, error: ErrorCallback, args: any) {
+        let ret: any = {};
+        let type = ConfigManager.getShareInstance().getStringValue("build.type", "elastOS");
+        ret.type = type;
+
+        let variant = ConfigManager.getShareInstance().getStringValue("build.variant", "");
+        ret.variant = variant;
+
+        ret.platform = "android";
+
+        success(ret);
+    }
+
     private checkIntentScheme(url: string): boolean {
         return IntentManager.checkTrinityScheme(url);// && (!isUrlApp() || url.contains("callbackurl="));
     }
@@ -744,5 +761,7 @@ TrinityRuntime.getSharedInstance().createIPCDefinitionForMainProcess("AppManager
     "startAppBackgroundService",
     "stopAppBackgroundService",
     "stopAllBackgroundService",
-    "getAllRunningServiceList"
+    "getAllRunningServiceList",
+
+    "getBuildInfo"
 ]);

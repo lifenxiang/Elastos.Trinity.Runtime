@@ -127,28 +127,28 @@ class MergeDBAdapter {
         }
     }
 
-    func getIntentFilter(_ act: String) throws -> [String] {
-        var list = [String]();
+    func getIntentFilter(_ act: String) throws -> [IntentFilter] {
+        var list = [IntentFilter]();
 
-        var ids: [String] = [String]();
+        var filters: [IntentFilter] = [IntentFilter]();
         if (userDBAdapter != nil) {
-            ids = try userDBAdapter!.getIntentFilter(act);
+            filters = try userDBAdapter!.getIntentFilter(act);
         }
-        for id in ids {
-            list.append(id);
+        for filter in filters {
+            list.append(filter);
         }
 
-        let baseIds = try baseDBAdapter.getIntentFilter(act);
-        for baseId in baseIds {
+        let baseFilters = try baseDBAdapter.getIntentFilter(act);
+        for baseFilter in baseFilters {
             var needAdd = true;
-            for id in ids {
-                if (baseId == id) {
+            for filter in filters {
+                if (baseFilter.packageId == filter.packageId) {
                     needAdd = false;
                     break;
                 }
             }
             if (needAdd) {
-                list.append(baseId);
+                list.append(baseFilter);
             }
         }
         

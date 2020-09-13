@@ -43,6 +43,8 @@ declare namespace NotificationManagerPlugin {
         key: string;
         /** Title to be displayed as the main message on the notification. */
         title: string;
+        /** Detailed message for this notification. */
+        message: string;
         /** Intent URL emitted when the notification is clicked. */
         url?: string;
         /** Contact DID emitting this notification, in case of a remotely received notification. */

@@ -33,13 +33,12 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
-import android.webkit.WebViewDatabase;
 
 import org.apache.cordova.PluginManager;
-import org.elastos.carrier.exceptions.CarrierException;
 import org.elastos.trinity.runtime.contactnotifier.ContactNotifier;
 import org.elastos.trinity.runtime.didsessions.DIDSessionManager;
 import org.elastos.trinity.runtime.didsessions.IdentityEntry;
@@ -55,28 +54,61 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 public class AppManager {
+    private static final String TAG = "AppManager";
 
-    /** The internal message */
+    /**
+     * The internal message
+     */
     public static final int MSG_TYPE_INTERNAL = 1;
-    /** The internal return message. */
+    /**
+     * The internal return message.
+     */
     public static final int MSG_TYPE_IN_RETURN = 2;
-    /** The internal refresh message. */
+    /**
+     * The internal refresh message.
+     */
     public static final int MSG_TYPE_IN_REFRESH = 3;
-    /** The installing message. */
+    /**
+     * The installing message.
+     */
     public static final int MSG_TYPE_INSTALLING = 4;
 
-    /** The external message */
+    /**
+     * The external message
+     */
     public static final int MSG_TYPE_EXTERNAL = 11;
-    /** The external launcher message */
+    /**
+     * The external launcher message
+     */
     public static final int MSG_TYPE_EX_LAUNCHER = 12;
-    /** The external install message */
+    /**
+     * The external install message
+     */
     public static final int MSG_TYPE_EX_INSTALL = 13;
-    /** The external return message. */
+    /**
+     * The external return message.
+     */
     public static final int MSG_TYPE_EX_RETURN = 14;
 
 
     public static final String LAUNCHER = "launcher";
     public static final String DIDSESSION = "didsession";
+
+    /** The app mode. */
+    public static final String STARTUP_APP = "app";
+    /** The service mode. */
+    public static final String STARTUP_SERVICE = "service";
+    /** The intent mode. It will be closed after sendIntentResponse */
+    public static final String STARTUP_INTENT = "intent";
+    /** The silence intent mode. It will be closed after sendIntentResponse */
+    public static final String STARTUP_SILENCE = "silence";
+
+    final static String[] startupModes = {
+            STARTUP_APP,
+            STARTUP_SERVICE,
+            STARTUP_INTENT,
+            STARTUP_SILENCE
+    };
 
     private static AppManager appManager;
     public WebViewActivity activity;
@@ -87,6 +119,7 @@ public class AppManager {
     private AppPathInfo basePathInfo = null;
     private AppPathInfo pathInfo = null;
 
+    //    private AppInfo didsessionAppInfo = null;
     private Boolean signIning = true;
     private String did = null;
 
@@ -95,6 +128,7 @@ public class AppManager {
     protected LinkedHashMap<String, AppInfo> appInfos;
     private ArrayList<String> lastList = new ArrayList<String>();
     private ArrayList<String> runningList = new ArrayList<String>();
+    private ArrayList<String> serviceRunningList = new ArrayList<String>();
     public AppInfo[] appList;
     protected LinkedHashMap<String, Boolean> visibles = new LinkedHashMap<String, Boolean>();
 
@@ -111,8 +145,8 @@ public class AppManager {
         }
     }
 
-    private ArrayList<InstallInfo>  installUriList = new ArrayList<InstallInfo>();
-    private ArrayList<Uri>          intentUriList = new ArrayList<Uri>();
+    private ArrayList<InstallInfo> installUriList = new ArrayList<InstallInfo>();
+    private ArrayList<Uri> intentUriList = new ArrayList<Uri>();
     private boolean launcherReady = false;
 
     final static String[] defaultPlugins = {
@@ -184,21 +218,22 @@ public class AppManager {
         IdentityEntry entry = null;
         try {
             entry = DIDSessionManager.getSharedInstance().getSignedInIdentity();
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
-        if (entry != null) {
+        // Apply theming for native popups
+        boolean darkMode = PreferenceManager.getShareInstance().getBooleanValue("ui.darkmode", false);
+        UIStyling.prepare(darkMode);
+
+         if (entry != null) {
             signIning = false;
             did = entry.didString;
             reInit(null);
-        }
-        else {
+        } else {
             try {
                 startDIDSession();
-            }
-            catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -206,17 +241,19 @@ public class AppManager {
         if (PreferenceManager.getShareInstance().getDeveloperMode()) {
 //            CLIService.getShareInstance().start();
         }
-
-        try {
-            ContactNotifier.getSharedInstance(activity, did);
-        } catch (CarrierException e) {
-            e.printStackTrace();
-        }
     }
-
 
     public static AppManager getShareInstance() {
         return AppManager.appManager;
+    }
+
+    public static boolean isStartupMode(String startupMode) {
+        for(String mode:startupModes) {
+            if (mode.equals(startupMode)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public String getBaseDataPath() {
@@ -226,7 +263,7 @@ public class AppManager {
     private void reInit(String sessionLanguage) {
         curFragment = null;
 
-        pathInfo = new AppPathInfo(getDIDDir());
+        pathInfo = new AppPathInfo(getDIDDir(did));
 
         dbAdapter.setUserDBAdapter(pathInfo.databasePath);
 
@@ -249,15 +286,49 @@ public class AppManager {
             e.printStackTrace();
         }
         refreashInfos();
+        startStartupServices();
         sendRefreshList("initiated", null, false);
+
+        try {
+            ContactNotifier.getSharedInstance(activity, did);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    private void closeAll() throws Exception {
+    private void startStartupServices() {
+        final int FIRST_SERVICE_START_DELAY = 5000;
+        final int DELAY_BETWEEN_EACH_SERVICE = 5000;
+
+        Log.d(TAG, "Starting startup services");
+
+        // Start services one after another, with an arbitrary (for now, to keep things simple) delay between starts
+        int nextDelay = FIRST_SERVICE_START_DELAY;
+        for (AppInfo info : appList) {
+            Log.d(TAG, "Startup service - checking if app "+info.app_id+" has services to start");
+            for (AppInfo.StartupService service : info.startupServices) {
+                Log.d(TAG, "Startup service - App "+info.app_id+" - starting service "+service.name);
+                new Handler().postDelayed(() -> {
+                    try {
+                        Log.d(TAG, "Startup service - App "+info.app_id+" - service "+service.name + " - before start");
+                        start(info.app_id, STARTUP_SERVICE, service.name);
+                        Log.d(TAG, "Startup service - App "+info.app_id+" - service "+service.name + " - after start");
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }, nextDelay);
+                nextDelay += DELAY_BETWEEN_EACH_SERVICE;
+            }
+        }
+
+        Log.d(TAG, "Finished starting startup services");
+    }
+
+    private void closeAllApps() throws Exception {
         for (String appId : getRunningList()) {
             if (!isLauncher(appId)) {
-                close(appId);
+                closeAllModes(appId);
             }
-
         }
 
         FragmentManager manager = activity.getSupportFragmentManager();
@@ -272,6 +343,7 @@ public class AppManager {
         appList = null;
         lastList = new ArrayList<String>();
         runningList = new ArrayList<String>();
+        serviceRunningList = new ArrayList<String>();
         visibles = new LinkedHashMap<String, Boolean>();
         dbAdapter.setUserDBAdapter(null);
 
@@ -294,7 +366,7 @@ public class AppManager {
     public void signOut() throws Exception {
         if (!signIning) {
             signIning = true;
-            closeAll();
+            closeAllApps();
             clean();
             startDIDSession();
         }
@@ -319,11 +391,11 @@ public class AppManager {
     }
 
     public void startDIDSession() throws Exception{
-        start(getDIDSessionId());
+        start(getDIDSessionId(), STARTUP_APP, null);
     }
 
     public void closeDIDSession() throws Exception {
-        close(getDIDSessionId());
+        close(getDIDSessionId(), STARTUP_APP, null);
 
         IdentityEntry entry = DIDSessionManager.getSharedInstance().getSignedInIdentity();
         did = entry.didString;
@@ -333,12 +405,15 @@ public class AppManager {
         return did;
     }
 
-    public String getDIDDir() {
-        String did = getDID();
+    public String getDIDDir(String did) {
         if (did != null) {
             did = did.replace(":", "_");
         }
         return did;
+    }
+
+    public AppPathInfo getPathInfo(String did) {
+        return new AppPathInfo(getDIDDir(did));
     }
 
     public MergeDBAdapter getDBAdapter() {
@@ -353,21 +428,21 @@ public class AppManager {
             input = manager.open(path);
         }
         catch (IOException e) {
-            e.printStackTrace();
+            Log.e(TAG, "open " + path + " error: " + e.getLocalizedMessage());
         }
 
         return input;
     }
 
     private void installBuiltInApp(String path, String id, int launcher) throws Exception {
-        Log.d("AppManager", "Entering installBuiltInApp path="+path+" id="+id+" launcher="+launcher);
+        Log.d(TAG, "Entering installBuiltInApp path="+path+" id="+id+" launcher="+launcher);
 
         path = path + id;
-        InputStream input = getAssetsFile(path + "/manifest.json");
+        InputStream input = getAssetsFile(path + "/assets/manifest.json");
         if (input == null) {
-            input = getAssetsFile(path + "/assets/manifest.json");
+            input = getAssetsFile(path + "/manifest.json");
             if (input == null) {
-                Log.e("AppManager", "No manifest found, returning");
+                Log.e(TAG, "Can't find manifest.json in / or /assets/, do not install this dapp");
                 return;
             }
         }
@@ -378,20 +453,20 @@ public class AppManager {
         if (installedInfo != null) {
             boolean versionChanged = PreferenceManager.getShareInstance().versionChanged;
             if (versionChanged || builtInInfo.version_code > installedInfo.version_code) {
-                Log.d("AppManager", "built in version > installed version: uninstalling installed");
+                Log.d(TAG, "built in version > installed version: uninstalling installed");
                 shareInstaller.unInstall(installedInfo, true);
             }
             else {
-                Log.d("AppManager", "Built in version <= installed version, No need to install");
+                Log.d(TAG, "Built in version <= installed version, No need to install");
                 needInstall = false;
             }
         }
         else {
-            Log.d("AppManager", "No installed info found");
+            Log.d(TAG, "No installed info found");
         }
 
         if (needInstall) {
-            Log.d("AppManager", "Needs install - copying assets and setting built-in to 1");
+            Log.d(TAG, "Needs install - copying assets and setting built-in to 1");
             shareInstaller.copyAssetsFolder(path, basePathInfo.appsPath + builtInInfo.app_id);
             builtInInfo.built_in = 1;
             dbAdapter.addAppInfo(builtInInfo, true);
@@ -410,7 +485,7 @@ public class AppManager {
                 info.built_in = 1;
                 int count = dbAdapter.removeAppInfo(launcherInfo, true);
                 if (count < 1) {
-                    Log.e("AppManager", "Launcher upgrade -- Can't remove the older DB info.");
+                    Log.e(TAG, "Launcher upgrade -- Can't remove the older DB info.");
                     //TODO:: need remove the files? now, restart will try again.
                     return;
                 }
@@ -434,7 +509,7 @@ public class AppManager {
                 info.built_in = 1;
                 int count = dbAdapter.removeAppInfo(getDIDSessionAppInfo(), true);
                 if (count < 1) {
-                    Log.e("AppManager", "Launcher upgrade -- Can't remove the older DB info.");
+                    Log.e(TAG, "Launcher upgrade -- Can't remove the older DB info.");
                     return;
                 }
                 shareInstaller.renameFolder(didsession, basePathInfo.appsPath, getDIDSessionId());
@@ -510,7 +585,14 @@ public class AppManager {
         }
     }
 
-    public Boolean getAppVisible(String id) {
+    public Boolean getAppVisible(String id, String startupMode) {
+        if (startupMode.equals(STARTUP_INTENT)) {
+            return true;
+        }
+        else if (startupMode.equals(STARTUP_SERVICE) || startupMode.equals(STARTUP_SILENCE)) {
+            return false;
+        }
+
         Boolean ret = visibles.get(id);
         if (ret == null) {
             return true;
@@ -551,6 +633,11 @@ public class AppManager {
     }
 
     public AppInfo getAppInfo(String id) {
+	    int index = id.indexOf("#");
+        if (index != -1) {
+            id = id.substring(0, index);
+        }
+
         if (isDIDSession(id)) {
             return getDIDSessionAppInfo();
         }
@@ -613,6 +700,10 @@ public class AppManager {
     }
 
     public String getDataPath(String id) {
+        return getDataPath(id, pathInfo);
+    }
+
+    public String getDataPath(String id, AppPathInfo pathInfo) {
         if (id == null) {
             return null;
         }
@@ -630,6 +721,10 @@ public class AppManager {
 
 
     public String getTempPath(String id) {
+        return getTempPath(id, pathInfo);
+    }
+
+    public String getTempPath(String id, AppPathInfo pathInfo) {
         if (id == null) {
             return null;
         }
@@ -693,7 +788,7 @@ public class AppManager {
     }
 
     public void unInstall(String id, boolean update) throws Exception {
-        close(id);
+        closeAllModes(id);
         AppInfo info = appInfos.get(id);
         shareInstaller.unInstall(info, update);
         refreashInfos();
@@ -706,9 +801,9 @@ public class AppManager {
         }
     }
 
-    public WebViewFragment getFragmentById(String id) {
-        if (isLauncher(id)) {
-            id = LAUNCHER;
+    public WebViewFragment getFragmentById(String modeId) {
+        if (isLauncher(modeId)) {
+            modeId = LAUNCHER;
         }
 
         FragmentManager manager = activity.getSupportFragmentManager();
@@ -717,7 +812,7 @@ public class AppManager {
             Fragment fragment = fragments.get(i);
             if (fragment instanceof WebViewFragment) {
                 WebViewFragment webViewFragment = (WebViewFragment)fragment;
-                if (webViewFragment.id.equals(id)) {
+                if (webViewFragment.modeId.equals(modeId)) {
                     return webViewFragment;
                 }
             }
@@ -740,7 +835,7 @@ public class AppManager {
                         .show(fragment);
             }
 //            transaction.addToBackStack(null);
-            transaction.commit();
+            transaction.commitAllowingStateLoss();
         }
 
         curFragment = fragment;
@@ -751,7 +846,7 @@ public class AppManager {
         lastList.add(0, id);
     }
 
-    private void hideFragment(WebViewFragment fragment, String id) {
+    private void hideFragment(WebViewFragment fragment, String startupMode, String id) {
         FragmentManager manager = activity.getSupportFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
         if (!fragment.isAdded()) {
@@ -760,8 +855,13 @@ public class AppManager {
         transaction.hide(fragment);
         transaction.commit();
 
-        runningList.add(0, id);
-        lastList.add(1, id);
+        if (startupMode.equals(STARTUP_APP)) {
+            runningList.add(0, id);
+            lastList.add(1, id);
+        }
+        else if (startupMode.equals(STARTUP_SERVICE)) {
+            serviceRunningList.add(0, id);
+        }
     }
 
     Boolean isCurrentFragment(WebViewFragment fragment) {
@@ -769,40 +869,61 @@ public class AppManager {
     }
 
     public boolean doBackPressed() {
-        if (launcherInfo == null || curFragment == null || isLauncher(curFragment.id) || isDIDSession(curFragment.id)) {
+        if (launcherInfo == null || curFragment == null || isLauncher(curFragment.modeId) || isDIDSession(curFragment.modeId)) {
             return true;
         }
         else {
-            switchContent(getFragmentById(launcherInfo.app_id), launcherInfo.app_id);
-            try {
-                AppManager.getShareInstance().sendLauncherMessageMinimize(curFragment.id);
-            } catch (Exception e) {
-                e.printStackTrace();
+            if ((curFragment != null)  && (curFragment.titlebar != null)) {
+                curFragment.titlebar.handleOuterLeftClicked();
+            } else {
+                switchContent(getFragmentById(launcherInfo.app_id), launcherInfo.app_id);
+                try {
+                    AppManager.getShareInstance().sendLauncherMessageMinimize(curFragment.modeId);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
             return false;
         }
     }
 
-    public void start(String id) throws Exception {
-        AppInfo info = getAppInfo(id);
+    public String getIdbyStartupMode(String id, String mode, String serviceName) {
+        if (!mode.equals(STARTUP_APP)) {
+            id += "#" + mode;
+            if (mode.equals(STARTUP_SERVICE) && (serviceName != null)) {
+                id += ":" + serviceName;
+            }
+        }
+        return id;
+    }
+
+    public void start(String packageId, String mode, String serviceName) throws Exception {
+        AppInfo info = getAppInfo(packageId);
         if (info == null) {
             throw new Exception("No such app!");
         }
 
+        if (mode.equals(STARTUP_SERVICE) && serviceName == null) {
+            throw new Exception("No service name!");
+        }
+
+        String id = getIdbyStartupMode(packageId, mode, serviceName);
         WebViewFragment fragment = getFragmentById(id);
         if (fragment == null) {
-            fragment = WebViewFragment.newInstance(id);
-            if (!isLauncher(id)) {
+            fragment = WebViewFragment.newInstance(packageId, mode, serviceName);
+            if (!isLauncher(packageId)) {
                 sendRefreshList("started", info, false);
             }
 
-            if (!getAppVisible(id)) {
-                showActivityIndicator(true);
-                hideFragment(fragment, id);
+            if (!getAppVisible(packageId, mode)) {
+                if (mode.equals(STARTUP_APP)) {
+                    showActivityIndicator(true);
+                }
+                hideFragment(fragment, mode, id);
             }
         }
 
-        if (getAppVisible(id)) {
+        if (getAppVisible(packageId, mode)) {
             switchContent(fragment, id);
             showActivityIndicator(false);
         }
@@ -820,7 +941,58 @@ public class AppManager {
         });
     }
 
-    public void close(String id) throws Exception {
+    public void closeAllModes(String packageId) {
+        for(String mode: startupModes) {
+            try {
+                if (mode.equals(STARTUP_SERVICE)) {
+                    closeAppAllServices(packageId);
+                }
+                else {
+                    close(packageId, mode, null);
+                }
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void closeAppAllServices(String packageId) throws Exception {
+        AppInfo info = getAppInfo(packageId);
+        if (info == null) {
+            throw new Exception("No such app!");
+        }
+
+        FragmentManager manager = activity.getSupportFragmentManager();
+        List<Fragment> fragments = manager.getFragments();
+        for (int i = 0; i < fragments.size(); i++) {
+            Fragment fragment = fragments.get(i);
+            if (fragment instanceof WebViewFragment) {
+                WebViewFragment webViewFragment = (WebViewFragment)fragment;
+                if (webViewFragment.modeId.startsWith(packageId + "#service:")) {
+                    closeFragment(info, webViewFragment);
+                }
+            }
+        }
+    }
+
+    public void closeAllServices() throws Exception {
+        FragmentManager manager = activity.getSupportFragmentManager();
+        List<Fragment> fragments = manager.getFragments();
+        for (int i = 0; i < fragments.size(); i++) {
+            Fragment fragment = fragments.get(i);
+            if (fragment instanceof WebViewFragment) {
+                WebViewFragment webViewFragment = (WebViewFragment)fragment;
+                if (webViewFragment.modeId.contains("#service:")) {
+                    String packageId = webViewFragment.packageId;
+                    AppInfo info = getAppInfo(packageId);
+                    closeFragment(info, webViewFragment);
+                }
+            }
+        }
+    }
+
+    public void close(String id, String mode, String serviceName) throws Exception {
         if (isLauncher(id)) {
             throw new Exception("Launcher can't close!");
         }
@@ -830,13 +1002,25 @@ public class AppManager {
             throw new Exception("No such app!");
         }
 
-        setAppVisible(id, info.start_visible);
+        if (mode.equals(STARTUP_SERVICE) && serviceName == null) {
+            throw new Exception("No service name!");
+        }
 
-        FragmentManager manager = activity.getSupportFragmentManager();
+        if (mode.equals(STARTUP_APP)) {
+            setAppVisible(id, info.start_visible);
+        }
+
+        id = getIdbyStartupMode(id, mode, serviceName);
         WebViewFragment fragment = getFragmentById(id);
         if (fragment == null) {
             return;
         }
+        closeFragment(info, fragment);
+    }
+
+    public void closeFragment(AppInfo info, WebViewFragment fragment) throws Exception {
+        String id = fragment.modeId;
+        String mode = fragment.startupMode;
 
         IntentManager.getShareInstance().removeAppFromIntentList(id);
 
@@ -854,17 +1038,24 @@ public class AppManager {
             }
         }
 
+        FragmentManager manager = activity.getSupportFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
         transaction.remove(fragment);
         transaction.commit();
-        lastList.remove(id);
-        runningList.remove(id);
+
+        if (mode.equals(STARTUP_APP)) {
+            lastList.remove(id);
+            runningList.remove(id);
+        }
+        else if (mode.equals(STARTUP_SERVICE)) {
+            serviceRunningList.remove(id);
+        }
 
         sendRefreshList("closed", info, false);
     }
 
     public void loadLauncher() throws Exception {
-        start(LAUNCHER);
+        start(LAUNCHER, STARTUP_APP, null);
     }
 
     public void checkInProtectList(String uri) throws Exception {
@@ -1227,11 +1418,27 @@ public class AppManager {
         return runningList.toArray(ids);
     }
 
+    public String[] getServiceRunningList(String appId) {
+        ArrayList<String> list = new ArrayList<String>();
+        String prefix = appId + "#service:";
+        for (String id: serviceRunningList) {
+            if (id.startsWith(prefix)) {
+                list.add(id.substring(prefix.length()));
+            }
+        }
+        String[] ids = new String[list.size()];
+        return list.toArray(ids);
+    }
+
+    public String[] getAllServiceRunningList() {
+        String[] ids = new String[serviceRunningList.size()];
+        return serviceRunningList.toArray(ids);
+    }
+
     public String[] getLastList() {
         String[] ids = new String[lastList.size()];
         return lastList.toArray(ids);
     }
-
 
     public void flingTheme() {
         if (curFragment == null) {

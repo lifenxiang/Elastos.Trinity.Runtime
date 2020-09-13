@@ -24,7 +24,7 @@ package org.elastos.trinity.runtime;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
-import org.elastos.trinity.runtime.passwordmanager.AppsPasswordStrategy;
+import org.elastos.trinity.runtime.passwordmanager.PasswordGetInfoOptions;
 import org.elastos.trinity.runtime.passwordmanager.PasswordInfoBuilder;
 import org.elastos.trinity.runtime.passwordmanager.passwordinfo.PasswordInfo;
 import org.elastos.trinity.runtime.passwordmanager.PasswordManager;
@@ -171,9 +171,24 @@ public class PasswordManagerPlugin extends TrinityPlugin {
 
     private void getPasswordInfo(JSONArray args, CallbackContext callbackContext) throws Exception {
         String key = args.getString(0);
+        JSONObject optionsJson = args.isNull(1) ? null : args.getJSONObject(1);
+        PasswordGetInfoOptions options = null;
+
+        try {
+            if (optionsJson != null) {
+                options = PasswordGetInfoOptions.fromJsonObject(optionsJson);
+            }
+        }
+        catch (Exception e) {
+            // Invalid options passed? We'll use default options
+        }
+
+        if (options == null) {
+            options = new PasswordGetInfoOptions(); // default options
+        }
 
         JSONObject result = new JSONObject();
-        PasswordManager.getSharedInstance().getPasswordInfo(key, did, appId, new PasswordManager.OnPasswordInfoRetrievedListener() {
+        PasswordManager.getSharedInstance().getPasswordInfo(key, did, appId, options, new PasswordManager.OnPasswordInfoRetrievedListener() {
             @Override
             public void onPasswordInfoRetrieved(PasswordInfo info) {
                 try {

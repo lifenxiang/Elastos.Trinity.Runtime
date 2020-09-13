@@ -11,6 +11,7 @@ public class Notification {
     public Integer nid;
     public String key;
     public String title;
+    public String message;
     public String appId;
     public String url;
     public String emitter;
@@ -25,6 +26,7 @@ public class Notification {
         notification.nid = cursor.getInt(cursor.getColumnIndex(DatabaseHelper.NOTIFICATION_ID));
         notification.key = cursor.getString(cursor.getColumnIndex(DatabaseHelper.KEY));
         notification.title = cursor.getString(cursor.getColumnIndex(DatabaseHelper.TITLE));
+        notification.message = cursor.getString(cursor.getColumnIndex(DatabaseHelper.MESSAGE));
         notification.appId = cursor.getString(cursor.getColumnIndex(DatabaseHelper.APP_ID));
         notification.url = cursor.getString(cursor.getColumnIndex(DatabaseHelper.URL));
         notification.emitter = cursor.getString(cursor.getColumnIndex(DatabaseHelper.EMITTER));
@@ -38,6 +40,7 @@ public class Notification {
             obj.put("notificationId", nid);
             obj.put("key", key);
             obj.put("title", title);
+            obj.put("message", message);
             obj.put("appId", appId);
             obj.put("url", url);
             obj.put("emitter", emitter);

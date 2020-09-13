@@ -42,7 +42,7 @@
     @objc static let API = 0;
     @objc static let JWT = 1;
     @objc static let URL = 2;
-    
+
     @objc static let REDIRECT_URL = "redirecturl";
     @objc static let CALLBACK_URL = "callbackurl";
     @objc static let REDIRECT_APP_URL = "redirectappurl";
@@ -52,8 +52,11 @@
     @objc dynamic var fromId: String;
     @objc dynamic var toId: String?;
     @objc dynamic var intentId: Int64 = 0;
+    @objc dynamic var silent: Bool = false;
     @objc dynamic var callbackId: String? = nil;
     @objc dynamic var callback: ((String, String?, String)->(Void))? = nil;
+    
+    @objc dynamic var filter: IntentFilter? = nil;
 
     @objc dynamic var originalJwtRequest: String? = nil
     @objc dynamic var redirecturl: String?;
@@ -62,27 +65,28 @@
     @objc dynamic var aud: String?;
     @objc dynamic var req: String?;
     @objc dynamic var type = API;
-    
+
     var isDoingResponse = false;
 
     init(_ action: String, _ params: String?, _ fromId: String, _ toId: String?,
-         _ intentId: Int64) {
+         _ intentId: Int64, _ silent: Bool) {
         self.action = action;
         self.params = params;
         self.fromId = fromId;
         self.toId = toId;
         self.intentId = intentId;
+        self.silent = silent;
     }
 
     convenience init(_ action: String, _ params: String?, _ fromId: String, _ toId: String?,
-         _ intentId: Int64, _ callbackId: String?) {
-        self.init(action, params, fromId, toId, intentId);
+                     _ intentId: Int64, _ silent: Bool, _ callbackId: String?) {
+        self.init(action, params, fromId, toId, intentId, silent);
         self.callbackId = callbackId;
     }
 
     convenience init(_ action: String, _ params: String?, _ fromId: String, _ toId: String?,
-         _ intentId: Int64, _ callback: ((String, String?, String)->(Void))?) {
-        self.init(action, params, fromId, toId, intentId);
+                     _ intentId: Int64, _ silent: Bool, _ callback: ((String, String?, String)->(Void))?) {
+        self.init(action, params, fromId, toId, intentId, silent);
         self.callback = callback;
     }
 
@@ -183,12 +187,17 @@ class ShareIntentParams {
             UIApplication.shared.openURL(url);
         }
     }
+    
+    private func getIdbyFilter(_ filter:IntentFilter) -> String {
+        return appManager.getIdbyStartupMode(filter.packageId, startupMode:filter.startupMode, serviceName:filter.serviceName);
+    }
 
-    private func putIntentToList(_ app_id: String, _ info: IntentInfo) {
-        if (intentList[app_id] == nil) {
-            intentList[app_id] = [IntentInfo]();
+    private func addIntentToList(_ info: IntentInfo) {
+        let id = getIdbyFilter(info.filter!)
+        if (intentList[id] == nil) {
+            intentList[id] = [IntentInfo]();
         }
-        intentList[app_id]!.append(info);
+        intentList[id]!.append(info);
     }
 
     func setIntentReady(_ id: String) throws {
@@ -238,52 +247,59 @@ class ShareIntentParams {
         ids!.append(info.intentId);
     }
 
-    public func removeAppFromIntentList(_ appId: String) throws {
+    public func removeAppFromIntentList(_ id: String) throws {
         for (intentId, info) in intentContextList {
-            if (info.toId != nil && info.toId == appId && !info.isDoingResponse) {
+            let modeId = getIdbyFilter(info.filter!);
+            if (modeId != nil && modeId == id && !info.isDoingResponse) {
                 if (info.type == IntentInfo.API) {
                     let viewController: TrinityViewController? = appManager.getViewControllerById(info.fromId);
                     if (viewController != nil) {
-                        try appManager.start(info.fromId);
+                        if (info.filter!.startupMode == AppManager.STARTUP_APP) {
+                            try appManager.start(info.fromId, AppManager.STARTUP_APP, nil);
+                        }
                         info.params = nil;
                         viewController!.basePlugin!.onReceiveIntentResponse(info);
                     }
                 }
                 intentContextList[intentId] = nil;
             }
-            else if (info.fromId == appId) {
+            else if (info.fromId == id) {
                 intentContextList[intentId] = nil;
+                if (info.filter!.startupMode == AppManager.STARTUP_INTENT
+                    || info.filter!.startupMode == AppManager.STARTUP_SILENCE) {
+                    try appManager.close(info.filter!.packageId, info.filter!.startupMode, info.filter!.serviceName);
+                }
             }
         }
     }
-    
+
     public func setDoingResponse(_ intentId: Int64 ) throws {
         let info = intentContextList[intentId];
         if (info == nil) {
             throw AppError.error(String(intentId) + " isn't exist!");
         }
-        
+
         info!.isDoingResponse = true;
     }
 
-    func getIntentFilter(_ action: String) throws -> [String] {
-        let ids = try appManager.dbAdapter.getIntentFilter(action);
-        var list = [String]();
+    func getIntentFilter(_ action: String) throws -> [IntentFilter] {
+        let filters = try appManager.dbAdapter.getIntentFilter(action);
+        var list = [IntentFilter]();
 
-        for id in ids {
-            if (getIntentReceiverPermission(action, id)) {
-                list.append(id);
+        for filter in filters {
+            if (getIntentReceiverPermission(action, filter.packageId)) {
+                list.append(filter);
             }
         }
 
         return list;
     }
 
-    private func popupIntentChooser(_ info: IntentInfo, _ ids: [String]) {
+    private func popupIntentChooser(_ info: IntentInfo, _ filters: [IntentFilter]) {
         // More than one possible handler, show a chooser and pass it the selectable apps info.
         var appInfos: [AppInfo] = []
-        for id in ids {
-            if let info = appManager.getAppInfo(id) {
+        for filter in filters {
+            if let info = appManager.getAppInfo(filter.packageId) {
                 appInfos.append(info)
             }
         }
@@ -300,13 +316,19 @@ class ShareIntentParams {
         }
 
         let popup = PopupDialog(viewController: vc)
-        let cancelButton = CancelButton(title: "Cancel") {}
+        let cancelButton = CancelButton(title: "cancel".localized) {}
         popup.addButtons([cancelButton])
 
         vc.setListener() { selectedAppInfo in
             popup.dismiss() {
                 // Now we know the real app that should receive the intent.
-                info.toId = selectedAppInfo.app_id
+                for filter in filters {
+                    if filter.packageId ==  selectedAppInfo.app_id {
+                        info.filter = filter;
+                        info.toId = self.getIdbyFilter(info.filter!);
+                        break;
+                    }
+                }
                 try! self.sendIntent(info)
             }
         }
@@ -325,13 +347,13 @@ class ShareIntentParams {
 
     func doIntent(_ info: IntentInfo) throws {
         if (info.toId == nil) {
-            let ids = try getIntentFilter(info.action);
+            let filters = try getIntentFilter(info.action);
 
             // Throw an error in case no one can handle the action.
             // Special case for the "share" action that is always handled by the native OS too.
             if (info.action != "share") {
-                if (ids.isEmpty) {
-                    throw AppError.error("Intent action \(info.action) isn't supported!");
+                if (filters.isEmpty) {
+                    throw AppError.error("Intent action '\(info.action)' isn't supported!");
                 }
             }
 
@@ -343,25 +365,37 @@ class ShareIntentParams {
             // Otherwise, we display a prompt so that user can pick the right application.
             // "share" action is special, as it must deal with the native share action.
             if (info.action != "share") {
-                if (ids.count == 1) {
-                    info.toId = ids[0]
+                if (filters.count == 1) {
+                    info.toId = getIdbyFilter(filters[0]);
+                    info.filter = filters[0];
                     try sendIntent(info)
                 }
                 else {
-                    popupIntentChooser(info, ids);
+                    popupIntentChooser(info, filters);
                 }
             }
             else {
                 // Action is "share"
-                if (ids.count == 0) {
+                if (filters.count == 0) {
                     // No dapp can handle share. Directly send the native action
                     sendNativeShareAction(info);
                 }
                 else {
                     // Show a popup chooser. It will add the native share action.
-                    popupIntentChooser(info, ids);
+                    popupIntentChooser(info, filters);
                 }
             }
+        }
+        else if (info.filter == nil) {
+            let filters = try getIntentFilter(info.action);
+            for filter in filters {
+                if (info.toId!.starts(with: filter.packageId)) {
+                    info.filter = filter;
+                    try sendIntent(info);
+                    return;
+                }
+            }
+            throw AppError.error("The appid[\(info.toId)]'s intent action '\(info.action)' isn't supported!");
         }
         else {
             try sendIntent(info);
@@ -369,18 +403,19 @@ class ShareIntentParams {
     }
 
     private func sendIntent(_ info: IntentInfo) throws {
-        let viewController = appManager.getViewControllerById(info.toId!)
+        let id =  getIdbyFilter(info.filter!);
+        let viewController = appManager.getViewControllerById(id)
         if (viewController != nil && viewController!.basePlugin!.isIntentReady()) {
             saveIntentContext(info);
             if (!appManager.isCurrentViewController(viewController!)) {
-                try appManager.start(info.toId!);
+                try appManager.start(info.filter!.packageId, info.filter!.startupMode, info.filter!.serviceName);
                 try appManager.sendLauncherMessageMinimize(info.fromId);
             }
             viewController!.basePlugin!.onReceiveIntent(info);
         }
         else {
-            putIntentToList(info.toId!, info);
-            try appManager.start(info.toId!);
+            addIntentToList(info);
+            try appManager.start(info.filter!.packageId, info.filter!.startupMode, info.filter!.serviceName);
             try appManager.sendLauncherMessageMinimize(info.fromId);
         }
     }
@@ -466,7 +501,7 @@ class ShareIntentParams {
 
             let currentTime = Int64(Date().timeIntervalSince1970);
 
-            info = IntentInfo(action, nil, fromId, nil, currentTime);
+            info = IntentInfo(action, nil, fromId, nil, currentTime, false);
             if (params != nil && params!.count > 0) {
                 getParamsByUri(params!, info!);
             }
@@ -547,7 +582,7 @@ class ShareIntentParams {
             if !((200 ... 299) ~= response.statusCode) {                    // check for http errors
                 print("Error - statusCode should be 2xx, but is \(response.statusCode)")
                 print("response = \(response)")
-                
+
                 if let responseString = String(data: data, encoding: .utf8) {
                     print("responseString = \(responseString)")
                 }
@@ -567,7 +602,7 @@ class ShareIntentParams {
         }
         return URL(string: url + param + result.encodingQuery())!;
     }
-    
+
     /**
      * Helper class to deal with app intent result types that can be either JSON objects with raw data,
      * or JSON objects with "jwt" special field.
@@ -619,17 +654,16 @@ class ShareIntentParams {
 
         var viewController: TrinityViewController? = nil
         viewController = appManager.getViewControllerById(info!.fromId)
-        if (viewController != nil) {
-            try self.appManager.start(info!.fromId)
+        if (!info!.silent && viewController != nil && viewController!.startupMode == AppManager.STARTUP_APP) {
+            try self.appManager.start(info!.fromId, AppManager.STARTUP_APP, nil)
         }
-        
+
         // The result object can be either a standard json object, or a {jwt:JWT} object.
         let intentResult = try IntentResult(rawResult: result)
 
         if (info!.type == IntentInfo.API) {
             if (viewController != nil) {
                 info!.params = intentResult.payloadAsString()
-                info!.fromId = fromId
                 viewController!.basePlugin!.onReceiveIntentResponse(info!)
             }
         }
@@ -648,7 +682,7 @@ class ShareIntentParams {
                 if (info!.type == IntentInfo.JWT) {
                     // Request intent was a JWT payload. We send the response as a JWT payload too
                     var jwt = try createUnsignedJWTResponse(info!, result);
-                    
+
                     if (intentResult.isAlreadyJWT()) {
                         jwt = intentResult.jwt
                         //System.out.println("DEBUG DELETE THIS - JWT TOKEN = "+jwt);
@@ -657,7 +691,7 @@ class ShareIntentParams {
                         // App did not return a JWT, so we return an unsigned JWT instead
                         jwt = try createUnsignedJWTResponse(info!, result)
                     }
-                    
+
                     if (IntentManager.checkTrinityScheme(urlString!)) {
                         urlString = urlString! + "/" + jwt!;
                         try sendIntentByUri(URL(string: urlString!)!, info!.fromId);
@@ -692,6 +726,10 @@ class ShareIntentParams {
         }
 
         intentContextList[intentId] = nil;
+        if (info!.filter!.startupMode == AppManager.STARTUP_INTENT
+            || info!.filter!.startupMode == AppManager.STARTUP_SILENCE) {
+            try appManager.close(info!.filter!.packageId, info!.filter!.startupMode, info!.filter!.serviceName);
+        }
     }
 
     func parseIntentPermission() throws {

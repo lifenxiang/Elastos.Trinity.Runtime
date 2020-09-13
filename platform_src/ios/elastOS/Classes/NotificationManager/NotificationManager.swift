@@ -8,26 +8,32 @@ public protocol NotificationListener {
 public class NotificationManager {
     public static let LOG_TAG = "NotificationManager"
 
+    private static var instances = Dictionary<String, NotificationManager>()  // Sandbox DIDs - One did session = one instance
 
-    private static var instance: NotificationManager? = nil
+    var didSessionDID: String
     private let mainViewController: MainViewController
     private var dbAdapter: NMDatabaseAdapter? = nil
 
     private var onNotificationListeners = Array<onNotification>()
 
 
-    init() {
+    init(didSessionDID: String) {
+        self.didSessionDID = didSessionDID
         self.mainViewController = AppManager.getShareInstance().mainViewController
         self.dbAdapter = NMDatabaseAdapter(notifier: self)
 
         Log.i(NotificationManager.LOG_TAG, "Creating NotificationManager")
     }
 
-    public static func getSharedInstance() throws -> NotificationManager {
-        if (NotificationManager.instance == nil) {
-            NotificationManager.instance = NotificationManager();
+    public static func getSharedInstance(did: String) throws -> NotificationManager {
+        if (instances.keys.contains(did)) {
+            return instances[did]!
         }
-        return NotificationManager.instance!;
+        else {
+            let instance = NotificationManager(didSessionDID: did)
+            instances[did] = instance
+            return instance
+        }
     }
 
     /**
@@ -37,14 +43,14 @@ public class NotificationManager {
      */
     public func clearNotification(notificationId: Int64?) -> Void {
         // Remove from database
-        self.dbAdapter!.clearNotification(notificationId: notificationId!)
+        self.dbAdapter!.clearNotification(didSessionDID: self.didSessionDID, notificationId: notificationId!)
     }
 
     /**
      * Get all notifications.
      */
     public func getNotifications() -> Array<Notification> {
-        return self.dbAdapter!.getNotifications();
+        return self.dbAdapter!.getNotifications(didSessionDID: self.didSessionDID);
     }
 
     /**
@@ -53,8 +59,10 @@ public class NotificationManager {
      * @param appId
      */
     public func sendNotification(notificationRequest: NotificationRequest, appId: String) throws {
-        let notification: Notification = try self.dbAdapter!.addNotification(key: notificationRequest.key!,
+        let notification: Notification = try self.dbAdapter!.addNotification(didSessionDID: self.didSessionDID,
+                                            key: notificationRequest.key!,
                                             title: notificationRequest.title!,
+                                            message: notificationRequest.message!,
                                             url: notificationRequest.url ?? "",
                                             emitter:notificationRequest.emitter ?? "",
                                             appId: appId)

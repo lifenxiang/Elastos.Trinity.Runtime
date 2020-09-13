@@ -56,6 +56,7 @@ public class PasswordManager {
     private AppManager appManager;
     private HashMap<String, PasswordDatabaseInfo> databasesInfo = new HashMap<>();
     private String virtualDIDContext = null;
+    private MasterPasswordPrompter.Builder activeMasterPasswordPrompt = null;
 
     private interface BasePasswordManagerListener {
         void onCancel();
@@ -171,13 +172,19 @@ public class PasswordManager {
      *
      * @returns The password info, or null if nothing was found.
      */
-    public void getPasswordInfo(String key, String did, String appID, OnPasswordInfoRetrievedListener listener) throws Exception {
+    public void getPasswordInfo(String key, String did, String appID, PasswordGetInfoOptions options, OnPasswordInfoRetrievedListener listener) throws Exception {
         String actualDID = getActualDIDContext(did);
         String actualAppID = getActualAppID(appID);
 
         checkMasterPasswordCreationRequired(actualDID, new OnMasterPasswordCreationListener() {
             @Override
             public void onMasterPasswordCreated() {
+                // In case caller doesn't want to show the password prompt if the database is locked, we return a cancellation exception.
+                if (!isDatabaseLoaded(actualDID) && !options.promptPasswordIfLocked) {
+                    listener.onCancel();
+                    return;
+                }
+
                 loadDatabase(actualDID, new OnDatabaseLoadedListener() {
                     @Override
                     public void onDatabaseLoaded() {
@@ -199,7 +206,7 @@ public class PasswordManager {
                     public void onError(String error) {
                         listener.onError(error);
                     }
-                }, false);
+                }, false, options.forceMasterPasswordPrompt);
             }
 
             @Override
@@ -499,8 +506,12 @@ public class PasswordManager {
     }
 
     private void loadDatabase(String did, OnDatabaseLoadedListener listener, boolean isPasswordRetry) {
+        loadDatabase(did, listener, isPasswordRetry, false);
+    }
+
+    private void loadDatabase(String did, OnDatabaseLoadedListener listener, boolean isPasswordRetry, boolean forcePasswordPrompt) {
         try {
-            if (isDatabaseLoaded(did) && !sessionExpired(did)) {
+            if (isDatabaseLoaded(did) && !sessionExpired(did) && !forcePasswordPrompt) {
                 listener.onDatabaseLoaded();
             } else {
                 if (sessionExpired(did)) {
@@ -508,10 +519,21 @@ public class PasswordManager {
                 }
 
                 // Master password is locked - prompt it to user
-                new MasterPasswordPrompter.Builder(activity, did, this)
+                // First make sure to cancel any on going popup instance.
+                if (activeMasterPasswordPrompt != null) {
+                    activeMasterPasswordPrompt.cancel();
+                    activeMasterPasswordPrompt = null;
+                }
+
+                activeMasterPasswordPrompt = new MasterPasswordPrompter.Builder(activity, did, this)
                         .setOnNextClickedListener((password, shouldSavePasswordToBiometric) -> {
+                            activeMasterPasswordPrompt = null;
                             try {
+                                // Force loading the database even if it's already loaded. That's the way to check if the
+                                // possibly forced password input is right or not. Reloading the database will not break
+                                // anything.
                                 loadEncryptedDatabase(did, password);
+
                                 if (isDatabaseLoaded(did)) {
                                     // User chose to enable biometric authentication (was not enabled before). So we save the
                                     // master password to the biometric crypto space.
@@ -552,15 +574,21 @@ public class PasswordManager {
                             } catch (Exception e) {
                                 // In case of wrong password exception, try again
                                 if (e.getMessage().contains("BAD_DECRYPT")) {
-                                    loadDatabase(did, listener, true);
+                                    loadDatabase(did, listener, true, forcePasswordPrompt);
                                 } else {
                                     // Other exceptions are passed raw
                                     listener.onError(e.getMessage());
                                 }
                             }
                         })
-                        .setOnCancelClickedListener(listener::onCancel)
-                        .setOnErrorListener(listener::onError)
+                        .setOnCancelClickedListener(() -> {
+                            activeMasterPasswordPrompt = null;
+                            listener.onCancel();
+                        })
+                        .setOnErrorListener((err) -> {
+                            activeMasterPasswordPrompt = null;
+                            listener.onError(err);
+                        })
                         .prompt(isPasswordRetry);
             }
         }

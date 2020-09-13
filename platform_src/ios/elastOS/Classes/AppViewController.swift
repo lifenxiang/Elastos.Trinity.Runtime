@@ -50,7 +50,7 @@
         }
 
         self.settings = AppViewController.originalSettings
-        self.settings.setValue(getCustomHostname(did, id), forKey: "hostname");
+        self.settings.setValue(getCustomHostname(did, packageId), forKey: "hostname");
 
         self.startPage = AppManager.getShareInstance().getStartPath(self.appInfo!);
 
@@ -58,9 +58,9 @@
         self.pluginObjects = NSMutableDictionary(capacity: 30);
         self.pluginObjects["WhitelistFiter"] = self.whitelistFilter;
         
-        self.permissionGroup = PermissionManager.getShareInstance().getPermissionGroup(id);
+        self.permissionGroup = PermissionManager.getShareInstance().getPermissionGroup(packageId);
 
-        AppManager.getShareInstance().getDBAdapter().resetApiDenyAuth(id);
+        AppManager.getShareInstance().getDBAdapter().resetApiDenyAuth(packageId);
     }
 
     override func filterPlugin(_ pluginName: String, _ className: String) -> NullPlugin? {

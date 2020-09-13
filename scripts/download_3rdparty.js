@@ -3,13 +3,13 @@
 // CONFIGURE HERE
 const files_to_download  = [
   {
-    "url": "https://github.com/elastos/Elastos.NET.Carrier.Swift.SDK/releases/download/release-v5.6.0/ElastosCarrier-framework.zip",
+    "url": "https://github.com/elastos/Elastos.NET.Carrier.Swift.SDK/releases/download/release-v5.6.4/ElastosCarrier-framework.zip",
     "filename": "ElastosCarrier-framework.zip",
     "sourceDirs": [
       "ElastosCarrier-framework/ElastosCarrierSDK.framework"
     ],
     "targetDir": "../Plugins/Carrier/src/ios/libs",
-    "md5": "32673236ca6507ac640c721c5003352c"
+    "md5": "2d5da94e04d57fde6f38b2fca422c742"
   },{
     "url": "https://github.com/elastos/Elastos.NET.Hive.Swift.SDK/releases/download/release-v1.0.1/ElastosHiveSDK-framework-for-trinity.zip",
     "filename": "ElastosHiveSDK-framework-for-trinity.zip",
@@ -22,13 +22,13 @@ const files_to_download  = [
     "targetDir": "../Plugins/Hive/src/ios/libs",
     "md5": "c7740161c0541f1e23a994419b57c81f"
   },{
-    "url": "https://github.com/elastos/Elastos.Trinity.Plugins.Wallet/releases/download/spvsdk-V0.5.0/libspvsdk.zip",
+    "url": "https://github.com/elastos/Elastos.Trinity.Plugins.Wallet/releases/download/spvsdk-V0.5.6.1/libspvsdk.zip",
     "filename": "libspvsdk.zip",
     "sourceDirs": [
       "libspvsdk"
     ],
     "targetDir": "../Plugins/Wallet/src/ios",
-    "md5": "e5f32bd9be63883284ce67d5d756ae6e"
+    "md5": "426791e81a8674a923975548d9c0eccc"
   },{
     "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/v0.1.0/ElastosDIDSDK.framework.zip",
     "filename": "ElastosDIDSDK.framework.zip",
@@ -36,7 +36,7 @@ const files_to_download  = [
       "ElastosDIDSDK.framework"
     ],
     "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "a96c279a257b83310424789b0a9b85ef"
+    "md5": "b8c748d7fd3f86dd9d1accdaf41ee78d"
   },
   {
     "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/v0.1.0/Antlr4.framework.zip",
@@ -45,7 +45,7 @@ const files_to_download  = [
       "Antlr4.framework"
     ],
     "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "3adaf2344ba460b1b46c449d8598f0cb"
+    "md5": "4eefd62d23aac4b206b67ea6e1d36edb"
   },
   {
     "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/v0.1.0/PromiseKit.framework.zip",

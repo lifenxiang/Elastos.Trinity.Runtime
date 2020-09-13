@@ -237,7 +237,7 @@ public class PreferenceManager {
     }
 
     public String getDIDResolver()  {
-        return getStringValue("did.resolver", "http://api.elastos.io:20606");
+        return getStringValue("sidechain.id.rpcapi", "http://api.elastos.io:20606");
     }
 
     public String getStringValue(String key, String defaultValue) {

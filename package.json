@@ -21,8 +21,10 @@
   "dependencies": {
     "appmanager": "file:plugin_src/AppManager",
     "contactnotifier": "file:plugin_src/ContactNotifier",
+    "cordova-android": "8.1.0",
     "cordova-clipboard": "1.2.1",
-    "cordova-electron": "^2.0.0-nightly.2020.7.18.d6fbdb83",
+    "cordova-electron": "^2.0.0-nightly.2020.9.12.734bbe7c",
+    "cordova-ios": "5.1.1",
     "cordova-plugin-add-swift-support": "^2.0.2",
     "cordova-plugin-battery-status": "^2.0.3",
     "cordova-plugin-camera": "^4.1.0",
@@ -101,10 +103,12 @@
       "elastos-trinity-plugins-hive": {},
       "elastos-trinity-plugins-wallet": {},
       "elastos-trinity-plugins-did": {},
+      "elastos-trinity-plugins-appmanager": {
+        "ANDROID_SUPPORT_V4_VERSION": "27.+"
+      },
       "elastos-trinity-plugins-fingerprint": {
         "FACEID_USAGE_DESCRIPTION": " "
       },
-      "elastos-trinity-plugins-appmanager": {},
       "elastos-trinity-plugins-titlebarmanager": {},
       "elastos-trinity-plugins-didsessionmanager": {},
       "elastos-trinity-plugins-passwordmanager": {},
@@ -112,6 +116,8 @@
       "elastos-trinity-plugins-contactnotifier": {}
     },
     "platforms": [
+      "android",
+      "ios",
       "electron"
     ]
   },

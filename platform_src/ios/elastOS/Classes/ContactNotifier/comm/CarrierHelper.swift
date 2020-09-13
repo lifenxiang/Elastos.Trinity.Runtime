@@ -21,6 +21,7 @@
 */
 
 import ElastosCarrierSDK
+import ElastosDIDSDK
 
 protocol OnCarrierEventListener {
     func onFriendRequest(_ did: String, _ userId: String)
@@ -45,8 +46,99 @@ public class CarrierHelper {
 
         try initialize()
     }
+    
+    /**
+     * Get a private key derived from the DID, in order to make sure we always get the same carrier address
+     * even after a trinity reinstallation, as long as the user keeps using the same DID.
+     */
+    private func getDerivedDIDPrivateKey(completion: @escaping (_ derivedKey: String)->Void) throws {
+        // TMP
+        completion("nothing")
+        
+        /*
+        // Retrieve the signed in identity info
+        if let signedInIdentity = try? DIDSessionManager.getSharedInstance().getSignedInIdentity() {
+            // Initialize a DID context to load the signed in user's DID Document. This is needed in order to get a
+            // private key derived from the DID.
+            let cacheDir = NSHomeDirectory() + "/Documents/data/did/.cache.did.elastos"
+            let resolver = PreferenceManager.getShareInstance().getDIDResolver()
 
+            class AuthDIDAdapter : DIDAdapter {
+                func createIdTransaction(_ payload: String, _ memo: String?) {
+                }
+            }
+            
+            // Initialize the DID store
+            try DIDBackend.initializeInstance(resolver, cacheDir)
+            let dataDir = NSHomeDirectory() + "/Documents/data/did/useridentities/" + signedInIdentity.didStoreId
+            let didStore = try DIDStore.open(atPath: dataDir, withType: "filesystem", adapter: AuthDIDAdapter())
+
+            // Load the did document
+            guard let didDocument = try? didStore.loadDid(signedInIdentity.didString) else {
+                Log.e(CarrierHelper.LOG_TAG, "Unable to get derived private key: unable to load the did")
+                completion(nil)
+                return
+            }
+            if didDocument == nil {
+                completion(nil)
+            } else {
+                // Get the DID store password
+                let passwordInfoKey = "didstore-"+signedInIdentity.didStoreId
+                let appId = "org.elastos.trinity.dapp.didsession" // act as the did session app to be able to retrieve a DID store password
+                PasswordManager.getSharedInstance().getPasswordInfo(passwordInfoKey, signedInIdentity.didString, appId, new PasswordManager.OnPasswordInfoRetrievedListener() {
+                    @Override
+                    public void onPasswordInfoRetrieved(PasswordInfo info) {
+                        GenericPasswordInfo genericPasswordInfo = (GenericPasswordInfo)info;
+                        if (genericPasswordInfo == null || genericPasswordInfo.password == null || genericPasswordInfo.password.equals("")) {
+                            Log.e(LOG_TAG, "Unable to get a DID derived key: no master password");
+                            listener.onDerivedKeyRetrieved(null);
+                        }
+                        else {
+                            do {
+                                let extendedDerivedKey = didDocument.derive(DID_DOCUMENT_DERIVE_INDEX, genericPasswordInfo.password);
+
+                                // From the 82 bytes of this extended key, get the end part which is the private key that we need.
+                                byte[] extendedDerivedKeyBytes = extendedDerivedKey.getBytes();
+                                byte[] derivedKeyBytes = Arrays.copyOfRange(extendedDerivedKeyBytes, 46,78);
+
+                                listener.onDerivedKeyRetrieved(derivedKeyBytes);
+                            }
+                            catch (DIDException e) {
+                                e.printStackTrace();
+                                listener.onDerivedKeyRetrieved(null);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancel() {
+                        listener.onDerivedKeyRetrieved(null);
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        listener.onDerivedKeyRetrieved(null);
+                    }
+                });
+            }
+        }
+        else {
+            listener.onDerivedKeyRetrieved(null);
+        }*/
+    }
+    
     private func initialize() throws {
+        try getDerivedDIDPrivateKey() { keyBytes in
+            do {
+                try self.initializeWithDIDDerivedKey(derivedKey: keyBytes)
+            }
+            catch {
+                print(error)
+            }
+        }
+    }
+
+    private func initializeWithDIDDerivedKey(derivedKey: String) throws {
         // Initial setup
         let options = DefaultCarrierOptions.createOptions(didSessionDID: didSessionDID)
 

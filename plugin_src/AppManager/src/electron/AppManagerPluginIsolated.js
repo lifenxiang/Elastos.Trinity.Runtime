@@ -49,6 +49,8 @@ contextBridge.exposeInMainWorld(
         "startAppBackgroundService",
         "stopAppBackgroundService",
         "stopAllBackgroundService",
-        "getAllRunningServiceList"
+        "getAllRunningServiceList",
+		
+		"getBuildInfo"
     ])
  )

@@ -26,11 +26,14 @@ import UIKit
 @objc(TrinityViewController)
 class TrinityViewController : CDVViewController {
     var basePlugin: AppBasePlugin?;
-    var id = "";
+    var packageId = "";
+    var modeId = "";
     var did: String? = nil;
+    var startupMode = AppManager.STARTUP_APP;
+    var serviceName: String? = nil;
     var appInfo: AppInfo?;
     var whitelistFilter: WhitelistFilter?;
-
+    
     @IBOutlet weak var titlebarContainer: UIView!
     @IBOutlet weak var webContainer: UIView!
     var titlebar: TitleBarView!
@@ -39,10 +42,15 @@ class TrinityViewController : CDVViewController {
 
     @IBOutlet weak var titlebarHeightConstraint: NSLayoutConstraint!
     
-    convenience init(_ appInfo: AppInfo) {
+    convenience init(_ appInfo: AppInfo, _ startupMode: String, _ serviceName: String?) {
         self.init();
         self.appInfo = appInfo;
-        self.id = appInfo.app_id;
+        self.packageId = appInfo.app_id;
+        self.startupMode = startupMode;
+        if (startupMode == AppManager.STARTUP_SERVICE) {
+            self.serviceName = serviceName;
+        }
+        self.modeId = AppManager.getShareInstance().getIdbyStartupMode(packageId, startupMode: startupMode, serviceName: serviceName);
         self.did = AppManager.getShareInstance().getDID();
         self.whitelistFilter = WhitelistFilter(appInfo);
     }
@@ -61,7 +69,7 @@ class TrinityViewController : CDVViewController {
 
         if trinityPlugin != nil {
             trinityPlugin!.setWhitelist(self.whitelistFilter)
-            trinityPlugin!.setInfo(self.appInfo);
+            trinityPlugin!.setInfo(self.appInfo, startupMode:startupMode,  serviceName:serviceName);
         }
     }
 
@@ -102,7 +110,7 @@ class TrinityViewController : CDVViewController {
     }
 
     override func newCordovaView(withFrame bounds: CGRect) ->UIView {
-        titlebar = TitleBarView(self, titlebarContainer.frame, id == "launcher", id)
+        titlebar = TitleBarView(self, titlebarContainer.frame, packageId == "launcher", packageId)
         titlebarContainer.addSubview(titlebar!)
         self.addMatchParentConstraints(view: titlebar, parent: titlebarContainer)
 

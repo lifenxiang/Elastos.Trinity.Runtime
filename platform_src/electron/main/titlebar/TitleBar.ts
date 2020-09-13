@@ -155,7 +155,7 @@ export class TitleBar {
     }
 
     public async setIcon(iconSlot: TitleBarIconSlot, icon: TitleBarIcon) {
-        console.log("TitleBar - setIcon");
+        //console.log("TitleBar - setIcon");
         let event: TitleBarEvent = {
             appViewId: this.fragment.browserViewId,
             method: "setIcon",

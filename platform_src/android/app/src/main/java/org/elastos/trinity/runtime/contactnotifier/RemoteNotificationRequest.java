@@ -10,8 +10,10 @@ public class RemoteNotificationRequest {
     public String key = null;
     /** Package ID of the sending app. */
     public String appId = null;
-    /** Title to be displayed as the main message on the notification. */
+    /** Title that highlights the notification main purpose. */
     public String title = null;
+    /** Main message content  */
+    public String message = null;
     /** Intent URL emitted when the notification is clicked. */
     public String url = null;
 
@@ -33,6 +35,8 @@ public class RemoteNotificationRequest {
                 notif.appId = obj.getString("appId");
             if (obj.has("title"))
                 notif.title = obj.getString("title");
+            if (obj.has("message"))
+                notif.message = obj.getString("message");
             if (obj.has("url"))
                 notif.url = obj.getString("url");
 

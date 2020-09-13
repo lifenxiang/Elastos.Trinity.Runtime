@@ -12,6 +12,7 @@ import { TrinityRuntime } from './Runtime';
 import { TrinityPlugin } from './TrinityPlugin';
 import { AppBasePlugin } from './AppBasePlugin';
 import { TrinityCordovaInterfaceImpl } from './TrinityCordovaInterfaceImpl';
+import { ProtocolRequest } from 'electron/main';
 
 export class WebViewFragment {
     private static LOG_TAG = "WebViewFragment";
@@ -187,7 +188,7 @@ export class WebViewFragment {
     private setupSessionProtocolHandlers(ses: Session, appId: string, dappFilesPath: string) {
         let wwwFilesPath = `${__dirname}`
 
-        ses.protocol.registerFileProtocol("trinityapp", async (request: Request, callback: (filePath: string)=>void) => {
+        ses.protocol.registerFileProtocol("trinityapp", async (request: ProtocolRequest, callback: (filePath: string)=>void) => {
             //console.log("Handle FILE trinityapp:", request);
 
             // Ex: request.url = trinityapp://index.html/
@@ -204,12 +205,9 @@ export class WebViewFragment {
 
             //console.log("Redirecting to file path: "+redirectedFilePath);
             callback(redirectedFilePath)
-        }, (err)=>{
-            /*if (err)
-                console.error("Asset intercept error:", err);*/
         });
 
-        ses.protocol.interceptFileProtocol("asset", (request: Request, callback: (filePath: string)=>void) => {
+        ses.protocol.interceptFileProtocol("asset", (request: ProtocolRequest, callback: (filePath: string)=>void) => {
             //console.log("Intercepting ASSET request:", request.url);
 
             let allowedUrls = [
@@ -226,12 +224,9 @@ export class WebViewFragment {
                 // the shared www folder.
                 callback(dappFilesPath + "/index.html"); // TMP TEST
             }
-        }, (err)=>{
-            /*if (err)
-                console.error("Asset intercept error:", err);*/
         });
 
-        ses.protocol.registerFileProtocol("icon", async (request: Request, callback: (filePath: string)=>void) => {
+        ses.protocol.registerFileProtocol("icon", async (request: ProtocolRequest, callback: (filePath: string)=>void) => {
             //console.log("Intercepting ASSET request:", request.url);
 
             // Ex: request.url = icon://appid/iconindex
@@ -252,9 +247,6 @@ export class WebViewFragment {
 
                 callback(null);
             //}
-        }, (err)=>{
-            /*if (err)
-                console.error("Icon intercept error:", err);*/
         });
 
         /*ses.protocol.registerFileProtocol("icon", (request: Request, callback: (filePath: string)=>void) => {

@@ -87,7 +87,7 @@ public class NotificationManagerPlugin extends TrinityPlugin {
     }
 
     private NotificationManager getNotifier() {
-        return NotificationManager.getSharedInstance();
+        return NotificationManager.getSharedInstance(this.did);
     }
 
     private void clearNotification(JSONArray args, CallbackContext callbackContext) {

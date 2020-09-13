@@ -32,7 +32,6 @@ export class BuiltInIcon {
     }
 
     public static fromString(value: string): BuiltInIcon {
-        console.log("fromString - "+value);
         for (let t of this.values) {
             if (t == value) {
                 console.log("equal - "+t);

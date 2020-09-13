@@ -17,7 +17,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
@@ -31,7 +30,6 @@ import java.util.Set;
 
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 //import org.apache.tomcat.util.codec.binary.Base64;
 
 import org.apache.http.client.HttpClient;
@@ -91,11 +89,16 @@ public class IntentManager {
         return false;
     }
 
-    private void saveIntentToList(String app_id, IntentInfo info) {
-        ArrayList<IntentInfo> infos = intentList.get(app_id);
+    private String getIdbyFilter(IntentFilter filter) {
+        return appManager.getIdbyStartupMode(filter.packageId, filter.startupMode, filter.serviceName);
+    }
+
+    private void addIntentToList(IntentInfo info) {
+        String id = getIdbyFilter(info.filter);
+        ArrayList<IntentInfo> infos = intentList.get(id);
         if (infos == null) {
             infos = new ArrayList<IntentInfo>();
-            intentList.put(app_id, infos);
+            intentList.put(id, infos);
         }
         infos.add(info);
     }
@@ -146,25 +149,34 @@ public class IntentManager {
         ids.add(info.intentId);
     }
 
-    public synchronized void removeAppFromIntentList(String appId) throws Exception {
+    public synchronized void removeAppFromIntentList(String id) throws Exception {
         Iterator<Map.Entry<Long, IntentInfo>> iterator = intentContextList.entrySet().iterator();
 
         while (iterator.hasNext()) {
             Map.Entry entry = iterator.next();
             IntentInfo info = (IntentInfo) entry.getValue();
-            if (info.toId != null && info.toId.equals(appId) ) {
+            String modeId = getIdbyFilter(info.filter);
+            if (modeId != null && modeId.equals(id) ) {
                 if (info.type == IntentInfo.API && info.fromId != null) {
                     WebViewFragment fragment = appManager.getFragmentById(info.fromId);
                     if (fragment != null) {
-                        appManager.start(info.fromId);
+                        if (info.filter.startupMode.equals(AppManager.STARTUP_APP)) {
+                            appManager.start(info.fromId, AppManager.STARTUP_APP, null);
+                        }
                         info.params = null;
                         fragment.basePlugin.onReceiveIntentResponse(info);
                     }
                 }
-                intentContextList.remove(entry.getKey());
+                iterator.remove();
+//                intentContextList.remove(entry.getKey());
             }
-            else if (info.fromId.equals((appId))) {
-                intentContextList.remove(entry.getKey());
+            else if (info.fromId.equals((id))) {
+                iterator.remove();
+//                intentContextList.remove(entry.getKey());
+                if (info.filter.startupMode.equals(AppManager.STARTUP_INTENT)
+                        || info.filter.startupMode.equals(AppManager.STARTUP_SILENCE)) {
+                    appManager.close(info.filter.packageId, info.filter.startupMode, info.filter.serviceName);
+                }
             }
         }
     }
@@ -172,25 +184,25 @@ public class IntentManager {
     /**
      * Returns the list of package IDs able to handle the given intent action.
      */
-    public String[] getIntentFilter(String action) throws Exception {
-        String[] ids = appManager.dbAdapter.getIntentFilter(action);
-        ArrayList<String>list = new ArrayList<String>();
+    public IntentFilter[] getIntentFilter(String action) throws Exception {
+        IntentFilter[] filters = appManager.dbAdapter.getIntentFilter(action);
+        ArrayList<IntentFilter>list = new ArrayList<IntentFilter>();
 
-        for (int i = 0; i < ids.length; i++) {
-            if (this.getIntentReceiverPermission(action, ids[i])) {
-                list.add(ids[i]);
+        for (int i = 0; i < filters.length; i++) {
+            if (this.getIntentReceiverPermission(action, filters[i].packageId)) {
+                list.add(filters[i]);
             }
         }
 
-        ids = new String[list.size()];
-        return list.toArray(ids);
+        filters = new IntentFilter[list.size()];
+        return list.toArray(filters);
     }
 
-    private void popupIntentChooser(IntentInfo info, String[] ids) {
+    private void popupIntentChooser(IntentInfo info, IntentFilter[] filters) {
         // More than one possible handler, show a chooser and pass it the selectable apps info.
         ArrayList<AppInfo> appInfos = new ArrayList();
-        for (String id : ids) {
-            appInfos.add(appManager.getAppInfo(id));
+        for (IntentFilter filter : filters) {
+            appInfos.add(appManager.getAppInfo(filter.packageId));
         }
 
         IntentActionChooserFragment actionChooserFragment = new IntentActionChooserFragment(appManager, appInfos);
@@ -204,7 +216,13 @@ public class IntentManager {
             actionChooserFragment.dismiss();
 
             // Now we know the real app that should receive the intent.
-            info.toId = appInfo.app_id;
+            for (IntentFilter filter : filters) {
+                if (filter.packageId.equals(appInfo.app_id)) {
+                    info.filter = filter;
+                    info.toId = getIdbyFilter(info.filter);
+                    break;
+                }
+            }
             try {
                 sendIntent(info);
             }
@@ -225,12 +243,12 @@ public class IntentManager {
 
     void doIntent(IntentInfo info) throws Exception {
         if (info.toId == null) {
-            String[] ids = getIntentFilter(info.action);
+            IntentFilter[] filters = getIntentFilter(info.action);
 
             // Throw an error in case no one can handle the action.
             // Special case for the "share" action that is always handled by the native OS too.
             if (!info.action.equals("share")) {
-                if (ids.length == 0) {
+                if (filters.length == 0) {
                     throw new Exception("Intent action "+info.action+" isn't supported!");
                 }
             }
@@ -243,24 +261,36 @@ public class IntentManager {
             // Otherwise, we display a prompt so that user can pick the right application.
             // "share" action is special, as it must deal with the native share action.
             if (!info.action.equals("share")) {
-                if (ids.length == 1) {
-                    info.toId = ids[0];
+                if (filters.length == 1) {
+                    info.toId = getIdbyFilter(filters[0]);
+                    info.filter = filters[0];
                     sendIntent(info);
                 } else {
-                    popupIntentChooser(info, ids);
+                    popupIntentChooser(info, filters);
                 }
             }
             else {
                 // Action is "share"
-                if (ids.length == 0) {
+                if (filters.length == 0) {
                     // No dapp can handle share. Directly send the native action
                     sendNativeShareAction(info);
                 }
                 else {
                     // Show a popup chooser. It will add the native share action.
-                    popupIntentChooser(info, ids);
+                    popupIntentChooser(info, filters);
                 }
             }
+        }
+        else if (info.filter == null) {
+            IntentFilter[] filters = getIntentFilter(info.action);
+            for (IntentFilter filter : filters) {
+                if (info.toId.startsWith(filter.packageId)) {
+                    info.filter = filter;
+                    sendIntent(info);
+                    return;
+                }
+            }
+            throw new Exception("The appid[" + info.toId +"]'s intent action '"+ info.action + "' isn't supported!");
         }
         else {
             sendIntent(info);
@@ -268,18 +298,19 @@ public class IntentManager {
     }
 
     public void sendIntent(IntentInfo info) throws Exception {
-        WebViewFragment fragment = appManager.getFragmentById(info.toId);
+        String id =  getIdbyFilter(info.filter);
+        WebViewFragment fragment = appManager.getFragmentById(id);
         if ((fragment != null) && (fragment.basePlugin.isIntentReady())) {
             putIntentContext(info);
             if (!appManager.isCurrentFragment(fragment)) {
-                appManager.start(info.toId);
+                appManager.start(info.filter.packageId, info.filter.startupMode, info.filter.serviceName);
                 appManager.sendLauncherMessageMinimize(info.fromId);
             }
             fragment.basePlugin.onReceiveIntent(info);
         }
         else {
-            saveIntentToList(info.toId, info);
-            appManager.start(info.toId);
+            addIntentToList(info);
+            appManager.start(info.filter.packageId, info.filter.startupMode, info.filter.serviceName);
             appManager.sendLauncherMessageMinimize(info.fromId);
         }
     }
@@ -386,7 +417,7 @@ public class IntentManager {
             Set<String> set = uri.getQueryParameterNames();
             long currentTime = System.currentTimeMillis();
 
-            info = new IntentInfo(action, null, fromId, null, currentTime, null);
+            info = new IntentInfo(action, null, fromId, null, currentTime, false, null);
             if (set.size() > 0) {
                 getParamsByUri(uri, info);
             }
@@ -537,8 +568,8 @@ public class IntentManager {
         WebViewFragment fragment = null;
         if (info.fromId != null) {
             fragment = appManager.getFragmentById(info.fromId);
-            if (fragment != null) {
-                appManager.start(info.fromId);
+            if (!info.silent && fragment != null && fragment.startupMode.equals(AppManager.STARTUP_APP)) {
+                appManager.start(info.fromId, AppManager.STARTUP_APP, null);
             }
         }
 
@@ -549,7 +580,10 @@ public class IntentManager {
             // The intent was sent by a trinity dapp, inside trinity, so we call the intent response callback
             if (fragment != null) {
                 info.params = intentResult.payloadAsString();
-                info.fromId = fromId;
+                // If the called dapp has generated a JWT as output, we pass the decoded payload to the calling dapp
+                // for convenience, but we also forward the raw JWT as this is required in some cases.
+                if (intentResult.isAlreadyJWT())
+                    info.responseJwt = intentResult.jwt;
                 fragment.basePlugin.onReceiveIntentResponse(info);
             }
         }
@@ -611,6 +645,10 @@ public class IntentManager {
         }
 
         intentContextList.remove(intentId);
+        if (info.filter.startupMode.equals(AppManager.STARTUP_INTENT)
+                || info.filter.startupMode.equals(AppManager.STARTUP_SILENCE)) {
+            appManager.close(info.filter.packageId, info.filter.startupMode, info.filter.serviceName);
+        }
     }
 
     public void parseIntentPermission() throws Exception {

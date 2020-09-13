@@ -26,12 +26,21 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.net.Uri;
 import android.util.Log;
+import android.webkit.CookieManager;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
+import org.elastos.trinity.runtime.didsessions.DIDSessionManager;
+import org.elastos.trinity.runtime.didsessions.IdentityEntry;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -43,6 +52,7 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.TreeMap;
@@ -50,6 +60,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class AppInstaller {
+    private static final String LOG_TAG = "AppInstaller";
 
     final String[] pluginWhitelist = {
             "device",
@@ -66,6 +77,7 @@ public class AppInstaller {
     private MergeDBAdapter dbAdapter = null;
     private Context context = null;
     private AppManager appManager = null;
+    private WebView webView = null;
 
     private Random random =new Random();
 
@@ -339,7 +351,7 @@ public class AppInstaller {
         AppInfo info = null;
         String downloadPkgPath = null;
         String originUrl = url;
-
+        String epkDid = null;
         sendInstallingMessage("start", "", originUrl);
 
         if (url.startsWith("asset://")) {
@@ -400,6 +412,16 @@ public class AppInstaller {
                 throw new Exception("Failed to verify EPK DID signature!");
             }
 
+            //Get did from did_url
+            int index = did_url.indexOf("/");
+            if (index == -1) {
+                index = did_url.indexOf("#");
+            }
+            if (index != -1) {
+                did_url = did_url.substring(0, index);
+            }
+            epkDid = did_url;
+
             Log.d("AppInstaller", "The EPK was signed by (Public Key): " + public_key);
             sendInstallingMessage("verified", "", originUrl);
         }
@@ -433,6 +455,10 @@ public class AppInstaller {
         else {
             Log.d("AppInstaller", "install() - No old info - nothing to uninstall or delete");
             info.built_in = 0;
+        }
+
+        if (epkDid != null) {
+            info.did = epkDid;
         }
 
         if (oldInfo != null && oldInfo.launcher == 1) {
@@ -475,6 +501,45 @@ public class AppInstaller {
         return true;
     }
 
+    private void clearLocalStorage(String did, String packageId) {
+        String url = "http://" + Utility.getCustomHostname(did, packageId);
+
+        //Clear cookies
+        CookieManager cm = CookieManager.getInstance();
+        String cookies = cm.getCookie(url);
+        if (cookies != null) {
+            for (String cookie : cookies.split("; ")) {
+                cm.setCookie(url, cookie.split("=")[0] + "=");
+            }
+        }
+
+        appManager.activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (webView == null) {
+                    webView = new WebView(appManager.activity);
+                    WebSettings settings = webView.getSettings();
+                    settings.setJavaScriptEnabled(true);
+                    settings.setDatabaseEnabled(true);
+                    settings.setDomStorageEnabled(true);
+                    webView.setWebViewClient(new WebViewClient() {
+                        @Override
+                        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                            String str = "<script>localStorage.clear();</script>";
+                            InputStream data = new ByteArrayInputStream(str.getBytes());
+                            WebResourceResponse response = new WebResourceResponse("text/html", "UTF-8", data);
+                            return response;
+                        }
+
+                    });
+                }
+                webView.loadUrl(url);
+                webView.clearHistory();
+            }
+        });
+
+    }
+
     public void unInstall(AppInfo info, boolean update)  throws Exception {
         if (info == null) {
             throw new Exception("No such app!");
@@ -494,10 +559,17 @@ public class AppInstaller {
         deleteAllFiles(root);
         if (!update) {
             Log.d("AppInstaller", "unInstall() - update = false - deleting all files");
-            root = new File(appManager.getDataPath(info.app_id));
-            deleteAllFiles(root);
-            root = new File(appManager.getTempPath(info.app_id));
-            deleteAllFiles(root);
+            String packageId = info.app_id;
+            ArrayList<IdentityEntry> entries = DIDSessionManager.getSharedInstance().getIdentityEntries();
+            for (IdentityEntry entry: entries) {
+                String did = entry.didString;
+                AppManager.AppPathInfo pathInfo = appManager.getPathInfo(did);
+                root = new File(appManager.getDataPath(packageId, pathInfo));
+                deleteAllFiles(root);
+                root = new File(appManager.getTempPath(packageId, pathInfo));
+                deleteAllFiles(root);
+                clearLocalStorage(did, packageId);
+            }
         }
     }
 
@@ -738,9 +810,34 @@ public class AppInstaller {
             for (int i = 0; i < array.length(); i++) {
                 JSONObject jobj = array.getJSONObject(i);
                 if (jobj.has("action")) {
-                    appInfo.addIntentFilter(jobj.getString("action"));
+                    String action = jobj.getString("action");
+                    String startupMode = AppManager.STARTUP_APP;
+                    if (jobj.has("startup_mode")) {
+                        startupMode = jobj.getString("startup_mode");
+                        if (!AppManager.isStartupMode(startupMode)) {
+                            throw new Exception("intent_filters startup_mode '" + startupMode + "' is invalid!");
+                        }
+                    }
+                    String serviceName = null;
+                    if (startupMode.equals("service") && jobj.has("service_name")) {
+                        serviceName = jobj.getString("service_name");
+                    }
+                    appInfo.addIntentFilter(action, startupMode, serviceName);
                 }
             }
+        }
+
+        if (json.has("startup_service")) {
+            JSONArray array = json.getJSONArray("startup_service");
+            Log.d(LOG_TAG, "Manifest parser: parsing services for "+appInfo.app_id+". "+array.length()+" services found");
+            for (int i = 0; i < array.length(); i++) {
+                String name = array.getString(i);
+                appInfo.addStartService(name);
+            }
+        }
+
+        if (json.has(AppInfo.DID)) {
+            appInfo.did = json.getString(AppInfo.DID);
         }
 
         appInfo.install_time = System.currentTimeMillis() / 1000;

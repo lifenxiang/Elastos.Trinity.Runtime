@@ -32,9 +32,11 @@ function finalize() {
     fs.copyFileSync(`${__dirname}/vscodeconfig/tasks.json`, path.join(vsCodeDir, "tasks.json"));
 
     // TODO: MOVE THIS
-    fs.copyFileSync(path.join(platformSrcDir, "index.html"), path.join(platformWwwOutputDir, "index.html"));
+    if (fs.existsSync(platformWwwOutputDir)) {
+        fs.copyFileSync(path.join(platformSrcDir, "index.html"), path.join(platformWwwOutputDir, "index.html"));
 	
-	fs.copyFileSync(path.join(platformSrcDir, "cdv-electron-settings.json"), path.join(platformWwwOutputDir, "cdv-electron-settings.json"));
+        fs.copyFileSync(path.join(platformSrcDir, "cdv-electron-settings.json"), path.join(platformWwwOutputDir, "cdv-electron-settings.json"));
+    }
 	
 
     console.log("Copies completed.")
@@ -42,20 +44,24 @@ function finalize() {
 
 module.exports = () => {
     return new Promise((resolve, reject)=>{
-        let tsConfig = path.join(`${__dirname}`, "../../platform_src/electron/main/tsconfig.json");
-        let transpileCommand = 'tsc --build '+tsConfig+" --force";
-        console.log("Executing shell command: "+transpileCommand);
-        exec(transpileCommand, (err, stdout, stderr) => {
-            if (err) {
-                console.error(err)
-            }
-            else {
-                console.log("Transpile success.")
-            }
 
-            finalize();
-            resolve();
-        });
+        let platformWwwPath = `${__dirname}/../../platforms/electron/platform_www`;
+        if (fs.existsSync(platformWwwPath)) {
+            let tsConfig = path.join(`${__dirname}`, "../../platform_src/electron/main/tsconfig.json");
+            let transpileCommand = 'tsc --build '+tsConfig+" --force";
+            console.log("Executing shell command: "+transpileCommand);
+            exec(transpileCommand, (err, stdout, stderr) => {
+                if (err) {
+                    console.error(err)
+                }
+                else {
+                    console.log("Transpile success.")
+                }
+
+                finalize();
+                resolve();
+            });
+        }
 
         //return;
         

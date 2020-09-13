@@ -17,6 +17,7 @@ import org.elastos.did.VerifiableCredential;
 import org.elastos.did.exception.DIDException;
 import org.elastos.did.exception.DIDResolveException;
 import org.elastos.trinity.plugins.did.DIDPlugin;
+import org.elastos.trinity.runtime.R;
 import org.elastos.trinity.runtime.contactnotifier.comm.CarrierHelper;
 import org.elastos.trinity.runtime.contactnotifier.db.DatabaseAdapter;
 import org.elastos.trinity.runtime.contactnotifier.db.ReceivedInvitation;
@@ -59,7 +60,7 @@ public class ContactNotifier {
         void onStatusChanged(Contact contact, OnlineStatus status);
     }
 
-    private ContactNotifier(Context context, String didSessionDID) throws CarrierException {
+    private ContactNotifier(Context context, String didSessionDID) throws Exception {
         // Initialize the DID back end as we will need it. Though it's not clean to call the DID plugin
         // Directly for this. Need to create a DID class inside runtime.
         try {
@@ -83,7 +84,7 @@ public class ContactNotifier {
         listenToCarrierHelperEvents();
     }
 
-    public static ContactNotifier getSharedInstance(Context context, String did) throws CarrierException {
+    public static ContactNotifier getSharedInstance(Context context, String did) throws Exception {
         if (instances.containsKey(did))
             return instances.get(did);
         else {
@@ -311,7 +312,7 @@ public class ContactNotifier {
     /**
      * DID Session sandboxed preferences
      */
-    private SharedPreferences getPrefs() {
+    public SharedPreferences getPrefs() {
         return context.getSharedPreferences("CONTACT_NOTIFIER_PREFS_"+didSessionDID, Context.MODE_PRIVATE);
     }
 
@@ -340,13 +341,13 @@ public class ContactNotifier {
                                         if (name != null) {
                                             // Save contact name to database for better display later on
                                             addedContact.setName(name);
-                                            sendLocalNotification(did,"newcontact-"+did, name+" was just added as a new contact. Touch to view his/her profile.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+                                            sendLocalNotification(did,"newcontact-"+did, context.getString(R.string.notification_contact_added), name + context.getString(R.string.notification_name_was_added_new), targetUrl, FRIENDS_APP_PACKAGE_ID);
                                             notificationSent = true;
                                         }
                                     }
 
                                     if (!notificationSent) {
-                                        sendLocalNotification(did,"newcontact-"+did, "Someone was just added as a new contact. Touch to view his/her profile.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+                                        sendLocalNotification(did,"newcontact-"+did, context.getString(R.string.notification_contact_added), context.getString(R.string.notification_someone_was_added_new), targetUrl, FRIENDS_APP_PACKAGE_ID);
                                     }
                                 });
                             }
@@ -368,9 +369,9 @@ public class ContactNotifier {
                         String targetUrl = "https://scheme.elastos.org/viewfriendinvitation?did="+did+"&invitationid="+invitationID;
 
                         if (name != null)
-                            sendLocalNotification(did,"contactreq-"+did, name+" wants to add you as a contact. Touch to view more details.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+                            sendLocalNotification(did,"contactreq-"+did, context.getString(R.string.notification_contact_request), name + context.getString(R.string.notification_name_want_add), targetUrl, FRIENDS_APP_PACKAGE_ID);
                         else
-                            sendLocalNotification(did,"contactreq-"+did, "Someone wants to add you as a contact. Touch to view more details.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+                            sendLocalNotification(did,"contactreq-"+did, context.getString(R.string.notification_contact_request), context.getString(R.string.notification_someone_want_add), targetUrl, FRIENDS_APP_PACKAGE_ID);
                     });
                 }
             }
@@ -392,7 +393,7 @@ public class ContactNotifier {
                 if (contact != null) {
                     // Make sure this contact is not blocked by us
                     if (!contact.notificationsBlocked) {
-                        sendLocalNotification(contact.did,remoteNotification.key, remoteNotification.title, remoteNotification.url);
+                        sendLocalNotification(contact.did,remoteNotification.key, remoteNotification.title, remoteNotification.message, remoteNotification.url);
                     }
                     else {
                         Log.w(ContactNotifier.LOG_TAG, "Not delivering remote notification because contact is blocked");
@@ -481,10 +482,10 @@ public class ContactNotifier {
             if (name != null) {
                 // Save name to database for later use
                 addedContact.setName(name);
-                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, name + " has accepted your invitation. Touch to view details.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, context.getString(R.string.notification_contact_invitation_accepted),name + context.getString(R.string.notification_name_accept_invitation), targetUrl, FRIENDS_APP_PACKAGE_ID);
             }
             else {
-                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, "Your friend has accepted your invitation. Touch to view details.", targetUrl, FRIENDS_APP_PACKAGE_ID);
+                sendLocalNotification(invitation.did,"friendaccepted-"+invitation.did, context.getString(R.string.notification_contact_invitation_accepted), context.getString(R.string.notification_someone_accept_invitation), targetUrl, FRIENDS_APP_PACKAGE_ID);
             }
 
             // Notify the listeners
@@ -533,19 +534,20 @@ public class ContactNotifier {
         return PresenceStatus.Away;
     }
 
-    void sendLocalNotification(String relatedRemoteDID, String key, String title, String url) {
-        sendLocalNotification(relatedRemoteDID, key, title, url, "system");
+    void sendLocalNotification(String relatedRemoteDID, String key, String title, String message, String url) {
+        sendLocalNotification(relatedRemoteDID, key, title, message, url, "system");
     }
 
-    void sendLocalNotification(String relatedRemoteDID, String key, String title, String url, String appId) {
-        NotificationRequest testNotif = new NotificationRequest();
-        testNotif.key = key;
-        testNotif.title = title;
-        testNotif.emitter = relatedRemoteDID;
-        testNotif.url = url;
+    void sendLocalNotification(String relatedRemoteDID, String key, String title, String message, String url, String appId) {
+        NotificationRequest notification = new NotificationRequest();
+        notification.key = key;
+        notification.title = title;
+        notification.message = message;
+        notification.emitter = relatedRemoteDID;
+        notification.url = url;
         try {
             // NOTE: appid can't be null because the notification manager uses it for several things.
-            NotificationManager.getSharedInstance().sendNotification(testNotif, appId);
+            NotificationManager.getSharedInstance(this.didSessionDID).sendNotification(notification, appId);
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -61,7 +61,7 @@
     }
 
     func close() throws {
-        try AppManager.getShareInstance().close(self.appId);
+        try AppManager.getShareInstance().close(self.appId, AppManager.STARTUP_APP, nil);
     }
 
     func getInfo() throws -> AppInfo? {
@@ -71,14 +71,18 @@
     func sendIntent(_ action: String, _ params: String, _ options: [String: Any]?, _ callback: ((String, String?, String)->(Void))?) throws {
         let currentTime = Int64(Date().timeIntervalSince1970);
         var toId: String? = nil;
+        var silent: Bool? = false;
 
         if (options != nil) {
             if (options!["appId"] != nil) {
                 toId = options!["appId"] as? String ?? "";
             }
+            if (options!["silentResponse"] != nil) {
+                silent = options!["silentResponse"] as? Bool ?? false;
+            }
         }
 
-        let info = IntentInfo(action, params, self.appId!, toId, currentTime, callback);
+        let info = IntentInfo(action, params, getModeId(), toId, currentTime, silent!, callback);
         try? IntentManager.getShareInstance().doIntent(info);
     }
 
@@ -86,7 +90,7 @@
         let url = URL(string: urlString)
 
         if (IntentManager.checkTrinityScheme(urlString)) {
-            try IntentManager.getShareInstance().sendIntentByUri(url!, self.appId!);
+            try IntentManager.getShareInstance().sendIntentByUri(url!, getModeId());
         }
         else if (shouldOpenExternalIntentUrl(urlString)) {
             IntentManager.openUrl(url!);
@@ -166,7 +170,7 @@
 
         self.commandDelegate.send(result, callbackId: command.callbackId)
     }
-    
+
     func sendCallback(_ command: CDVInvokedUrlCommand, _ status: CDVCommandStatus, _ keepCallback:Bool, _ retAsString: String?) {
         var result: CDVPluginResult? = nil;
         if (status != CDVCommandStatus_NO_RESULT) {
@@ -213,6 +217,7 @@
     func launcher(_ command: CDVInvokedUrlCommand) {
         do {
             try launcher();
+            try AppManager.getShareInstance().sendLauncherMessageMinimize(getModeId());
             self.success(command, "ok");
         } catch AppError.error(let err) {
             self.error(command, err);
@@ -221,9 +226,13 @@
         }
     }
 
-    @objc(start:)
-    func start(_ command: CDVInvokedUrlCommand) {
-        let id = command.arguments[0] as? String ?? ""
+    private func startByMode(_ command: CDVInvokedUrlCommand,
+        _ startupMode: String) {
+        let id = command.arguments[0] as? String ?? "";
+        var serviceName: String? = nil;
+        if (startupMode == AppManager.STARTUP_SERVICE) {
+            serviceName = command.arguments[1] as? String ?? "";
+        }
 
         if (id == "") {
             self.error(command, "Invalid id.")
@@ -236,7 +245,7 @@
         }
         else {
             do {
-                try AppManager.getShareInstance().start(id);
+                try AppManager.getShareInstance().start(id, startupMode, serviceName);
                 self.success(command, "ok");
             } catch AppError.error(let err) {
                 self.error(command, err);
@@ -246,10 +255,15 @@
         }
     }
 
+    @objc(start:)
+    func start(_ command: CDVInvokedUrlCommand) {
+        startByMode(command, AppManager.STARTUP_APP);
+    }
+
     @objc(close:)
     func close(_ command: CDVInvokedUrlCommand) {
         do {
-            try AppManager.getShareInstance().close(self.appId);
+            try AppManager.getShareInstance().close(self.appId, AppManager.STARTUP_APP, nil);
             self.success(command, "ok");
         } catch AppError.error(let err) {
             self.error(command, err);
@@ -268,7 +282,7 @@
         }
 
         do {
-            try AppManager.getShareInstance().close(appId);
+            try AppManager.getShareInstance().close(appId, AppManager.STARTUP_APP, nil);
             self.success(command, "ok");
         } catch AppError.error(let err) {
             self.error(command, err);
@@ -440,7 +454,7 @@
 
     @objc(sendMessage:)
     func sendMessage(_ command: CDVInvokedUrlCommand) {
-        let toId = command.arguments[0] as? String ?? "";
+        var toId = command.arguments[0] as? String ?? "";
         let type = command.arguments[1] as? Int ?? -1;
         let msg = command.arguments[2] as? String ?? "";
 
@@ -449,8 +463,18 @@
             return
         }
 
+        if (toId.hasPrefix("#")) {
+            if (toId.hasPrefix("#service:") || AppManager.isStartupMode(toId.subStringFrom(index: 1))) {
+                toId = appId + toId;
+            }
+            else {
+                self.error(command, "It is invalid startup mode!");
+                return;
+            }
+        }
+
         do {
-            try AppManager.getShareInstance().sendMessage(toId, type, msg, self.appId!);
+            try AppManager.getShareInstance().sendMessage(toId, type, msg, getModeId());
             self.success(command, "ok");
         } catch AppError.error(let err) {
             self.error(command, err);
@@ -499,14 +523,18 @@
         let currentTime = Int64(Date().timeIntervalSince1970);
         let options = command.arguments[2] as? [String: Any] ?? nil
         var toId: String? = nil;
+        var silent: Bool? = false;
 
         if (options != nil) {
             if (options!["appId"] != nil) {
                 toId = options!["appId"] as? String ?? "";
             }
+            if (options!["silentResponse"] != nil) {
+                silent = options!["silentResponse"] as? Bool ?? false;
+            }
         }
 
-        let info = IntentInfo(action, params, self.appId!, toId, currentTime, command.callbackId);
+        let info = IntentInfo(action, params, getModeId(), toId, currentTime, silent!, command.callbackId);
 
         do {
             try IntentManager.getShareInstance().doIntent(info);
@@ -526,7 +554,7 @@
 
         if (IntentManager.checkTrinityScheme(urlString)) {
             do {
-                try IntentManager.getShareInstance().sendIntentByUri(url!, self.appId!);
+                try IntentManager.getShareInstance().sendIntentByUri(url!, getModeId());
                 self.success(command, "ok");
             } catch AppError.error(let err) {
                 self.error(command, err);
@@ -547,7 +575,7 @@
 //        let action = command.arguments[0] as? String ?? "";
         let result = command.arguments[1] as? String ?? "";
         let intentId = command.arguments[2] as? Int64 ?? -1
-        
+
         do {
             try IntentManager.getShareInstance().setDoingResponse(intentId);
         } catch AppError.error(let err) {
@@ -555,12 +583,13 @@
         } catch let error {
             self.error(command, error.localizedDescription);
         }
-        
+
         self.sendCallback(command, CDVCommandStatus_NO_RESULT, true, nil);
-        
+        let modeId = getModeId()!;
+
         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(100), execute: {
             do {
-                try IntentManager.getShareInstance().sendIntentResponse(result, intentId, self.appId!);
+                try IntentManager.getShareInstance().sendIntentResponse(result, intentId, modeId);
                 self.sendCallback(command, CDVCommandStatus_OK, false, "ok");
             } catch AppError.error(let err) {
                 self.sendCallback(command, CDVCommandStatus_ERROR, false, err);
@@ -576,11 +605,11 @@
         let result = CDVPluginResult(status: CDVCommandStatus_NO_RESULT);
         result?.setKeepCallbackAs(true);
         self.commandDelegate.send(result, callbackId: command.callbackId)
-        try? IntentManager.getShareInstance().setIntentReady(self.appId!);
+        try? IntentManager.getShareInstance().setIntentReady(getModeId());
     }
 
     @objc func hasPendingIntent(_ command: CDVInvokedUrlCommand) {
-        let ret = IntentManager.getShareInstance().getIntentCount(self.appId!) != 0;
+        let ret = IntentManager.getShareInstance().getIntentCount(getModeId()) != 0;
         self.success(command, ret.description);
     }
 
@@ -605,7 +634,7 @@
         else if (self.intentListener != nil) {
             DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(100), execute: {
                 self.intentListener!(info.action, info.params, info.fromId, info.intentId);
-            })  
+            })
         }
     }
 
@@ -614,7 +643,7 @@
             let ret = [
                 "action": info.action,
                 "result": info.params,
-                "from": info.fromId
+                "from": info.toId
             ] as [String : Any?]
 
             let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: ret as [String : Any]);
@@ -769,11 +798,11 @@
                                         message: msg,
                                         preferredStyle: UIAlertController.Style.alert)
         if (cancel) {
-            let cancelAlertAction = UIAlertAction(title: "Cancel", style:
+            let cancelAlertAction = UIAlertAction(title: "cancel".localized, style:
                 UIAlertAction.Style.cancel, handler: doCancelHandler)
             alertController.addAction(cancelAlertAction)
         }
-        let sureAlertAction = UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: doOKHandler)
+        let sureAlertAction = UIAlertAction(title: "ok".localized, style: UIAlertAction.Style.default, handler: doOKHandler)
         alertController.addAction(sureAlertAction)
 
         DispatchQueue.main.async {
@@ -796,6 +825,11 @@
     @objc func setVisible(_ command: CDVInvokedUrlCommand) {
         var visible = command.arguments[0] as? String ?? "show"
 
+        if (startupMode != AppManager.STARTUP_APP) {
+            self.error(command, "'" + startupMode + "' mode can't setVisible.");
+            return;
+        }
+
         if (visible != "hide") {
             visible = "show";
         }
@@ -805,7 +839,7 @@
 
             appManager.setAppVisible(self.appId, visible);
             if (visible == "show") {
-                try appManager.start(self.appId);
+                try appManager.start(self.appId, AppManager.STARTUP_APP, nil);
             }
             else {
                 try appManager.loadLauncher();
@@ -923,7 +957,95 @@
     @objc func broadcastMessage(_ command: CDVInvokedUrlCommand) {
         let type = command.arguments[0] as? Int ?? 0;
         let msg = command.arguments[1] as? String ?? "";
-        AppManager.getShareInstance().broadcastMessage(type, msg, self.appId);
+        AppManager.getShareInstance().broadcastMessage(type, msg, getModeId());
         self.success(command, "ok");
     }
+
+    @objc func getStartupMode(_ command: CDVInvokedUrlCommand) {
+        var ret = [String : String]();
+        ret["startupMode"] = self.startupMode;
+        if (startupMode == AppManager.STARTUP_SERVICE) {
+            ret["serviceName"] = self.serviceName;
+        }
+        self.success(command, retAsDict: ret);
+    }
+
+    @objc func startBackgroundService(_ command: CDVInvokedUrlCommand) {
+        let serviceName = command.arguments[0] as? String ?? "";
+
+        do {
+            try AppManager.getShareInstance().start(packageId, AppManager.STARTUP_SERVICE, serviceName);
+            self.success(command, "ok");
+        } catch AppError.error(let err) {
+            self.error(command, err);
+        } catch let error {
+            self.error(command, error.localizedDescription);
+        }
+    }
+
+    @objc func stopBackgroundService(_ command: CDVInvokedUrlCommand) {
+        let serviceName = command.arguments[0] as? String ?? "";
+
+        do {
+            try AppManager.getShareInstance().close(packageId, AppManager.STARTUP_SERVICE, serviceName);
+            self.success(command, "ok");
+        } catch AppError.error(let err) {
+            self.error(command, err);
+        } catch let error {
+            self.error(command, error.localizedDescription);
+        }
+    }
+
+    @objc func getRunningServiceList(_ command: CDVInvokedUrlCommand) {
+        let list = AppManager.getShareInstance().getServiceRunningList(self.appId);
+        self.success(command, retAsArray: filterList(list));
+    }
+
+    @objc func startAppBackgroundService(_ command: CDVInvokedUrlCommand) {
+        startByMode(command, AppManager.STARTUP_SERVICE);
+    }
+
+    @objc func stopAppBackgroundService(_ command: CDVInvokedUrlCommand) {
+        let id = command.arguments[0] as? String ?? "";
+        let serviceName = command.arguments[1] as? String ?? "";
+        do {
+            try AppManager.getShareInstance().close(id, AppManager.STARTUP_SERVICE, serviceName);
+            self.success(command, "ok");
+        } catch AppError.error(let err) {
+            self.error(command, err);
+        } catch let error {
+            self.error(command, error.localizedDescription);
+        }
+    }
+
+    @objc func stopAllBackgroundService(_ command: CDVInvokedUrlCommand) {
+        do {
+            try AppManager.getShareInstance().closeAllServices();
+            self.success(command, "ok");
+        } catch AppError.error(let err) {
+            self.error(command, err);
+        } catch let error {
+            self.error(command, error.localizedDescription);
+        }
+    }
+
+    @objc func getAllRunningServiceList(_ command: CDVInvokedUrlCommand) {
+        let list = AppManager.getShareInstance().getAllServiceRunningList();
+        self.success(command, retAsArray: filterList(list));
+    }
+
+    @objc func getBuildInfo(_ command: CDVInvokedUrlCommand) {
+        var ret = [String : String]();
+
+        let type = ConfigManager.getShareInstance().getStringValue("build.type", "elastOS");
+        ret["type"] = type;
+
+        let variant = ConfigManager.getShareInstance().getStringValue("build.variant", "");
+        ret["variant"] = variant;
+
+        ret["platform"] = "ios";
+
+        self.success(command, retAsDict: ret);
+    }
+
  }

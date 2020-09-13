@@ -29,7 +29,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 public class ManagerDBHelper extends SQLiteOpenHelper {
-    private static final int DATABASE_VERSION = 5;
+    private static final int DATABASE_VERSION = 7;
 
     private static final String DATABASE_NAME = "manager.db";
     public static final String AUTH_PLUGIN_TABLE = "auth_plugin";
@@ -43,6 +43,7 @@ public class ManagerDBHelper extends SQLiteOpenHelper {
     public static final String SETTING_TABLE = "setting";
     public static final String PREFERENCE_TABLE = "preference";
     public static final String INTENT_FILTER_TABLE = "intent";
+    public static final String SERVICE_TABLE = "service";
     public static final String APP_TABLE = "app";
 
     public static final String KEY = "key";
@@ -118,7 +119,9 @@ public class ManagerDBHelper extends SQLiteOpenHelper {
 
         strSQL =  "create table " + INTENT_FILTER_TABLE + "(tid integer primary key autoincrement, " +
                 AppInfo.APP_ID + " varchar(128) NOT NULL, " +
-                AppInfo.ACTION + " varchar(64) NOT NULL)";
+                AppInfo.ACTION + " varchar(64) NOT NULL, " +
+                AppInfo.STARTUP_MODE + " varchar(32), " +
+                AppInfo.SERVICE_NAME + " varchar(64))";
         db.execSQL(strSQL);
 
         strSQL =  "create table " + SETTING_TABLE + "(tid integer primary key autoincrement, " +
@@ -132,8 +135,14 @@ public class ManagerDBHelper extends SQLiteOpenHelper {
              VALUE + " varchar(2048) NOT NULL)";
         db.execSQL(strSQL);
 
+         strSQL =  "create table " + SERVICE_TABLE + "(tid integer primary key autoincrement, " +
+                 AppInfo.APP_ID + " varchar(128) NOT NULL, " +
+                 AppInfo.STARTUP_SERVICE + " varchar(128) NOT NULL)";
+         db.execSQL(strSQL);
+
         strSQL = "create table " + APP_TABLE + "(tid integer primary key autoincrement, " +
                 AppInfo.APP_ID + " varchar(128) UNIQUE NOT NULL, " +
+                AppInfo.DID + " varchar(128), " +
                 AppInfo.VERSION + " varchar(32) NOT NULL, " +
                 AppInfo.VERSION_CODE + " integer, " +
                 AppInfo.NAME + " varchar(128) NOT NULL, " +
@@ -189,6 +198,14 @@ public class ManagerDBHelper extends SQLiteOpenHelper {
             Log.d("ManagerDBHelper", "Upgrading database to v5");
             upgradeToV5(db);
         }
+        if (oldVersion < 6) {
+            Log.d("ManagerDBHelper", "Upgrading database to v6");
+            upgradeToV6(db);
+        }
+        if (oldVersion < 7) {
+            Log.d("ManagerDBHelper", "Upgrading database to v7");
+            upgradeToV7(db);
+        }
     }
 
     @Override
@@ -242,4 +259,35 @@ public class ManagerDBHelper extends SQLiteOpenHelper {
             e.printStackTrace();
         }
     }
+
+    // 20200618 - Added SERVICE_TABLE and Changed INTENT_FILTER_TABLE
+    private void upgradeToV6(SQLiteDatabase db) {
+        try {
+            String strSQL =  "create table " + SERVICE_TABLE + "(tid integer primary key autoincrement, " +
+                    AppInfo.APP_ID + " varchar(128) NOT NULL, " +
+                    AppInfo.STARTUP_SERVICE + " varchar(128) NOT NULL)";
+            db.execSQL(strSQL);
+
+            strSQL = "ALTER TABLE " + INTENT_FILTER_TABLE + " ADD COLUMN " + AppInfo.STARTUP_MODE + " varchar(32)";
+            db.execSQL(strSQL);
+
+            strSQL = "ALTER TABLE " + INTENT_FILTER_TABLE + " ADD COLUMN " + AppInfo.SERVICE_NAME + " varchar(64)";
+            db.execSQL(strSQL);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // 20200825 - Added "did" field
+    private void upgradeToV7(SQLiteDatabase db) {
+        try {
+            String strSQL = "ALTER TABLE " + APP_TABLE + " ADD COLUMN " + AppInfo.DID + " varchar(128)";
+            db.execSQL(strSQL);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            // Do nothing, intercept SQL errors - in case we try to apply an upgrade again after a strange downgrade from android
+            // (happened to KP many times - unknown reason - 2020.03)
+        }
+    }
+
 }

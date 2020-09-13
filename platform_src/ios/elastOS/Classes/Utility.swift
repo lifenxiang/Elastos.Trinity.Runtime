@@ -150,17 +150,17 @@ func getAssetPath(_ url: String) -> String {
                                      message: msg,
                                      preferredStyle: UIAlertController.Style.alert)
      if (cancel) {
-         let cancelAlertAction = UIAlertAction(title: "Cancel", style:
+         let cancelAlertAction = UIAlertAction(title: "cancel".localized, style:
              UIAlertAction.Style.cancel, handler: doCancelHandler)
          alertController.addAction(cancelAlertAction)
      }
-     let sureAlertAction = UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: doOKHandler)
+     let sureAlertAction = UIAlertAction(title: "ok".localized, style: UIAlertAction.Style.default, handler: doOKHandler)
      alertController.addAction(sureAlertAction)
 
     DispatchQueue.main.async { AppManager.getShareInstance().mainViewController.present(alertController, animated: true, completion: nil)
     }
  }
- 
+
  func getCurrentLanguage() -> String {
      let preferredLang = NSLocale.preferredLanguages.first!
 
@@ -173,7 +173,7 @@ func getAssetPath(_ url: String) -> String {
          return "en"
      }
  }
- 
+
  func getCustomHostname(_ did: String?, _ appId: String) -> String {
      var hostname = "";
 
@@ -184,7 +184,7 @@ func getAssetPath(_ url: String) -> String {
 
     return hostname.lowercased().encodingURL();
  }
- 
+
  func getImageFromURL(_ fileUrl: String) -> UIImage? {
     let url = URL(string: fileUrl)
     let data = try? Data(contentsOf: url!)
@@ -248,8 +248,24 @@ func getAssetPath(_ url: String) -> String {
             return false;
         }
     }
+    
+    func subStringFrom(index: Int) -> String {
+        let temporaryString: String = self
+        let temporaryIndex = temporaryString.index(temporaryString.startIndex, offsetBy: index)
+        return String(temporaryString[temporaryIndex...])
+    }
+    
+    func indexOf(sub:String, backwards:Bool = false)->Int {
+        var pos = -1
+        if let range = range(of:sub, options: backwards ? .backwards : .literal ) {
+            if !range.isEmpty {
+                pos = self.distance(from:startIndex, to:range.lowerBound)
+            }
+        }
+        return pos
+    }
  }
- 
+
  extension Bool {
     func toString() -> String {
         return self.description;
@@ -434,3 +450,4 @@ func getAssetPath(_ url: String) -> String {
         bounces = false
     }
  }
+

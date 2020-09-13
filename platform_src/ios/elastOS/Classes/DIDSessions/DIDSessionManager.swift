@@ -75,7 +75,7 @@ public class DIDSessionManager {
     public func signOut() throws {
         if let signedInIdentity = try? getSignedInIdentity() {
             // Lock password manager session database
-            PasswordManager.getSharedInstance().lockMasterPassword(did: signedInIdentity.didString)
+            try PasswordManager.getSharedInstance().lockMasterPassword(did: signedInIdentity.didString)
         }
             
         try dbAdapter.setDIDSessionSignedInIdentity(entry: nil)
@@ -93,7 +93,7 @@ public class DIDSessionManager {
         // Retrieve the master password
         let passwordInfoKey = "didstore-"+signedInIdentity.didStoreId
         let appId = "org.elastos.trinity.dapp.didsession" // act as the did session app to be able to retrieve a DID store password
-        try PasswordManager.getSharedInstance().getPasswordInfo(key: passwordInfoKey, did: signedInIdentity.didString, appID: appId, onPasswordInfoRetrieved: { info in
+        try PasswordManager.getSharedInstance().getPasswordInfo(key: passwordInfoKey, did: signedInIdentity.didString, appID: appId, options: PasswordGetInfoOptions(), onPasswordInfoRetrieved: { info in
             
             let genericPasswordInfo = info as? GenericPasswordInfo
             if genericPasswordInfo == nil || genericPasswordInfo!.password == nil || genericPasswordInfo!.password == "" {
@@ -108,7 +108,7 @@ public class DIDSessionManager {
 
                 do {
                     class AuthDIDAdapter : DIDAdapter {
-                        func createIdTransaction(_ payload: String, _ memo: String?, _ confirms: Int, _ callback: @escaping TransactionCallback) {
+                        func createIdTransaction(_ payload: String, _ memo: String?) {
                         }
                     }
                     

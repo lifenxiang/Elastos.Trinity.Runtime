@@ -162,4 +162,4 @@ require("./DIDSessionManagerPlugin");
 require("./NotificationManagerPlugin");
 require("./PasswordManagerPlugin");
 require("./TitleBarPlugin");
-require("./plugins_main/Carrier/CarrierPlugin");
+//require("./plugins_main/Carrier/CarrierPlugin");

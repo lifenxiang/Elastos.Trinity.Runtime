@@ -46,7 +46,7 @@
         }
 
         AppViewController.originalSettings = self.settings;
-        self.settings.setValue(getCustomHostname(did, id), forKey: "hostname");
+        self.settings.setValue(getCustomHostname(did, packageId), forKey: "hostname");
 
         if(self.wwwFolderName == nil){
             self.wwwFolderName = "www";

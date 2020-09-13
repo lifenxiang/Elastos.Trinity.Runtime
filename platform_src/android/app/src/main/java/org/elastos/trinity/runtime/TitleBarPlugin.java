@@ -167,6 +167,9 @@ public class TitleBarPlugin extends TrinityPlugin {
     private void addOnItemClickedListener(JSONArray args, CallbackContext callbackContext) throws Exception {
         String functionString = args.getString(0);
         getTitleBar().addOnItemClickedListener(functionString, (menuItem)->{
+            if (menuItem == null)
+                return;
+
             try {
                 PluginResult res = new PluginResult(PluginResult.Status.OK, menuItem.toJSONObject());
                 res.setKeepCallback(true);

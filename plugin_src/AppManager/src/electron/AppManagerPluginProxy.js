@@ -173,6 +173,10 @@ var AppManagerPluginProxy = {
 
     getAllRunningServiceList: async function(success, error, opts) {
         await window.appManagerImpl.getAllRunningServiceList(success, error, opts);
+    },
+	
+	getBuildInfo: async function(success, error, opts) {
+        await window.appManagerImpl.getBuildInfo(success, error, opts);
     }
 };
 

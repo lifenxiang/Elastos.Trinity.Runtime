@@ -38,7 +38,7 @@ class TitleBarPlugin : TrinityPlugin {
     }
 
     private func getTitleBar() -> TitleBarView {
-        let viewController = AppManager.getShareInstance().getViewControllerById(self.appId);
+        let viewController = AppManager.getShareInstance().getViewControllerById(self.getModeId());
         return viewController!.getTitlebar();
     }
 

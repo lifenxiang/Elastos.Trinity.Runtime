@@ -166,6 +166,8 @@ declare namespace AppManagerPlugin {
     type AppInfo = {
         /** The app id. */
         id: string;
+        /** The app did. */
+        did: string;
         /** The app version. */
         version: string;
         /** The app version code. */
@@ -274,6 +276,8 @@ declare namespace AppManagerPlugin {
     type IntentOptions = {
         /** The target app package id, in case the intent should be sent to a specific app instead of being brodcast. */
         appId?: string
+        /** If true, the calling app is not displayed on top of other apps when receiving the intent response. Default: false */
+        silentResponse?: boolean
     }
 
     /**

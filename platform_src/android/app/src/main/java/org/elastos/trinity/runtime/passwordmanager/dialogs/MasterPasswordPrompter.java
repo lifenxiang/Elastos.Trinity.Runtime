@@ -86,7 +86,7 @@ public class MasterPasswordPrompter extends AlertDialog {
             return this;
         }
 
-        public void prompt(boolean passwordWasWrong) {
+        public Builder prompt(boolean passwordWasWrong) {
             Context localizedContext = PreferenceManager.getShareInstance().getLocalizedContext(activity);
             View view = LayoutInflater.from(localizedContext).inflate(R.layout.dialog_password_manager_prompt, null);
 
@@ -125,8 +125,7 @@ public class MasterPasswordPrompter extends AlertDialog {
                 lblWrongPassword.setVisibility(View.GONE);
 
             btCancel.setOnClickListener(v -> {
-                alertDialog.dismiss();
-                onCancelClickedListener.onCancelClicked();
+                cancel();
             });
 
             btNext.setOnClickListener(v -> {
@@ -218,6 +217,13 @@ public class MasterPasswordPrompter extends AlertDialog {
             alertDialog = alertDialogBuilder.create();
             alertDialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
             alertDialog.show();
+
+            return this;
+        }
+
+        public void cancel() {
+            alertDialog.dismiss();
+            onCancelClickedListener.onCancelClicked();
         }
 
         private void setTextPasswordVisible(boolean shouldShow) {

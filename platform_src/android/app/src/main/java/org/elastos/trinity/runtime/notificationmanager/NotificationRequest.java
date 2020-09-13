@@ -8,17 +8,21 @@ public class NotificationRequest {
     public String key = null;
     /** Title to be displayed as the main message on the notification. */
     public String title = null;
+    /** Detailed message for this notification. */
+    public String message = null;
     /** Intent URL emitted when the notification is clicked. */
     public String url = null;
     /** Contact DID emitting this notification, in case of a remotely received notification. */
     public String emitter = null;
 
     public static NotificationRequest fromJSONObject(JSONObject obj) {
-
         try {
             NotificationRequest notif = new NotificationRequest();
             notif.key = obj.getString("key");
             notif.title = obj.getString("title");
+
+            if (obj.has("message"))
+                notif.message = obj.getString("message");
 
             if (obj.has("url"))
                 notif.url = obj.getString("url");

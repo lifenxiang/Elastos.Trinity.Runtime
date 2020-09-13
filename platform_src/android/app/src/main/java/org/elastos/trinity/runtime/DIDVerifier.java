@@ -20,9 +20,8 @@ public class DIDVerifier {
             DIDBackend.initialize(resolver, cacheDir);
             mDIDStore = DIDStore.open("filesystem", dataDir, new DIDAdapter() {
                 @Override
-                public void createIdTransaction(String payload, String memo, int confirms, TransactionCallback callback) {
+                public void createIdTransaction(String payload, String memo) {
                     Log.i("DIDVerifier", "createIdTransaction");
-                    callback.accept("", 0, null);
                 }
             });
         } catch (Exception e) {

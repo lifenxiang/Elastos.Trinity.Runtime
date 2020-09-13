@@ -157,34 +157,34 @@ public class MergeDBAdapter {
         }
     }
 
-    public String[] getIntentFilter(String action) {
-        ArrayList<String> list = new ArrayList<String>();
-        String[] ids = null;
+    public IntentFilter[] getIntentFilter(String action) {
+        ArrayList<IntentFilter> list = new ArrayList<IntentFilter>();
+        IntentFilter[] filters = null;
         if (userDBAdapter != null) {
-            ids = userDBAdapter.getIntentFilter(action);
+            filters = userDBAdapter.getIntentFilter(action);
         }
 
-        String[] baseIds = baseDBAdapter.getIntentFilter(action);
+        IntentFilter[] baseFilters = baseDBAdapter.getIntentFilter(action);
 
-        for (String id: ids) {
-            list.add(id);
+        for (IntentFilter filter: filters) {
+            list.add(filter);
         }
 
-        for (String baseId: baseIds) {
+        for (IntentFilter baseFilter: baseFilters) {
             Boolean needAdd = true;
-            for (String id: ids) {
-                if (baseId.equals(id)) {
+            for (IntentFilter filter: filters) {
+                if (baseFilter.packageId.equals(filter.packageId)) {
                     needAdd = false;
                     break;
                 }
             }
             if (needAdd) {
-                list.add(baseId);
+                list.add(baseFilter);
             }
         }
 
-        ids = new String[list.size()];
-        return list.toArray(ids);
+        filters = new IntentFilter[list.size()];
+        return list.toArray(filters);
     }
 
     public long setSetting(String id, String key, Object value) throws Exception {

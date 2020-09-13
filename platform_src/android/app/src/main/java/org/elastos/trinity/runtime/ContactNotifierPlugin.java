@@ -23,12 +23,8 @@
 package org.elastos.trinity.runtime;
 
 import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaInterface;
-import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.PluginResult;
-import org.elastos.carrier.Carrier;
 import org.elastos.carrier.exceptions.CarrierException;
-import org.elastos.trinity.runtime.TrinityPlugin;
 import org.elastos.trinity.runtime.contactnotifier.Contact;
 import org.elastos.trinity.runtime.contactnotifier.ContactAvatar;
 import org.elastos.trinity.runtime.contactnotifier.ContactNotifier;
@@ -36,11 +32,6 @@ import org.elastos.trinity.runtime.contactnotifier.InvitationRequestsMode;
 import org.elastos.trinity.runtime.contactnotifier.OnlineStatus;
 import org.elastos.trinity.runtime.contactnotifier.OnlineStatusMode;
 import org.elastos.trinity.runtime.contactnotifier.RemoteNotificationRequest;
-import org.elastos.trinity.runtime.passwordmanager.AppsPasswordStrategy;
-import org.elastos.trinity.runtime.passwordmanager.PasswordInfoBuilder;
-import org.elastos.trinity.runtime.passwordmanager.PasswordManager;
-import org.elastos.trinity.runtime.passwordmanager.PasswordUnlockMode;
-import org.elastos.trinity.runtime.passwordmanager.passwordinfo.PasswordInfo;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -130,7 +121,7 @@ public class ContactNotifierPlugin extends TrinityPlugin {
         callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, method+": "+message));
     }
 
-    private ContactNotifier getNotifier() throws CarrierException {
+    private ContactNotifier getNotifier() throws Exception {
         return ContactNotifier.getSharedInstance(cordova.getContext(), did);
     }
 

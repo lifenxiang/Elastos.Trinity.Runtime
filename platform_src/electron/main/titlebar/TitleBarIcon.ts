@@ -26,7 +26,6 @@ export class TitleBarIcon {
     }
 
     protected fillFromJSONObject(jsonObject: any) {
-        console.log("fillFromJSONObject - "+this.iconPath);
         this.key = jsonObject.key;
         this.iconPath = jsonObject.iconPath;
 

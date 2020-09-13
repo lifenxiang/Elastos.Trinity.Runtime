@@ -17,6 +17,8 @@ import { ConfigManager } from './ConfigManager';
 import { WebViewFragment } from './WebViewFragment';
 import { AppBasePlugin } from './AppBasePlugin';
 import { DIDSessionManager } from './didsessions/DIDSessionManager';
+import { TitleBarActivityType } from './titlebar/TitleBarActivityType';
+import { IntentManager } from './IntentManager';
 
 export class AppManager {
     private static LOG_TAG = "AppManager";
@@ -79,8 +81,8 @@ export class AppManager {
     private static appManager: AppManager;
     private runtime: TrinityRuntime; //TODO: diff with java
     private curFragment: WebViewFragment = null; //TODO: change type
-    public fragments = new Map<number, WebViewFragment>();
-    public fragmentIds = new Map<string, number>();
+    public fragments = new Map<number, WebViewFragment>(); //key: browserViewId
+    public fragmentIds = new Map<string, number>(); //key: appId, value: browserViewId
     public window: BrowserWindow = null;
     dbAdapter: MergeDBAdapter = null;
 
@@ -139,7 +141,6 @@ export class AppManager {
         await this.refreashInfos();
 
         let entry: IdentityEntry = null;
-        //TODO: migrate from java
         try {
             entry = await (await DIDSessionManager.getSharedInstance()).getSignedInIdentity();
         }
@@ -147,20 +148,21 @@ export class AppManager {
             Log.e(AppManager.LOG_TAG, e);
         }
 
-        // TMP if (entry != null) {
+        //Apply theming for native popups
+        let darkMode: boolean = await PreferenceManager.getSharedInstance().getBooleanValue("ui.darkmode", false);
+        UIStyling.prepare(darkMode);
+
         if (entry != null) {
-        //if (true) { // TMP BPI FORCE LAUNCHER NOT DID SESSION
             this.signIning = false;
             //this.did = "FAKEDIDFIXME" // TMP BPI entry.didString;
             this.did = entry.didString;
-            console.log("AppManager - did: "+this.did);
+            //console.log("AppManager - did: "+this.did);
             await this.reInit(null);
         }
         else {
             try {
                 await this.startDIDSession();
-            }
-            catch (e){
+            } catch (e) {
                 Log.e(AppManager.LOG_TAG, e);
             }
         }
@@ -168,17 +170,6 @@ export class AppManager {
         if (await PreferenceManager.getSharedInstance().getDeveloperMode()) {
             //CLIService.getShareInstance().start();
         }
-
-        //Apply theming for native popups
-        let darkMode: boolean = await PreferenceManager.getSharedInstance().getBooleanValue("ui.darkmode", false);
-        UIStyling.prepare(darkMode);
-
-        //TODO: migrate from java
-        /*try {
-            ContactNotifier.getSharedInstance(activity, did);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }*/
     }
 
     public static getSharedInstance(): AppManager {
@@ -199,12 +190,10 @@ export class AppManager {
     }
 
     private async reInit(sessionLanguage: string) {
-        //TODO: diff with java
-        //curFragment = null;
+        this.curFragment = null;
 
-        this.pathInfo = new AppPathInfo(this.getDIDDir());
+        this.pathInfo = new AppPathInfo(this.getDIDDir(this.did));
 
-        console.log("AppManager - reInit - dbPath: "+this.pathInfo.databasePath);
         await this.dbAdapter.setUserDBAdapter(this.pathInfo.databasePath);
 
         // If we have received an optional language info, we set the DID session language preference with it.
@@ -226,19 +215,43 @@ export class AppManager {
             Log.e(AppManager.LOG_TAG, e);
         }
         await this.refreashInfos();
+        this.startStartupServices();
         this.sendRefreshList("initiated", null, false);
+
+        //TODO
+        /*try {
+            ContactNotifier.getSharedInstance(activity, did);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }*/
     }
 
     private startStartupServices() {
+        let FIRST_SERVICE_START_DELAY = 5000;
+        let DELAY_BETWEEN_EACH_SERVICE = 5000;
+
+        //Log.d(AppManager.LOG_TAG, "Starting startup services");
+
+        // Start services one after another, with an arbitrary (for now, to keep things simple) delay between starts
+        let nextDelay = FIRST_SERVICE_START_DELAY;
         for (let info of this.appList) {
+            //Log.d(AppManager.LOG_TAG, "Startup service - checking if app "+info.app_id+" has services to start");
             for (let service of info.startupServices) {
-                try {
-                    this.start(info.app_id, AppManager.STARTUP_SERVICE, service.name);
-                } catch (e) {
-                    Log.e(AppManager.LOG_TAG, e);
-                }   
+                //Log.d(AppManager.LOG_TAG, "Startup service - App "+info.app_id+" - starting service "+service.name);
+                //setTimeout(() => {
+                    try {
+                        //Log.d(AppManager.LOG_TAG, "Startup service - App "+info.app_id+" - service "+service.name + " - before start");
+                        this.start(info.app_id, AppManager.STARTUP_SERVICE, service.name);
+                        //Log.d(AppManager.LOG_TAG, "Startup service - App "+info.app_id+" - service "+service.name + " - after start");
+                    } catch (e) {
+                        Log.e(AppManager.LOG_TAG, e);
+                    }
+                /*}, nextDelay);
+                nextDelay += DELAY_BETWEEN_EACH_SERVICE;*/
             }
         }
+
+        Log.d(AppManager.LOG_TAG, "Finished starting startup services");
     }
 
     private closeAllApps() {
@@ -257,7 +270,7 @@ export class AppManager {
 
     private async clean() {
         this.did = null;
-        //TOOD: this.curFragment = null;
+        this.curFragment = null;
         this.appList = null;
         this.lastList = new Array<string>();
         this.runningList = new Array<string>();
@@ -317,21 +330,23 @@ export class AppManager {
     public async closeDIDSession() {
         await this.close(this.getDIDSessionId(), AppManager.STARTUP_APP, null);
 
-        //TODO: need DIDSessionManager
-        /*let entry = DIDSessionManager.getSharedInstance().getSignedInIdentity();
-        did = entry.didString;*/
+        let entry = await (await DIDSessionManager.getSharedInstance()).getSignedInIdentity();
+        //this.did = entry.didString;
     }
 
     public getDID(): string {
         return this.did;
     }
 
-    public getDIDDir(): string {
-        let did = this.getDID();
+    public getDIDDir(did: string): string {
         if (did != null) {
             did = did.replace(":", "_");
         }
         return did;
+    }
+
+    public getPathInfo(did: string): AppPathInfo {
+        return new AppPathInfo(this.getDIDDir(did));
     }
 
     public getDBAdapter(): MergeDBAdapter {
@@ -348,14 +363,14 @@ export class AppManager {
     }
 
     private async installBuiltInApp(path: string, id: string, launcher: number) {
-        //Log.d("AppManager", "Entering installBuiltInApp relativeRootPath="+path+" id="+id+" launcher="+launcher);
+        //Log.d("AppManager", "Entering installBuiltInApp path="+path+" id="+id+" launcher="+launcher);
 
         path = path + id;
-        let input = this.getAssetsFile(path + "/manifest.json");
+        let input = this.getAssetsFile(path + "/assets/manifest.json");
         if (input == null) {
-            input = this.getAssetsFile(path + "/assets/manifest.json");
+            input = this.getAssetsFile(path + "/manifest.json");
             if (input == null) {
-                //Log.e("AppManager", "No manifest found, returning");
+                Log.e("AppManager", "Can't find manifest.json in / or /assets/, do not install this dapp");
                 return;
             }
         }
@@ -408,7 +423,6 @@ export class AppManager {
                 await this.getLauncherInfo();
             }
 
-            //TODO: diff with java
             this.installBuiltInApp("/", "launcher", 1);
         } catch (e) {
             Log.e(AppManager.LOG_TAG, e);
@@ -427,7 +441,7 @@ export class AppManager {
                     return;
                 }
                 this.shareInstaller.renameFolder(didsession, this.basePathInfo.appsPath, this.getDIDSessionId());
-                this.dbAdapter.addAppInfo(info, true);
+                await this.dbAdapter.addAppInfo(info, true);
                 this.didSessionInfo = null;
             }
         } catch (e) {
@@ -491,7 +505,7 @@ export class AppManager {
     }
 
     public setAppVisible(id: string, visible: string) {
-        //Log.d(AppManager.LOG_TAG, "setAppVisible - id: "+id+", visible: "+visible);
+        Log.d(AppManager.LOG_TAG, "setAppVisible - id: "+id+", visible: "+visible);
         if (visible == "hide") {
             this.visibles.set(id, false);
         }
@@ -615,7 +629,7 @@ export class AppManager {
         return path;
     }
 
-    public async getDataPath(id: string): Promise<string> {
+    public async getDataPath(id: string, pathInfo: AppPathInfo = this.pathInfo): Promise<string> {
         if (id == null) {
             return null;
         }
@@ -624,14 +638,19 @@ export class AppManager {
             id = (await this.getLauncherInfo()).app_id;
         }
 
-        return this.checkPath(this.pathInfo.dataPath + id + "/");
+        return this.checkPath(pathInfo.dataPath + id + "/");
     }
 
+    /*public async getDataUrl(id: string): Promise<string> {
+        //TODO: need to check
+        //return "file://" + this.getDataPath(id);
+        return await this.getDataPath(id);
+    }*/
     public getDataUrl(id: string): string {
         return "file://" + this.getDataPath(id);
     }
 
-    public async getTempPath(id: string): Promise<string> {
+    public async getTempPath(id: string, pathInfo: AppPathInfo = this.pathInfo): Promise<string> {
         if (id == null) {
             return null;
         }
@@ -639,11 +658,12 @@ export class AppManager {
         if (this.isLauncher(id)) {
             id = (await this.getLauncherInfo()).app_id;
         }
-        return this.checkPath(this.pathInfo.tempPath + id + "/");
+        return this.checkPath(pathInfo.tempPath + id + "/");
     }
 
-    public getTempUrl(id: string): string {
-        return "file://" + this.getTempPath(id);
+    public async getTempUrl(id: string): Promise<string> {
+        //TODO: need to check
+        return await /*"file://" + */this.getTempPath(id);
     }
 
     public getConfigPath(): string {
@@ -651,8 +671,8 @@ export class AppManager {
     }
 
     public getIconUrl(info: AppInfo, iconSrc: string): string {
-        //TODO: diff with java
-        let url = this.getAppLocalPath(info);
+        //TODO: need to check
+        let url = /*"file://" +*/ this.getAppLocalPath(info);
         return this.resetPath(url, iconSrc);
     }
 
@@ -674,6 +694,9 @@ export class AppManager {
         return origin;
     }
 
+    /*
+     * debug: from CLI to debug dapp
+     */
     public install(url: string, update: boolean, fromCLI: boolean) {
         let info = this.shareInstaller.install(url, update);
         if (info != null) {
@@ -690,15 +713,15 @@ export class AppManager {
         return info;
     }
 
-    public unInstall(id: string, update: boolean) {
+    public async unInstall(id: string, update: boolean) {
         this.closeAllModes(id);
         let info = this.appInfos.get(id);
         this.shareInstaller.unInstall(info, update);
-        this.refreashInfos();
+        await this.refreashInfos();
         if (!update) {
             if (info.built_in == 1) {
-                this.installBuiltInApp("built-in", info.app_id, 0);
-                this.refreashInfos();
+                await this.installBuiltInApp("built-in", info.app_id, 0);
+                await this.refreashInfos();
             }
             this.sendRefreshList("unInstalled", info, false);
         }
@@ -714,20 +737,19 @@ export class AppManager {
             let browserView = browserViews[i];
             let fragment = this.fragments.get(browserView.id);
             if (fragment instanceof WebViewFragment) {
-                let webViewfragment = fragment as WebViewFragment;
-                if (webViewfragment.modeId == modeId) {
-                    return webViewfragment;
+                let webViewFragment = fragment as WebViewFragment;
+                if (webViewFragment.modeId == modeId) {
+                    return webViewFragment;
                 }
             }
         }
 
+        //TODO: remove
         /*this.fragments.forEach((value: WebViewFragment, key: number) => {
             if (value.modeId == modeId) {
                 return value;
             }
         });*/
-
-        
 
         return null;
     }
@@ -778,7 +800,7 @@ export class AppManager {
     
         if (startupMode == AppManager.STARTUP_APP) {
             this.runningList.unshift(id);
-            this.lastList[1] = id;
+            this.lastList.splice(1, 0, id);
         }
         else if (startupMode == AppManager.STARTUP_SERVICE) {
             this.serviceRunningList.unshift(id);
@@ -790,15 +812,20 @@ export class AppManager {
     }
 
     public doBackPressed(): boolean {
-        if (this.launcherInfo == null || this.curFragment == null || this.isLauncher(this.curFragment.modeId)) {
+        if (this.launcherInfo == null || this.curFragment == null || this.isLauncher(this.curFragment.modeId) || this.isDIDSession(this.curFragment.modeId)) {
             return true;
         }
         else {
-            this.switchContent(this.getFragmentById(this.launcherInfo.app_id), this.launcherInfo.app_id);
-            try {
-                AppManager.getSharedInstance().sendLauncherMessageMinimize(this.curFragment.modeId);
-            } catch (e) {
-                Log.e(AppManager.LOG_TAG, e);
+            if ((this.curFragment != null) && (this.curFragment != null)) {
+                //TODO: send event to titlebar
+                //curFragment.titlebar.handleOuterLeftClicked();
+            } else {
+                this.switchContent(this.getFragmentById(this.launcherInfo.app_id), this.launcherInfo.app_id);
+                try {
+                    AppManager.getSharedInstance().sendLauncherMessageMinimize(this.curFragment.modeId);
+                } catch (e) {
+                    Log.e(AppManager.LOG_TAG, e);
+                }
             }
             return false;
         }
@@ -816,6 +843,7 @@ export class AppManager {
 
     //TODO: need fragment
     public async start(packageId: string, mode: string, serviceName: string) {
+        console.log("AppManager - start packageId: "+packageId);
         let info = await this.getAppInfo(packageId);
         if (info == null) {
             throw new Error("No such app ("+packageId+")!");
@@ -826,32 +854,39 @@ export class AppManager {
         }
 
         let id = this.getIdbyStartupMode(packageId, mode, serviceName);
-        console.log("AppManager - start id: "+id);
-
+        console.log("AppManager - id: "+id);
         let fragment = this.getFragmentById(id);
         if (fragment == null) {
-            fragment = await WebViewFragment.newInstance(packageId, mode, serviceName);
+            console.log("AppManager - fragment is null");
+            fragment = WebViewFragment.newInstance(packageId, mode, serviceName);
             if (!this.isLauncher(packageId)) {
-                console.log("AppManager - start - !this.isLauncher(packageId)");
                 this.sendRefreshList("started", info, false);
             }
 
             if (!this.getAppVisible(packageId, mode)) {
-                console.log("AppManager - start - !this.getAppVisible(packageId, mode)");
-                this.showActivityIndicator(true);
-                this.hideFragment(fragment, mode, id);
+                console.log("AppManager - getAppVisible mid");
+                if (mode == AppManager.STARTUP_APP) {
+                    this.showActivityIndicator(true);
+                }
+                await this.hideFragment(fragment, mode, id);
             }
         }
 
         if (this.getAppVisible(packageId, mode)) {
-            console.log("AppManager - start - this.getAppVisible(packageId, mode)");
-            this.switchContent(fragment, id);
+            console.log("AppManager - getAppVisible bottom");
+            await this.switchContent(fragment, id);
             this.showActivityIndicator(false);
         }
     }
 
     private showActivityIndicator(show: boolean) {
-        notImplemented("showActivityIndicator");
+        if (this.curFragment != null && this.curFragment.titleBar != null) {
+            if (show) {
+                this.curFragment.titleBar.showActivityIndicator(TitleBarActivityType.fromId(TitleBarActivityType.LAUNCH), "Starting");
+            } else {
+                this.curFragment.titleBar.hideActivityIndicator(TitleBarActivityType.fromId(TitleBarActivityType.LAUNCH));
+            }
+        }
     }
 
     public closeAllModes(packageId: string) {
@@ -870,28 +905,39 @@ export class AppManager {
         }
     }
 
-    public closeAppAllServices(packageId: string) {
-        let info = this.getAppInfo(packageId);
+    public async closeAppAllServices(packageId: string) {
+        let info = await this.getAppInfo(packageId);
         if (info == null) {
             throw new Error("No such app!");
         }
 
-        //TODO: migrate from java
-        /*FragmentManager manager = activity.getSupportFragmentManager();
-        List<Fragment> fragments = manager.getFragments();
-        for (int i = 0; i < fragments.size(); i++) {
-            Fragment fragment = fragments.get(i);
+        let browserViews = this.window.getBrowserViews();
+        for (var i = 0; i < browserViews.length; i++) {
+            let browserView = browserViews[i];
+            let fragment = this.fragments.get(browserView.id);
             if (fragment instanceof WebViewFragment) {
-                WebViewFragment webViewFragment = (WebViewFragment)fragment;
+                let webViewFragment = fragment as WebViewFragment;
                 if (webViewFragment.modeId.startsWith(packageId + "#service:")) {
-                    closeFragment(info, webViewFragment);
+                    this.closeFragment(info, webViewFragment);
                 }
             }
-        }*/
+        }
     }
 
-    public closeAllServices() {
-        //TODO: implement
+    public async closeAllServices() {
+        let browserViews = this.window.getBrowserViews();
+        for (var i = 0; i < browserViews.length; i++) {
+            let browserView = browserViews[i];
+            let fragment = this.fragments.get(browserView.id);
+            if (fragment instanceof WebViewFragment) {
+                let webViewFragment = fragment as WebViewFragment;
+                if (webViewFragment.modeId.includes("#service:")) {
+                    let packageId = webViewFragment.packageId;
+                    let info = await this.getAppInfo(packageId);
+                    this.closeFragment(info, webViewFragment);
+                }
+            }
+        }
     }
 
     public async close(id: string, mode: string, serivceName: string) {
@@ -912,28 +958,48 @@ export class AppManager {
             this.setAppVisible(id, info.start_visible);
         }
 
-        //TODO: change to fragment
-        /*if (!this.runningApps[id]) {
+        id = this.getIdbyStartupMode(id, mode, serivceName);
+        let fragment = this.getFragmentById(id);
+        if (fragment == null) {
             return;
-        }*/
-
-        //TODO: place in closeFragment
-        /*this.window.removeBrowserView(BrowserView.fromId(this.runningApps[id].browserViewID));
-        this.lastList.splice(this.lastList.indexOf(id), 1);
-        this.runningList.splice(this.lastList.indexOf(id), 1);
-        delete this.runningApps[id];*/
-
-        this.window.removeBrowserView(BrowserView.fromId(this.fragmentIds.get(id)));
-        this.lastList.splice(this.lastList.indexOf(id), 1);
-        this.runningList.splice(this.lastList.indexOf(id), 1);
-        this.fragments.delete(this.fragmentIds.get(id));
-        this.fragmentIds.delete(id);
-        
-        this.sendRefreshList("closed", info, false);
+        }
+        await this.closeFragment(info, fragment);
     }
 
-    public closeFragment(info: AppInfo, fragment: any) {
-        //TODO: implement
+    public async closeFragment(info: AppInfo, fragment: WebViewFragment) {
+        let id = fragment.modeId;
+        let mode = fragment.startupMode;
+
+        //TODO
+        //IntentManager.getShareInstance().removeAppFromIntentList(id);
+
+        if (fragment == this.curFragment) {
+            if (this.lastList.length > 1) {
+                let id2 = this.lastList[1];
+                let fragment2 = this.getFragmentById(id2);
+                if (fragment2 == null) {
+                    fragment2 = this.getFragmentById(AppManager.LAUNCHER);
+                    if (fragment2 == null) {
+                        throw new Error("RT inner error!");
+                    }
+                }
+                await this.switchContent(fragment2, id2);
+            }
+        }
+
+        this.window.removeBrowserView(BrowserView.fromId(this.fragmentIds.get(id)));
+        this.fragments.delete(this.fragmentIds.get(id));
+        this.fragmentIds.delete(id);
+
+        if (mode == AppManager.STARTUP_APP) {
+            this.lastList.splice(this.lastList.indexOf(id), 1);
+            this.runningList.splice(this.lastList.indexOf(id), 1);
+        }
+        else if (mode == AppManager.STARTUP_SERVICE) {
+            this.serviceRunningList.splice(this.serviceRunningList.indexOf(id), 1);
+        }
+
+        this.sendRefreshList("closed", info, false);
     }
 
     public async loadLauncher() {
@@ -952,9 +1018,9 @@ export class AppManager {
         }
     }
 
-    private installUri(uri: string, dev: boolean) {
+    private async installUri(uri: string, dev: boolean) {
         try {
-            if (dev && PreferenceManager.getSharedInstance().getDeveloperMode()) {
+            if (dev && await PreferenceManager.getSharedInstance().getDeveloperMode()) {
                 this.install(uri, true, dev);
             }
             else {
@@ -1045,9 +1111,7 @@ export class AppManager {
     public sendMessage(toId: string, type: number, msg: string, fromId: string) {
         if (this.signIning) return;
 
-        //console.log("AppManager", "sendMessage toId: "+toId);
-
-        let fragment = this.fragments.get(this.fragmentIds.get(toId));
+        /*let fragment = this.fragments.get(this.fragmentIds.get(toId));
         if (fragment) {
             let appManagerPlugin = fragment.pluginInstances["AppManager"] as AppBasePlugin;
             appManagerPlugin.onReceive(msg, type, fromId);
@@ -1055,20 +1119,17 @@ export class AppManager {
         }
         else {
             throw new Error(toId + " isn't running!");
-        }
+        }*/
 
-        
-        /*let runningApp = this.runningApps[toId];
-        if (runningApp) {
-            //console.log("Sending message to app id "+runningApp.appInfo.app_id, msg, fromId);
-            let appManagerPlugin = runningApp.pluginInstances["AppManager"] as AppManagerPlugin
+        let fragment = this.getFragmentById(toId);
+        if (fragment != null) {
+            let appManagerPlugin = fragment.pluginInstances["AppManager"] as AppBasePlugin;
             appManagerPlugin.onReceive(msg, type, fromId);
+            //fragment.basePlugin.onReceive(msg, type, fromId);
         }
         else {
             throw new Error(toId + " isn't running!");
-        }*/
-
-        
+        }
     }
 
     public broadcastMessage(type: number, msg: string, fromId: string) {

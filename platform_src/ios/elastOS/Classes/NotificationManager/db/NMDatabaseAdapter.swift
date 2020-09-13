@@ -31,8 +31,10 @@ public class NMDatabaseAdapter {
 
     // Fields
     public let notificationIdField = Expression<Int64>(NMDatabaseHelper.NOTIFICATION_ID)
+    public let didsessionField = Expression<String>(NMDatabaseHelper.DID_SESSION_DID)
     public let notificationkeyField = Expression<String>(NMDatabaseHelper.KEY)
     public let titleField = Expression<String>(NMDatabaseHelper.TITLE)
+    public let messageField = Expression<String>(NMDatabaseHelper.MESSAGE)
     public let urlField = Expression<String>(NMDatabaseHelper.URL)
     public let emitterField = Expression<String>(NMDatabaseHelper.EMITTER)
     public let appIdField = Expression<String>(NMDatabaseHelper.APP_ID)
@@ -44,24 +46,26 @@ public class NMDatabaseAdapter {
         helper = NMDatabaseHelper()
     }
 
-    public func addNotification(key: String, title: String, url: String, emitter: String, appId: String) throws -> Notification {
-        let needUpdate = isNotificationExist(key: key, appId: appId)
+    public func addNotification(didSessionDID: String, key: String, title: String, message: String, url: String, emitter: String, appId: String) throws -> Notification {
+        let needUpdate = isNotificationExist(didSessionDID: didSessionDID, key: key, appId: appId)
         if (needUpdate) {
-            try updateNotifications(key: key, title: title, url: url, emitter: emitter, appId: appId)
+            try updateNotifications(didSessionDID: didSessionDID, key: key, title: title, message: message, url: url, emitter: emitter, appId: appId)
         } else {
-            try insertNotification(key: key, title: title, url: url, emitter: emitter, appId: appId)
+            try insertNotification(didSessionDID: didSessionDID, key: key, title: title, message: message, url: url, emitter: emitter, appId: appId)
         }
 
-        return getNotificationByKeyAndAppId(key: key, appId: appId)!
+        return getNotificationByKeyAndAppId(didSessionDID: didSessionDID, key: key, appId: appId)!
      }
 
-     public func insertNotification(key: String, title: String, url: String, emitter: String, appId: String) throws -> Void {
+    public func insertNotification(didSessionDID: String, key: String, title: String, message: String, url: String, emitter: String, appId: String) throws -> Void {
         let db = try helper.getDatabase()
 
         try db.transaction {
             try db.run(notifications.insert(
+                didsessionField <- didSessionDID,
                 notificationkeyField <- key,
                 titleField <- title,
+                messageField <- message,
                 urlField <- url,
                 emitterField <- emitter,
                 appIdField <- appId,
@@ -70,15 +74,16 @@ public class NMDatabaseAdapter {
         }
      }
 
-    public func updateNotifications(key: String, title: String, url: String, emitter: String, appId: String) throws -> Void {
+    public func updateNotifications(didSessionDID: String, key: String, title: String, message: String, url: String, emitter: String, appId: String) throws -> Void {
 
         do {
             let db = try helper.getDatabase()
             try db.transaction {
                 try db.run(notifications
-                    .filter(notificationkeyField == key && appIdField == appId)
+                    .filter(didsessionField == didSessionDID && notificationkeyField == key && appIdField == appId)
                     .update(
                         titleField <- title,
+                        messageField <- message,
                         urlField <- url,
                         emitterField <- emitter,
                         sentDateField <- Int64(Date().timeIntervalSince1970 * 1000)
@@ -90,13 +95,13 @@ public class NMDatabaseAdapter {
         }
      }
 
-    public func getNotificationByKeyAndAppId(key: String, appId: String) -> Notification? {
+    public func getNotificationByKeyAndAppId(didSessionDID: String, key: String, appId: String) -> Notification? {
         do {
             let db = try helper.getDatabase()
             var notification: Notification? = nil
             try db.transaction {
                 let query = notifications.select(*)
-                    .filter(notificationkeyField == key && appIdField == appId)
+                    .filter(didsessionField == didSessionDID && notificationkeyField == key && appIdField == appId)
                 let notificationRows = try! db.prepare(query)
                 for row in notificationRows {
                     notification = Notification.fromDatabaseRow(notifier: notifier, row: row)
@@ -112,13 +117,13 @@ public class NMDatabaseAdapter {
         }
      }
 
-    public func isNotificationExist(key: String, appId: String) -> Bool {
+    public func isNotificationExist(didSessionDID: String, key: String, appId: String) -> Bool {
         do {
             let db = try helper.getDatabase()
             var isExist = false
             try db.transaction {
                 let query = notifications.select(*)
-                    .filter(notificationkeyField == key && appIdField == appId)
+                    .filter(didsessionField == didSessionDID && notificationkeyField == key && appIdField == appId)
                 let notificationRows = try! db.prepare(query)
                 for _ in notificationRows {
                     isExist = true
@@ -134,12 +139,12 @@ public class NMDatabaseAdapter {
         return false
      }
 
-    public func clearNotification(notificationId: Int64) {
+    public func clearNotification(didSessionDID: String, notificationId: Int64) {
         do {
             let db = try helper.getDatabase()
-            let row = notifications.filter(notificationIdField == notificationId)
+            let row = notifications.filter(didsessionField == didSessionDID && notificationIdField == notificationId)
             try? db.transaction {
-                try? db.run(row.delete())
+                _ = try? db.run(row.delete())
             }
         }
         catch (let error) {
@@ -147,12 +152,12 @@ public class NMDatabaseAdapter {
         }
      }
 
-    public func getNotifications() -> Array<Notification> {
+    public func getNotifications(didSessionDID: String) -> Array<Notification> {
         var allNotifications = Array<Notification>()
         do {
             let db = try helper.getDatabase()
             try db.transaction {
-                let query = notifications.select(*).order(sentDateField.desc)
+                let query = notifications.select(*).filter(didsessionField == didSessionDID).order(sentDateField.desc)
                 let rows = try! db.prepare(query)
 
                 for row in rows {

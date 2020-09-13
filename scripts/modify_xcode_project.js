@@ -32,6 +32,7 @@ module.exports = function(ctx) {
 
     let options = { customFramework: true, embed: embed, sign: true };
     runtimeProj.addFramework('libz.tbd');
+    runtimeProj.addFramework('libresolv.9.dylib');// for wallet plugin: Ethereum
 
     //
     // Build phase to strip invalid framework files ARCHs for itunes publication

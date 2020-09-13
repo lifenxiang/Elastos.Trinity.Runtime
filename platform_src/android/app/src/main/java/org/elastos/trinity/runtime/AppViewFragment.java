@@ -22,14 +22,6 @@
 
 package org.elastos.trinity.runtime;
 
-import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.ImageButton;
-
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.PluginEntry;
 
@@ -65,7 +57,7 @@ import java.util.ArrayList;
 
     @Override
     protected void loadConfig() {
-        AppManager.getShareInstance().getDBAdapter().resetApiDenyAuth(id);
+        AppManager.getShareInstance().getDBAdapter().resetApiDenyAuth(modeId);
 
         pluginEntries = new ArrayList<PluginEntry>(20);
         preferences = cfgPreferences;
@@ -85,13 +77,13 @@ import java.util.ArrayList;
                 CordovaPlugin plugin = null;
                 if (isPluginAllowedToLoad(entry.service)) {
                     pluginClass = "org.elastos.plugins.appmanager.AuthorityPlugin";
-                    plugin = new AuthorityPlugin(entry.pluginClass, appInfo, entry.service, whitelistPlugin, permissionGroup);
+                    plugin = new AuthorityPlugin(entry.pluginClass, this, entry.service, whitelistPlugin, permissionGroup);
                     if (entry.service.equals("AppManager")) {
                         basePlugin = (AppBasePlugin)((AuthorityPlugin)plugin).getOriginalPlugin();
                     }
                 }
                 else {
-                    pluginClass = "org.elastos.plugins.appmanager.NullPlugin";
+                    pluginClass = "org.elastos.plugins.appmathisnager.NullPlugin";
                     plugin = new NullPlugin(entry.service);
                 }
                 pluginEntries.add(new PluginEntry(entry.service, pluginClass, entry.onload, plugin));
