@@ -39,7 +39,8 @@
         </feature>
         <preference name="CordovaWebViewEngine" value="CDVWKWebViewEngine" />
     </platform>
-
+    <platform name="electron">
+    </platform>
     <preference name="AndroidLaunchMode" value="singleTask" />
     <preference name="SplashShowOnlyFirstTime" value="false" />
     <preference name="ShowSplashScreenSpinner" value="false" />
@@ -54,8 +55,6 @@
     <hook src="scripts/remove_files.js" type="after_platform_add" />
     <hook src="scripts/modify_xcode_project.js" type="after_platform_add" />
     <hook src="scripts/apply_patches.js" type="before_plugin_install" />
-	<hook src="scripts/electron/build.main.js" type="before_prepare" />
-    <hook src="scripts/electron/build.renderer.js" type="before_prepare" />
     <hook src="scripts/remove_files.js" type="after_prepare" />
     <hook src="scripts/merge_types.js" type="after_prepare" />
     <hook src="scripts/apply_patches.js" type="after_build" />
@@ -96,4 +95,5 @@
     <plugin name="cordova-plugin-vibration" spec="^3.1.1" />
     <engine name="android" spec="8.1.0" />
     <engine name="ios" spec="5.1.1" />
+    <engine name="electron" spec="^2.0.0-nightly.2020.9.12.734bbe7c" />
 </widget>

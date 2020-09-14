@@ -1,0 +1,12 @@
+{
+    "locale.language": "native system",
+    "developer.mode": false,
+    "developer.install.verifyDigest": false,
+    "ui.darkmode": false,
+    "chain.network.type": "MainNet",
+    "chain.network.config": "",
+    "chain.network.configurl": "",
+    "mainchain.rpcapi": "http://api.elastos.io:20336",
+    "sidechain.id.rpcapi": "http://api.elastos.io:20606",
+    "sidechain.eth.rpcapi": "https://mainrpc.elaeth.io"
+}

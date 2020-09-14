@@ -42,6 +42,40 @@ function finalize() {
     console.log("Copies completed.")
 }
 
+function init() {
+    let platformWwwPath = `${__dirname}/../../platforms/electron/platform_www`;
+        if (fs.existsSync(platformWwwPath)) {
+            let tsConfig = path.join(`${__dirname}`, "../../platform_src/electron/main/tsconfig.json");
+            let transpileCommand = 'tsc --build '+tsConfig+" --force";
+            console.log("Executing shell command: "+transpileCommand);
+            exec(transpileCommand, (err, stdout, stderr) => {
+                if (err) {
+                    console.error(err)
+                }
+                else {
+                    console.log("Transpile success.")
+                }
+
+                finalize();
+                //resolve();
+            });
+        }
+
+        //return;
+        
+        //let webpackConfig = require("./webpack.main.config");
+
+        // Do some cleanup
+        let defaultElectronMainPath = `${__dirname}/../../platforms/electron/platform_www/cdv-electron-main.js`;
+        if (fs.existsSync(defaultElectronMainPath))
+            fs.unlinkSync(defaultElectronMainPath);
+    
+		return;
+}
+
+init();
+
+/*
 module.exports = () => {
     return new Promise((resolve, reject)=>{
 
@@ -92,4 +126,4 @@ module.exports = () => {
             resolve();
         });
     });
-};
+};*/

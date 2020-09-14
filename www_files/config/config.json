@@ -1,0 +1,34 @@
+{
+    "dapp.protectList": [
+        "org.elastos.trinity.dapp.wallet",
+        "org.elastos.trinity.dapp.didsession",
+        "org.elastos.trinity.dapp.passwordmanager"
+    ],
+    "api.authority.whitelist": [
+        "org.elastos.trinity.dapp.wallet",
+        "org.elastos.trinity.dapp.settings",
+        "org.elastos.trinity.dapp.did",
+        "org.elastos.trinity.dapp.didsession",
+        "org.elastos.trinity.dapp.passwordmanager",
+        "org.elastos.trinity.dapp.friends",
+        "org.elastos.trinity.dapp.qrcodescanner"
+    ],
+    "url.authority.whitelist": [
+        "org.elastos.trinity.dapp.wallet",
+        "org.elastos.trinity.dapp.settings",
+        "org.elastos.trinity.dapp.dappstore"
+    ],
+    "intent.authority.whitelist": [
+        "org.elastos.trinity.dapp.settings",
+        "org.elastos.trinity.dapp.did"
+    ],
+    "whitelist.urls": [
+        "https://sentry.io/*"
+    ],
+    "native.dapps.mode": false,
+    "native.dapps": {
+        "org.elastos.trinity.dapp.wallet": "WalletMainViewController"
+    },
+    "build.type": "elastOS",
+    "build.variant": ""
+}

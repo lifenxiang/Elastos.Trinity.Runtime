@@ -1,0 +1,181 @@
+{
+    "admin": {
+        "*":[]
+    },
+    "wallet": {
+        "Wallet": ["*"],
+        "$user": {}
+    },
+    "friends": {
+        "AppManager": [
+            "getAppInfos",
+            "getAppList",
+            "getAppInfo"
+        ],
+        "ContactNotifierPlugin": [
+            "notifierRemoveContact",
+            "notifierSendInvitation",
+            "contactSetAllowNotifications",
+            "notifierAcceptInvitation",
+            "notifierSetOnInvitationAcceptedListener",
+            "contactSetName",
+            "contactSetAvatar",
+            "notifierGetAllContacts"
+        ],
+        "$user": {}
+    },
+    "settings": {
+        "AppManager": [
+            "getAppInfos",
+            "getAppList",
+            "getAppInfo",
+            "setCurrentLocale",
+            "setPreference",
+            "resetPreferences",
+            "broadcastMessage",
+            "unInstall",
+            "setUrlAuthority",
+            "setPluginAuthority",
+            "alertPrompt"
+        ],
+        "DIDSessionManagerPlugin": [
+            "getSignedInIdentity",
+            "signOut"
+        ],
+        "ContactNotifierPlugin": [
+            "notifierSetOnlineStatusMode",
+            "notifierGetOnlineStatusMode",
+            "notifierSetInvitationRequestsMode",
+            "notifierGetInvitationRequestsMode"
+        ],
+        "$user": {}
+    },
+    "didsession": {
+        "AppManager": [
+            "setCurrentLocale"
+        ],
+        "DIDSessionManagerPlugin": ["*"],
+        "PasswordManagerPlugin": ["*"],
+        "TitleBarPlugin": [
+            "setNavigationIconVisibility"
+        ],
+        "$user": {}
+    },
+    "did": {
+        "AppManager": [
+            "getAppList",
+            "getAppInfo"
+        ],
+        "DIDSessionManagerPlugin": [
+            "getSignedInIdentity",
+            "addIdentityEntry",
+            "signOut"
+        ],
+        "PasswordManagerPlugin": [
+            "deleteAll"
+        ],
+        "$user": {}
+    },
+    "passwordmanager": {
+        "AppManager": [
+            "getAppInfos",
+            "getAppList",
+            "getAppInfo"
+        ],
+        "PasswordManagerPlugin": ["*"],
+        "$user": {}
+    },
+    "dappstore": {
+        "AppManager": [
+            "getAppInfos",
+            "getAppList",
+            "getAppInfo"
+        ],
+        "$user": {}
+    },
+    "user": {
+        "AppManager": [
+            "getVersion",
+            "setVisible",
+            "getLocale",
+            "getInfo",
+            "launcher",
+            "start",
+            "close",
+            "sendMessage",
+            "setListener",
+            "sendIntent",
+            "sendUrlIntent",
+            "setIntentListener",
+            "sendIntentResponse",
+            "hasPendingIntent",
+            "getSetting",
+            "getSettings",
+            "setSetting",
+            "getPreference",
+            "getPreferences",
+            "getStartupMode",
+            "startBackgroundService",
+            "stopBackgroundService",
+            "getRunningServiceList",
+            "getBuildInfo"
+        ],
+        "PasswordManagerPlugin": [
+            "setPasswordInfo",
+            "getPasswordInfo",
+            "deletePasswordInfo",
+            "generateRandomPassword"
+        ],
+        "TitleBarPlugin": [
+            "setTitle",
+            "setBackgroundColor",
+            "setForegroundMode",
+            "setNavigationMode",
+            "addOnItemClickedListener",
+            "removeOnItemClickedListener",
+            "setIcon",
+            "setBadgeCount",
+            "setupMenuItems",
+            "showActivityIndicator",
+            "hideActivityIndicator"
+        ],
+        "Accelerometer": ["*"],
+        "Battery": ["*"],
+        "Camera": ["*"],
+        "Capture": ["*"],
+        "CarrierPlugin": ["*"],
+        "CDVOrientation": ["*"],
+        "Clipboard": ["*"],
+        "Console": ["*"],
+        "Device": ["*"],
+        "DIDPlugin": ["*"],
+        "DIDSessionManagerPlugin": [
+            "authenticate"
+        ],
+        "File": ["*"],
+        "Flashlight": ["*"],
+        "Geolocation": ["*"],
+        "HivePlugin": ["*"],
+        "InAppBrowser": ["*"],
+        "Media": ["*"],
+        "NetworkStatus": ["*"],
+        "Notification": ["*"],
+        "QRScanner": ["*"],
+        "SplashScreen": ["*"],
+        "FingerprintPlugin": ["*"],
+        "CDVIonicKeyboard": ["*"],
+        "ContactNotifierPlugin": [
+            "notifierGetCarrierAddress",
+            "notifierResolveContact",
+            "notifierSetOnlineStatusListener",
+            "contactSendRemoteNotification",
+            "contactGetOnlineStatus",
+            "contactGetName",
+            "contactGetAvatar"
+        ],
+        "NotificationManagerPlugin": [
+            "getNotifications",
+            "sendNotification"
+        ]
+    }
+}
