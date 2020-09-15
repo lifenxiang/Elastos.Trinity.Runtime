@@ -107,4 +107,10 @@
         </config-file>
 
     </platform>
+
+    <platform name="electron">
+        <js-module src="src/electron/AppManagerPluginProxy.js" name="AppManagerPluginProxy">
+            <runs />
+        </js-module>
+    </platform>
 </plugin>

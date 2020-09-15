@@ -20,4 +20,9 @@
             </feature>
         </config-file>
     </platform>
+	<platform name="electron">
+        <js-module src="src/electron/DIDSessionManagerPluginProxy.js" name="DIDSessionManagerPluginProxy">
+            <runs />
+        </js-module>
+    </platform>
 </plugin>
