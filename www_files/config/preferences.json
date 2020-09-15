@@ -8,5 +8,6 @@
     "chain.network.configurl": "",
     "mainchain.rpcapi": "http://api.elastos.io:20336",
     "sidechain.id.rpcapi": "http://api.elastos.io:20606",
-    "sidechain.eth.rpcapi": "https://mainrpc.elaeth.io"
+    "sidechain.eth.rpcapi": "http://api.elastos.io:20636",
+    "sidechain.eth.apimisc": "http://api.elastos.io:20634"
 }
