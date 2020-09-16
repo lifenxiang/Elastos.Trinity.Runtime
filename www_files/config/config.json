@@ -24,7 +24,7 @@
     ],
     "whitelist.urls": [
         "https://sentry.io/*",
-        "http://api.elastos.io:*/*"
+        "http://api.elastos.io/*"
     ],
     "native.dapps.mode": false,
     "native.dapps": {
