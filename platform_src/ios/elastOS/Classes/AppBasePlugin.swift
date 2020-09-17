@@ -825,7 +825,7 @@
     @objc func setVisible(_ command: CDVInvokedUrlCommand) {
         var visible = command.arguments[0] as? String ?? "show"
 
-        if (startupMode != AppManager.STARTUP_APP) {
+        if (startupMode != AppManager.STARTUP_APP && startupMode != AppManager.STARTUP_INTENT) {
             self.error(command, "'" + startupMode + "' mode can't setVisible.");
             return;
         }
@@ -837,9 +837,9 @@
         do {
             let appManager = AppManager.getShareInstance();
 
-            appManager.setAppVisible(self.appId, visible);
+            appManager.setAppVisible(self.getModeId(), visible);
             if (visible == "show") {
-                try appManager.start(self.appId, AppManager.STARTUP_APP, nil);
+                try appManager.start(self.appId, startupMode, nil);
             }
             else {
                 try appManager.loadLauncher();

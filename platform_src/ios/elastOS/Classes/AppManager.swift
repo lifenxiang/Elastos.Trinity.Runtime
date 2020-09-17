@@ -411,10 +411,7 @@ class AppManager: NSObject {
     }
 
     func getAppVisible(_ id: String, _ startupMode: String) -> Bool {
-        if (startupMode == AppManager.STARTUP_INTENT) {
-            return true;
-        }
-        else if (startupMode == AppManager.STARTUP_SERVICE || startupMode == AppManager.STARTUP_SILENCE) {
+        if (startupMode == AppManager.STARTUP_SERVICE || startupMode == AppManager.STARTUP_SILENCE) {
             return false;
         }
 
@@ -850,15 +847,19 @@ class AppManager: NSObject {
 
             mainViewController.add(viewController!)
             viewControllers[id] = viewController;
+            
+            if (mode == AppManager.STARTUP_INTENT) {
+                setAppVisible(id, "hide");
+            }
 
-            if (!getAppVisible(packageId, mode)) {
+            if (!getAppVisible(id, mode)) {
                 hideViewController(viewController!, mode, id);
             }
 
             viewController!.setReady();
         }
 
-        if (getAppVisible(packageId, mode)) {
+        if (getAppVisible(id, mode)) {
             viewController!.view.isHidden = false;
             switchContent(viewController!, id);
         }
@@ -916,11 +917,15 @@ class AppManager: NSObject {
             throw AppError.error("No such app!");
         }
 
+        id = getIdbyStartupMode(id, startupMode: mode, serviceName: serviceName);
         if (mode == AppManager.STARTUP_APP) {
             setAppVisible(id, info!.start_visible);
         }
+        else if (mode == AppManager.STARTUP_INTENT) {
+            setAppVisible(id, "hide");
+        }
 
-        id = getIdbyStartupMode(id, startupMode: mode, serviceName: serviceName);
+        
         let viewController = getViewControllerById(id);
         if (viewController == nil) {
             return;

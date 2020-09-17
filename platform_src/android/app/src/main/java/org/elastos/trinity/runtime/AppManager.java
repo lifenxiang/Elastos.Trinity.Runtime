@@ -586,10 +586,7 @@ public class AppManager {
     }
 
     public Boolean getAppVisible(String id, String startupMode) {
-        if (startupMode.equals(STARTUP_INTENT)) {
-            return true;
-        }
-        else if (startupMode.equals(STARTUP_SERVICE) || startupMode.equals(STARTUP_SILENCE)) {
+        if (startupMode.equals(STARTUP_SERVICE) || startupMode.equals(STARTUP_SILENCE)) {
             return false;
         }
 
@@ -915,7 +912,11 @@ public class AppManager {
                 sendRefreshList("started", info, false);
             }
 
-            if (!getAppVisible(packageId, mode)) {
+            if (mode.equals(STARTUP_INTENT)) {
+                setAppVisible(id, "hide");
+            }
+
+            if (!getAppVisible(id, mode)) {
                 if (mode.equals(STARTUP_APP)) {
                     showActivityIndicator(true);
                 }
@@ -923,7 +924,7 @@ public class AppManager {
             }
         }
 
-        if (getAppVisible(packageId, mode)) {
+        if (getAppVisible(id, mode)) {
             switchContent(fragment, id);
             showActivityIndicator(false);
         }
@@ -1006,11 +1007,14 @@ public class AppManager {
             throw new Exception("No service name!");
         }
 
+        id = getIdbyStartupMode(id, mode, serviceName);
         if (mode.equals(STARTUP_APP)) {
             setAppVisible(id, info.start_visible);
         }
+        else if (mode.equals(STARTUP_INTENT)) {
+            setAppVisible(id, "hide");
+        }
 
-        id = getIdbyStartupMode(id, mode, serviceName);
         WebViewFragment fragment = getFragmentById(id);
         if (fragment == null) {
             return;

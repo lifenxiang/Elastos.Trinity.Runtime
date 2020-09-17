@@ -422,7 +422,7 @@ import org.json.JSONObject;
             String startupMode = cursor.getString(cursor.getColumnIndex(AppInfo.STARTUP_MODE));
             String serviceName = null;
             if (startupMode == null) {
-                startupMode = AppManager.STARTUP_APP;
+                startupMode = AppManager.STARTUP_INTENT;
             }
             else if (startupMode.equals(AppManager.STARTUP_SERVICE)) {
                 serviceName = cursor.getString(cursor.getColumnIndex(AppInfo.SERVICE_NAME));

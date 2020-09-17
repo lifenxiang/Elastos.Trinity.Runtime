@@ -638,7 +638,7 @@
                 if (action != nil) {
                     var startupMode = intent_filter["startup_mode"];
                     if (startupMode == nil) {
-                        startupMode = AppManager.STARTUP_APP;
+                        startupMode = AppManager.STARTUP_INTENT;
                     }
                     else {
                         if (!AppManager.isStartupMode(startupMode!)) {

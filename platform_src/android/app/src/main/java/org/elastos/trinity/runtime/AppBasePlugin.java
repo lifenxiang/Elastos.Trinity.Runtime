@@ -242,7 +242,7 @@ public class AppBasePlugin extends TrinityPlugin {
     protected void setVisible(JSONArray args, CallbackContext callbackContext) throws Exception {
         String visible = args.getString(0);
 
-        if (!startupMode.equals(AppManager.STARTUP_APP)) {
+        if (!startupMode.equals(AppManager.STARTUP_APP) && !startupMode.equals(AppManager.STARTUP_INTENT)) {
             callbackContext.error("'" + startupMode + "' mode can't setVisible.");
             return;
         }
@@ -251,9 +251,9 @@ public class AppBasePlugin extends TrinityPlugin {
             visible = "show";
         }
 
-        appManager.setAppVisible(appId, visible);
+        appManager.setAppVisible(modeId, visible);
         if (visible.equals("show")) {
-            appManager.start(this.appId, AppManager.STARTUP_APP, null);
+            appManager.start(this.appId, startupMode, null);
         }
         else {
             appManager.loadLauncher();

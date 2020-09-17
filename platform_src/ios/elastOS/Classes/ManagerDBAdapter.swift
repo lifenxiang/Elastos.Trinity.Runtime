@@ -25,7 +25,7 @@ import SQLite
 
 class ManagerDBAdapter {
     @objc static let DATABASE_NAME = "manager.db";
-    @objc static let VERSION = 1;
+    @objc static let VERSION = 2;
     @objc static let AUTH_PLUGIN_TABLE = "auth_plugin";
     @objc static let AUTH_URL_TABLE = "auth_url";
     @objc static let AUTH_INTENT_TABLE = "auth_intent";
@@ -701,10 +701,14 @@ class ManagerDBAdapter {
            Log.d("ManagerDBHelper", "Upgrading database to v1");
            try upgradeToV1();
         }
+        if (oldVersion < 2) {
+           Log.d("ManagerDBHelper", "Upgrading database to v2");
+           try upgradeToV2();
+        }
     }
     
     private func upgradeToV1() throws {
-        try db.run(intent_filters.addColumn(startup_mode, defaultValue: "app"))
+        try db.run(intent_filters.addColumn(startup_mode, defaultValue: AppManager.STARTUP_INTENT))
         try db.run(intent_filters.addColumn(service_name, defaultValue: nil))
         
         try db.run(services.create(ifNotExists: true) { t in
@@ -714,6 +718,13 @@ class ManagerDBAdapter {
         })
         
         db.userVersion = 1;
+    }
+    
+    private func upgradeToV2() throws {
+        let row = intent_filters.filter(startup_mode == AppManager.STARTUP_APP);
+        try db.run(row.update(startup_mode <-  AppManager.STARTUP_INTENT));
+        
+        db.userVersion = 2;
     }
     
  }
