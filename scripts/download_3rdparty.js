@@ -30,76 +30,20 @@ const files_to_download  = [
     "targetDir": "../Plugins/Wallet/src/ios",
     "md5": "426791e81a8674a923975548d9c0eccc"
   },{
-    "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/v0.1.0/ElastosDIDSDK.framework.zip",
-    "filename": "ElastosDIDSDK.framework.zip",
+    "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/release-v1.1/ElastosDIDSDK-framework-for-trinity.zip",
+    "filename": "ElastosDIDSDK-framework-for-trinity.zip",
     "sourceDirs": [
-      "ElastosDIDSDK.framework"
+      "ElastosDIDSDK-framework-for-trinity/ElastosDIDSDK.framework",
+      "ElastosDIDSDK-framework-for-trinity/Antlr4.framework",
+      "ElastosDIDSDK-framework-for-trinity/PromiseKit.framework",
+      "ElastosDIDSDK-framework-for-trinity/Cryptor.framework",
+      "ElastosDIDSDK-framework-for-trinity/CryptorRSA.framework",
+      "ElastosDIDSDK-framework-for-trinity/KituraContracts.framework",
+      "ElastosDIDSDK-framework-for-trinity/LoggerAPI.framework",
+      "ElastosDIDSDK-framework-for-trinity/Logging.framework"
     ],
     "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "b8c748d7fd3f86dd9d1accdaf41ee78d"
-  },
-  {
-    "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/v0.1.0/Antlr4.framework.zip",
-    "filename": "Antlr4.framework.zip",
-    "sourceDirs": [
-      "Antlr4.framework"
-    ],
-    "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "4eefd62d23aac4b206b67ea6e1d36edb"
-  },
-  {
-    "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/v0.1.0/PromiseKit.framework.zip",
-    "filename": "PromiseKit.framework.zip",
-    "sourceDirs": [
-      "PromiseKit.framework"
-    ],
-    "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "6f7096e86b45f79bef2a935e57f4de90"
-  },
-  {
-    "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/v0.1.0/Cryptor.framework.zip",
-    "filename": "Cryptor.framework.zip",
-    "sourceDirs": [
-      "Cryptor.framework"
-    ],
-    "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "35b7599f8da68f2e72903bd18ce0d0cd"
-  },
-  {
-    "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/v0.1.0/CryptorRSA.framework.zip",
-    "filename": "CryptorRSA.framework.zip",
-    "sourceDirs": [
-      "CryptorRSA.framework"
-    ],
-    "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "dc4bbadc5ba1063621e9280108bd1475"
-  },
-  {
-    "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/v0.1.0/KituraContracts.framework.zip",
-    "filename": "KituraContracts.framework.zip",
-    "sourceDirs": [
-      "KituraContracts.framework"
-    ],
-    "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "b75d65b9f5cda85d5a46c5852eb50186"
-  },
-  {
-    "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/v0.1.0/LoggerAPI.framework.zip",
-    "filename": "LoggerAPI.framework.zip",
-    "sourceDirs": [
-      "LoggerAPI.framework"
-    ],
-    "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "7f00086233dcc7e919aa9e25335e0d47"
-  },
-  {
-    "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/v0.1.0/Logging.framework.zip",
-    "filename": "Logging.framework.zip",
-    "sourceDirs": [
-      "Logging.framework"
-    ],
-    "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "aa4649f771f03e63eb71b15ad458851e"
+    "md5": "5c371ea2eb2a7526e2534a6f089e7c37"
   }
 ]
 // no need to configure below
