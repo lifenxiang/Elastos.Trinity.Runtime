@@ -35,6 +35,7 @@
      public static final String APP_TID = "app_tid";
      public static final String APP_ID = "app_id";
      public static final String DID = "did";
+     public static final String PUBLIC_KEY = "public_key";
      public static final String VERSION = "version";
      public static final String VERSION_CODE = "version_code";
      public static final String NAME = "name";
@@ -80,6 +81,7 @@
      public long tid;
      public String app_id;
      public String did;
+     public String public_key;
      public String version;
      public int    version_code;
      public String name;

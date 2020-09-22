@@ -352,6 +352,7 @@ public class AppInstaller {
         String downloadPkgPath = null;
         String originUrl = url;
         String epkDid = null;
+        String publicKey = null;
         sendInstallingMessage("start", "", originUrl);
 
         if (url.startsWith("asset://")) {
@@ -422,6 +423,9 @@ public class AppInstaller {
             }
             epkDid = did_url;
 
+            //Get did from did_url
+            publicKey = public_key;
+
             Log.d("AppInstaller", "The EPK was signed by (Public Key): " + public_key);
             sendInstallingMessage("verified", "", originUrl);
         }
@@ -438,6 +442,14 @@ public class AppInstaller {
         AppInfo oldInfo = appManager.getAppInfo(info.app_id);
         if (oldInfo != null) {
             if (update) {
+                if (verifyDigest && oldInfo.public_key != null) {
+                    if (!oldInfo.public_key.equals(publicKey)) {
+                        throw new Exception("The epk's public key is different!");
+                    }
+                    if ((info.public_key != null) && !oldInfo.public_key.equals(info.public_key)) {
+                        throw new Exception("The mainfest's public key is different!");
+                    }
+                }
                 Log.d("AppInstaller", "install() - uninstalling "+info.app_id+" - update = true");
                 if (oldInfo.launcher != 1 && !appManager.isDIDSession(oldInfo.app_id)) {
                     AppManager.getShareInstance().unInstall(info.app_id, true);
@@ -459,6 +471,10 @@ public class AppInstaller {
 
         if (epkDid != null) {
             info.did = epkDid;
+        }
+
+        if (publicKey != null) {
+            info.public_key = publicKey;
         }
 
         if (oldInfo != null && oldInfo.launcher == 1) {
@@ -838,6 +854,10 @@ public class AppInstaller {
 
         if (json.has(AppInfo.DID)) {
             appInfo.did = json.getString(AppInfo.DID);
+        }
+
+        if (json.has(AppInfo.PUBLIC_KEY)) {
+            appInfo.public_key = json.getString(AppInfo.PUBLIC_KEY);
         }
 
         appInfo.install_time = System.currentTimeMillis() / 1000;

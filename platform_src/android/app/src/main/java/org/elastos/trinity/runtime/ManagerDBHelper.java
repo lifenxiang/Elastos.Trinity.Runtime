@@ -30,7 +30,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 public class ManagerDBHelper extends SQLiteOpenHelper {
-    private static final int DATABASE_VERSION = 8;
+    private static final int DATABASE_VERSION = 9;
 
     private static final String DATABASE_NAME = "manager.db";
     public static final String AUTH_PLUGIN_TABLE = "auth_plugin";
@@ -144,6 +144,7 @@ public class ManagerDBHelper extends SQLiteOpenHelper {
         strSQL = "create table " + APP_TABLE + "(tid integer primary key autoincrement, " +
                 AppInfo.APP_ID + " varchar(128) UNIQUE NOT NULL, " +
                 AppInfo.DID + " varchar(128), " +
+                AppInfo.PUBLIC_KEY + " varchar(128), " +
                 AppInfo.VERSION + " varchar(32) NOT NULL, " +
                 AppInfo.VERSION_CODE + " integer, " +
                 AppInfo.NAME + " varchar(128) NOT NULL, " +
@@ -211,6 +212,10 @@ public class ManagerDBHelper extends SQLiteOpenHelper {
             Log.d("ManagerDBHelper", "Upgrading database to v8");
             upgradeToV8(db);
         }
+        if (oldVersion < 9) {
+            Log.d("ManagerDBHelper", "Upgrading database to v9");
+            upgradeToV9(db);
+        }
     }
 
     @Override
@@ -246,8 +251,6 @@ public class ManagerDBHelper extends SQLiteOpenHelper {
             db.execSQL(strSQL);
         } catch (SQLException e) {
             e.printStackTrace();
-            // Do nothing, intercept SQL errors - in case we try to apply an upgrade again after a strange downgrade from android
-            // (happened to KP many times - unknown reason - 2020.03)
         }
     }
 
@@ -290,16 +293,24 @@ public class ManagerDBHelper extends SQLiteOpenHelper {
             db.execSQL(strSQL);
         } catch (SQLException e) {
             e.printStackTrace();
-            // Do nothing, intercept SQL errors - in case we try to apply an upgrade again after a strange downgrade from android
-            // (happened to KP many times - unknown reason - 2020.03)
         }
     }
+
     private void upgradeToV8(SQLiteDatabase db) {
         try {
                 ContentValues contentValues = new ContentValues();
                 contentValues.put(AppInfo.STARTUP_MODE, AppManager.STARTUP_INTENT);
                 contentValues.put(AppInfo.SERVICE_NAME, "");
                 db.update(ManagerDBHelper.INTENT_FILTER_TABLE, contentValues, null, null );
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void upgradeToV9(SQLiteDatabase db) {
+        try {
+            String strSQL = "ALTER TABLE " + APP_TABLE + " ADD COLUMN " + AppInfo.PUBLIC_KEY + " varchar(128)";
+            db.execSQL(strSQL);
         } catch (SQLException e) {
             e.printStackTrace();
         }
