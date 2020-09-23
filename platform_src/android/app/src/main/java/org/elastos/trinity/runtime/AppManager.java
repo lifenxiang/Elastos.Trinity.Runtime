@@ -917,7 +917,7 @@ public class AppManager {
             }
 
             if (!getAppVisible(id, mode)) {
-                if (mode.equals(STARTUP_APP)) {
+                if (mode.equals(STARTUP_APP) || mode.equals(STARTUP_INTENT)) {
                     showActivityIndicator(true);
                 }
                 hideFragment(fragment, mode, id);
