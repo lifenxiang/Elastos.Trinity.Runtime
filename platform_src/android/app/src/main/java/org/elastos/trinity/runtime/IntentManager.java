@@ -3,6 +3,7 @@ package org.elastos.trinity.runtime;
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.net.Uri;
+import android.os.Handler;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
@@ -306,6 +307,7 @@ public class IntentManager {
                 appManager.start(info.filter.packageId, info.filter.startupMode, info.filter.serviceName);
                 appManager.sendLauncherMessageMinimize(info.fromId);
             }
+
             fragment.basePlugin.onReceiveIntent(info);
         }
         else {
