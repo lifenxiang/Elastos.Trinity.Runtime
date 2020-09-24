@@ -3,15 +3,15 @@
 // CONFIGURE HERE
 const files_to_download  = [
   {
-    "url": "https://github.com/elastos/Elastos.NET.Carrier.Swift.SDK/releases/download/release-v5.6.4/ElastosCarrier-framework.zip",
+    "url": "https://github.com/elastos/Elastos.NET.Carrier.Swift.SDK/releases/download/release-v5.6.5/ElastosCarrier-framework.zip",
     "filename": "ElastosCarrier-framework.zip",
     "sourceDirs": [
       "ElastosCarrier-framework/ElastosCarrierSDK.framework"
     ],
     "targetDir": "../Plugins/Carrier/src/ios/libs",
-    "md5": "2d5da94e04d57fde6f38b2fca422c742"
+    "md5": "b75bb05b7b393147019a19e7c67c33ad"
   },{
-    "url": "https://github.com/elastos/Elastos.NET.Hive.Swift.SDK/releases/download/release-v1.0.1/ElastosHiveSDK-framework-for-trinity.zip",
+    "url": "https://github.com/elastos/Elastos.NET.Hive.Swift.SDK/releases/download/release-v1.0.2/ElastosHiveSDK-framework-for-trinity.zip",
     "filename": "ElastosHiveSDK-framework-for-trinity.zip",
     "sourceDirs": [
       "ElastosHiveSDK-framework-for-trinity/Alamofire.framework",
@@ -20,7 +20,7 @@ const files_to_download  = [
       "ElastosHiveSDK-framework-for-trinity/Swifter.framework"
     ],
     "targetDir": "../Plugins/Hive/src/ios/libs",
-    "md5": "c7740161c0541f1e23a994419b57c81f"
+    "md5": "af87566ea05120657de2f2f47d4ac35e"
   },{
     "url": "https://github.com/elastos/Elastos.Trinity.Plugins.Wallet/releases/download/spvsdk-V0.5.6.1/libspvsdk.zip",
     "filename": "libspvsdk.zip",
@@ -43,7 +43,7 @@ const files_to_download  = [
       "ElastosDIDSDK-framework-for-trinity/Logging.framework"
     ],
     "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "5c371ea2eb2a7526e2534a6f089e7c37"
+    "md5": "e92f96b87d3655020f98b383b049abb0"
   }
 ]
 // no need to configure below
