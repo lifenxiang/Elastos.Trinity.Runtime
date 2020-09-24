@@ -620,7 +620,7 @@ public class IntentManager {
                         // Response url can't be handled by trinity. So we either call an intent to open it, or HTTP POST data
                         if (info.redirecturl != null) {
                             url = info.redirecturl + "/" + jwt;
-                            basePlugin.webView.showWebPage(url, true, false, null);
+                            Utility.showWebPage(appManager.activity, url);
                         } else if (info.callbackurl != null) {
                             postCallback("jwt", jwt, info.callbackurl);
                         }
@@ -637,7 +637,7 @@ public class IntentManager {
                         // Response url can't be handled by trinity. So we either call an intent to open it, or HTTP POST data
                         if (info.redirecturl != null) {
                             url = getResultUrl(url, ret);
-                            basePlugin.webView.showWebPage(url, true, false, null);
+                            Utility.showWebPage(appManager.activity, url);
                         } else if (info.callbackurl != null) {
                             postCallback("result", ret, info.callbackurl);
                         }
