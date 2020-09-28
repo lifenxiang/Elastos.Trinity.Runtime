@@ -1,6 +1,7 @@
 package org.elastos.trinity.runtime;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.Handler;
@@ -59,6 +60,10 @@ public class IntentManager {
 
     public class ShareIntentParams {
         String title = null;
+        Uri url = null;
+    }
+
+    public class OpenUrlIntentParams {
         Uri url = null;
     }
 
@@ -247,8 +252,8 @@ public class IntentManager {
             IntentFilter[] filters = getIntentFilter(info.action);
 
             // Throw an error in case no one can handle the action.
-            // Special case for the "share" action that is always handled by the native OS too.
-            if (!info.action.equals("share")) {
+            // Special case for some specific actions that is always handled by the native OS too.
+            if (!info.action.equals("share") && !info.action.equals("openurl")) {
                 if (filters.length == 0) {
                     throw new Exception("Intent action "+info.action+" isn't supported!");
                 }
@@ -258,10 +263,14 @@ public class IntentManager {
                 throw new Exception("Application "+info.fromId+" doesn't have the permission to send an intent with action "+info.action);
             }
 
-            // If there is only one application able to handle this intent, we directly use it.
-            // Otherwise, we display a prompt so that user can pick the right application.
-            // "share" action is special, as it must deal with the native share action.
-            if (!info.action.equals("share")) {
+            if (info.action.equals("openurl")) {
+                // We don't let apps handle the openurl intent. It's always a native call.
+                sendNativeOpenUrlAction(info);
+            }
+            else if (!info.action.equals("share")) {
+                // If there is only one application able to handle this intent, we directly use it.
+                // Otherwise, we display a prompt so that user can pick the right application.
+                // "share" action is special, as it must deal with the native share action.
                 if (filters.length == 1) {
                     info.toId = getIdbyFilter(filters[0]);
                     info.filter = filters[0];
@@ -746,6 +755,47 @@ public class IntentManager {
             sendIntent.putExtra(android.content.Intent.EXTRA_TEXT,  TextUtils.join(" ", extraTextParams));
 
             sendIntent.setType("text/plain");
+
+            android.content.Intent shareIntent = android.content.Intent.createChooser(sendIntent, null);
+            appManager.activity.startActivity(shareIntent);
+        }
+    }
+
+    private OpenUrlIntentParams extractOpenUrlIntentParams(IntentInfo info) {
+        // Extract JSON params from the open url intent. Expected format is {url:""}.
+        if (info.params == null) {
+            System.out.println("Openurl intent params are not set!");
+            return null;
+        }
+
+        JSONObject jsonParams = null;
+        try {
+            jsonParams = new JSONObject(info.params);
+        } catch (JSONException e) {
+            System.out.println("Openurl intent parameters are not JSON format");
+            return null;
+        }
+
+        OpenUrlIntentParams openUrlIntentParams = new OpenUrlIntentParams();
+
+        String url = jsonParams.optString("url");
+        if (openUrlIntentParams != null) {
+            openUrlIntentParams.url = Uri.parse(url);
+        }
+
+        return openUrlIntentParams;
+    }
+
+    void sendNativeOpenUrlAction(IntentInfo info) {
+        OpenUrlIntentParams extractedParams = extractOpenUrlIntentParams(info);
+        if (extractedParams != null)  {
+            // Can't send an empty open url action
+            if (extractedParams.url == null)
+                return;
+
+            android.content.Intent sendIntent = new android.content.Intent();
+            sendIntent.setAction(Intent.ACTION_VIEW);
+            sendIntent.setData(extractedParams.url);
 
             android.content.Intent shareIntent = android.content.Intent.createChooser(sendIntent, null);
             appManager.activity.startActivity(shareIntent);
