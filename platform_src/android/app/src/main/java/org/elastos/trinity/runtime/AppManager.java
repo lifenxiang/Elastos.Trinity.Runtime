@@ -219,6 +219,10 @@ public class AppManager {
         saveBuiltInApps();
         refreashInfos();
 
+        // Apply theming for native popups
+        boolean darkMode = PreferenceManager.getShareInstance().getBooleanValue("ui.darkmode", false);
+        UIStyling.prepare(darkMode);
+
         if (!ConfigManager.getShareInstance().isNativeBuild()) {
             IdentityEntry entry = null;
             try {
@@ -253,10 +257,6 @@ public class AppManager {
         if (PreferenceManager.getShareInstance().getDeveloperMode()) {
 //            CLIService.getShareInstance().start();
         }
-
-        // Apply theming for native popups
-        boolean darkMode = PreferenceManager.getShareInstance().getBooleanValue("ui.darkmode", false);
-        UIStyling.prepare(darkMode);
     }
 
 
