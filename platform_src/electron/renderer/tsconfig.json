@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+      "noImplicitAny": false,
+      "declaration": false,
+      "module": "es2015",
+      "allowSyntheticDefaultImports": true,
+      "moduleResolution": "node",
+      "experimentalDecorators": true,
+      "importHelpers": true,
+      "target": "es5",
+      "lib": [
+        "es2018",
+        "dom"
+      ],
+      "allowJs": true,
+      "sourceMap": true,
+      "preserveConstEnums": true,
+    }
+}

@@ -5,25 +5,11 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.net.Uri;
-import android.os.Bundle;
 
-import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaArgs;
-import org.apache.cordova.CordovaInterface;
-import org.apache.cordova.CordovaPlugin;
-import org.apache.cordova.CordovaPreferences;
-import org.apache.cordova.CordovaResourceApi;
-import org.apache.cordova.CordovaWebView;
-import org.apache.cordova.ICordovaClientCertRequest;
-import org.apache.cordova.ICordovaHttpAuthHandler;
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
@@ -84,5 +70,13 @@ public class Utility {
         hostname += appId;
 
         return Uri.encode(hostname.toLowerCase());
+    }
+
+    public static void showWebPage(Activity activity, String url) {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.addCategory(Intent.CATEGORY_BROWSABLE);
+        Uri uri = Uri.parse(url);
+        intent.setData(uri);
+        activity.startActivity(intent);
     }
 }

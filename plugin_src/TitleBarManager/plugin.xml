@@ -20,4 +20,10 @@
             </feature>
         </config-file>
     </platform>
+	
+	<platform name="electron">
+        <js-module src="src/electron/TitleBarManagerPluginProxy.js" name="TitleBarManagerPluginProxy">
+            <runs />
+        </js-module>
+    </platform>
 </plugin>

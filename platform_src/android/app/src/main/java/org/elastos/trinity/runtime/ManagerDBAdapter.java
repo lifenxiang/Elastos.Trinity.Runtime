@@ -26,12 +26,15 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import org.json.JSONObject;
 
  public class ManagerDBAdapter {
-    ManagerDBHelper helper;
-    Context context;
+     private static final String LOG_TAG = "ManagerDBAdapter";
+
+     ManagerDBHelper helper;
+     Context context;
 
      public ManagerDBAdapter(Context context, String dbPath)
      {
@@ -55,6 +58,8 @@ import org.json.JSONObject;
             SQLiteDatabase db = helper.getWritableDatabase();
             ContentValues contentValues = new ContentValues();
             contentValues.put(AppInfo.APP_ID, info.app_id);
+            contentValues.put(AppInfo.DID, info.did);
+            contentValues.put(AppInfo.PUBLIC_KEY, info.public_key);
             contentValues.put(AppInfo.VERSION, info.version);
             contentValues.put(AppInfo.VERSION_CODE, info.version_code);
             contentValues.put(AppInfo.NAME, info.name);
@@ -169,7 +174,7 @@ import org.json.JSONObject;
 
     private AppInfo[] getInfos(String selection, String[] selectionArgs) {
         SQLiteDatabase db = helper.getWritableDatabase();
-        String[] columns = {AppInfo.TID, AppInfo.APP_ID, AppInfo.VERSION, AppInfo.VERSION_CODE, AppInfo.NAME, AppInfo.SHORT_NAME,
+        String[] columns = {AppInfo.TID, AppInfo.APP_ID, AppInfo.DID, AppInfo.PUBLIC_KEY, AppInfo.VERSION, AppInfo.VERSION_CODE, AppInfo.NAME, AppInfo.SHORT_NAME,
                 AppInfo.DESCRIPTION, AppInfo.START_URL, AppInfo.START_VISIBLE, AppInfo.TYPE,
                 AppInfo.AUTHOR_NAME, AppInfo.AUTHOR_EMAIL, AppInfo.DEFAULT_LOCAL, AppInfo.BACKGROUND_COLOR,
                 AppInfo.THEME_DISPLAY, AppInfo.THEME_COLOR, AppInfo.THEME_FONT_NAME, AppInfo.THEME_FONT_COLOR,
@@ -182,6 +187,8 @@ import org.json.JSONObject;
             AppInfo info = new AppInfo();
             info.tid = cursor.getInt(cursor.getColumnIndex(AppInfo.TID));
             info.app_id = cursor.getString(cursor.getColumnIndex(AppInfo.APP_ID));
+            info.did = cursor.getString(cursor.getColumnIndex(AppInfo.DID));
+            info.public_key = cursor.getString(cursor.getColumnIndex(AppInfo.PUBLIC_KEY));
             info.version = cursor.getString(cursor.getColumnIndex(AppInfo.VERSION));
             info.version_code = cursor.getInt(cursor.getColumnIndex(AppInfo.VERSION_CODE));
             info.name = cursor.getString(cursor.getColumnIndex(AppInfo.NAME));
@@ -264,6 +271,8 @@ import org.json.JSONObject;
             String[] idArg = {info.app_id};
             String[] columns6 = {AppInfo.STARTUP_SERVICE};
             cursor1 = db.query(ManagerDBHelper.SERVICE_TABLE, columns6,AppInfo.APP_ID + "=?", idArg,null,null,null);
+            Log.d(LOG_TAG, "DBAdapter getInfo: adding services to app info, from database, for "+info.app_id);
+
             while (cursor1.moveToNext()) {
                 info.addStartService(cursor1.getString(cursor1.getColumnIndex(AppInfo.STARTUP_SERVICE)));
             }
@@ -390,15 +399,15 @@ import org.json.JSONObject;
         int count = db.delete(ManagerDBHelper.AUTH_URL_TABLE, where, whereArgs);
         db.delete(ManagerDBHelper.AUTH_INTENT_TABLE, where, whereArgs);
         count = db.delete(ManagerDBHelper.AUTH_PLUGIN_TABLE, where, whereArgs);
-        db.delete(ManagerDBHelper.ICONS_TABLE, where, whereArgs);
-        db.delete(ManagerDBHelper.LACALE_TABLE, where, whereArgs);
-        db.delete(ManagerDBHelper.FRAMEWORK_TABLE, where, whereArgs);
-        db.delete(ManagerDBHelper.PLATFORM_TABLE, where, whereArgs);
+        count = db.delete(ManagerDBHelper.ICONS_TABLE, where, whereArgs);
+        count = db.delete(ManagerDBHelper.LACALE_TABLE, where, whereArgs);
+        count = db.delete(ManagerDBHelper.FRAMEWORK_TABLE, where, whereArgs);
+        count = db.delete(ManagerDBHelper.PLATFORM_TABLE, where, whereArgs);
         where = AppInfo.APP_ID + "=?";
         String[] args = {info.app_id};
-        db.delete(ManagerDBHelper.INTENT_FILTER_TABLE, where, args);
-        db.delete(ManagerDBHelper.SETTING_TABLE, where, args);
-        db.delete(ManagerDBHelper.SERVICE_TABLE, where, args);
+        count = db.delete(ManagerDBHelper.INTENT_FILTER_TABLE, where, args);
+        count = db.delete(ManagerDBHelper.SETTING_TABLE, where, args);
+        count = db.delete(ManagerDBHelper.SERVICE_TABLE, where, args);
         where = AppInfo.TID + "=?";
         count = db.delete(ManagerDBHelper.APP_TABLE, where, whereArgs);
         return count;
@@ -415,7 +424,7 @@ import org.json.JSONObject;
             String startupMode = cursor.getString(cursor.getColumnIndex(AppInfo.STARTUP_MODE));
             String serviceName = null;
             if (startupMode == null) {
-                startupMode = AppManager.STARTUP_APP;
+                startupMode = AppManager.STARTUP_INTENT;
             }
             else if (startupMode.equals(AppManager.STARTUP_SERVICE)) {
                 serviceName = cursor.getString(cursor.getColumnIndex(AppInfo.SERVICE_NAME));

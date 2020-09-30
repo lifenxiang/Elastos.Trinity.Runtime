@@ -268,6 +268,11 @@ public class TitleBar extends FrameLayout {
     }
 
     public void showActivityIndicator(TitleBarActivityType activityType, String hintText) {
+        // NOTE: NON SENSE ON ANDROID - just kept to keep aligned code on android and ios.
+        // Don't show activity indicators on ios/itunes
+        if (ConfigManager.getShareInstance().getStringValue("build.variant", "").equals("itunesappstore"))
+            return;
+
         // Increase reference count for this progress animation type
         activityCounters.put(activityType, activityCounters.get(activityType) + 1);
         activityHintTexts.put(activityType, hintText);
@@ -490,8 +495,11 @@ public class TitleBar extends FrameLayout {
         else {
             // Custom app image, try to load it
             AppInfo appInfo = appManager.getAppInfo(appId);
+
+            int backupremote = appInfo.remote;
             appInfo.remote = 0; // TODO - DIRTY! FIND A BETTER WAY TO GET THE REAL IMAGE PATH FROM JS PATH !
             String iconPath = appManager.getAppPath(appInfo) + icon.iconPath;
+            appInfo.remote = backupremote;
 
             iv.setImageURI(Uri.parse(iconPath));
         }

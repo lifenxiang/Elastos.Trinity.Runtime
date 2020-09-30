@@ -574,7 +574,7 @@ public class PasswordManager {
                             } catch (Exception e) {
                                 // In case of wrong password exception, try again
                                 if (e.getMessage().contains("BAD_DECRYPT")) {
-                                    loadDatabase(did, listener, true);
+                                    loadDatabase(did, listener, true, forcePasswordPrompt);
                                 } else {
                                     // Other exceptions are passed raw
                                     listener.onError(e.getMessage());

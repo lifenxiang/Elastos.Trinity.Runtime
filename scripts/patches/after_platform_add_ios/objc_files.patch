@@ -239,9 +239,7 @@
  //
 
  #import <Cordova/CDV.h>
-+#import "TrinityPlugin.h"
-+#import <CommonCrypto/CommonDigest.h>
-+//#import "SPVWallet.h"
++#import "BridgingSwift.h"
 
 ===================================================================
 --- origin_platforms/ios/CordovaLib/Classes/Public/CDVPlugin.h	null

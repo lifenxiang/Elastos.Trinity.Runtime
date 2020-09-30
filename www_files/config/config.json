@@ -23,7 +23,8 @@
         "org.elastos.trinity.dapp.did"
     ],
     "whitelist.urls": [
-        "https://sentry.io/*"
+        "https://sentry.io/*",
+        "http://api.elastos.io/*"
     ],
     "native.dapps.mode": false,
     "native.dapps": {

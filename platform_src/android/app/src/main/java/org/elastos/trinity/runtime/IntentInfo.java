@@ -17,6 +17,7 @@ public class IntentInfo {
     String fromId;
     String toId;
     long intentId;
+    Boolean silent;
     CallbackContext callbackContext;
 
     IntentFilter filter;
@@ -31,12 +32,13 @@ public class IntentInfo {
     int type = API;
 
     IntentInfo(String action, String params, String fromId, String toId,
-               long intentId, CallbackContext callbackContext) {
+               long intentId, Boolean silent, CallbackContext callbackContext) {
         this.action = action;
         this.params = params;
         this.fromId = fromId;
         this.toId = toId;
         this.intentId = intentId;
+        this.silent = silent;
         this.callbackContext = callbackContext;
     }
 

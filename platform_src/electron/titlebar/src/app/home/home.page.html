@@ -1,0 +1,38 @@
+<ion-content [fullscreen]="true">
+    <ion-grid class="ion-no-padding" [ngStyle]="{'background-color': currentTitleBar.flRoot.backgroundColor}">
+        <ion-row>
+            <ion-col class="icon-container" size="1.5">
+                <ion-img class="icon"
+                    [ngStyle]="{'filter': currentTitleBar.btnOuterLeft.state.colorFilter, 'display': currentTitleBar.btnOuterLeft.state.visibility}"
+                    [src]="currentTitleBar.btnOuterLeft.state.imageResource"
+                    (click)="currentTitleBar.handleOuterLeftClicked()">
+                </ion-img>
+            </ion-col>
+            <ion-col class="icon-container" size="1.5">
+                <ion-img class="icon"
+                    [ngStyle]="{'filter': currentTitleBar.btnInnerLeft.state.colorFilter, 'display': currentTitleBar.btnInnerLeft.state.visibility}"
+                    [src]="currentTitleBar.btnInnerLeft.state.imageResource"
+                    (click)="currentTitleBar.handleInnerLeftClicked()">
+                </ion-img>
+            </ion-col>
+            <ion-col class="icon-container" size="6">
+                <h2 class="title" [ngStyle]="{'color': currentTitleBar.tvTitle.textColor}">{{ currentTitleBar.tvTitle.text }}</h2>
+            </ion-col>
+            <ion-col class="icon-container" size="1.5">
+                <ion-img class="icon"
+                    [ngStyle]="{'filter': currentTitleBar.btnInnerRight.state.colorFilter, 'display': currentTitleBar.btnInnerRight.state.visibility}"
+                    [src]="currentTitleBar.btnInnerRight.state.imageResource"
+                    (click)="currentTitleBar.handleInnerRightClicked()">
+                </ion-img>
+            </ion-col>
+            <ion-col class="icon-container" size="1.5">
+                <ion-img class="icon"
+                    [ngStyle]="{'filter': currentTitleBar.btnOuterRight.state.colorFilter, 'display': currentTitleBar.btnOuterRight.state.visibility}"
+                    [src]="currentTitleBar.btnOuterRight.state.imageResource"
+                    (click)="currentTitleBar.handleOuterRightClicked()"></ion-img>
+            </ion-col>
+        </ion-row>
+        
+    </ion-grid>
+    <div class="animationHint" [ngStyle]="{'color': currentTitleBar.tvAnimationHint.textColor, 'display': currentTitleBar.tvAnimationHint.visibility}">animationHint</div>
+</ion-content>

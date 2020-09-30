@@ -231,7 +231,7 @@ class AppManager: NSObject {
     private func reInit(_ sessionLanguage: String?) {
         curController = nil;
 
-        pathInfo = AppPathInfo(getDIDDir());
+        pathInfo = AppPathInfo(getDIDDir(self.did));
 
         dbAdapter.setUserDBAdapter(pathInfo?.databasePath);
 
@@ -268,14 +268,25 @@ class AppManager: NSObject {
     }
 
     private func startStartupServices() {
+        let FIRST_SERVICE_START_DELAY = 5000
+        let DELAY_BETWEEN_EACH_SERVICE = 5000
+
+        // Start services one after another, with an arbitrary (for now, to keep things simple) delay between starts
+        var nextDelay = FIRST_SERVICE_START_DELAY
         for info in appList {
             for service in info.startupServices {
-                do {
-                    try start(info.app_id, AppManager.STARTUP_SERVICE, service.name);
-                }
-                catch let error {
-                    print("startStartupServices error: \(error)");
-                }
+                DispatchQueue(label: "service \(info.app_id)").asyncAfter(deadline: .now() + .milliseconds(nextDelay), execute: {
+                    // Start must be called from the main thread
+                    DispatchQueue.main.async {
+                        do {
+                            try self.start(info.app_id, AppManager.STARTUP_SERVICE, service.name);
+                        }
+                        catch let error {
+                            print("startStartupServices error: \(error)");
+                        }
+                    }
+                })
+                nextDelay += DELAY_BETWEEN_EACH_SERVICE
             }
         }
     }
@@ -365,12 +376,15 @@ class AppManager: NSObject {
         return did;
     }
 
-    func getDIDDir() -> String? {
-        var did = getDID();
+    func getDIDDir(_ did: String?) -> String? {
         if (did != nil) {
             did!.replacingOccurrences(of: ":", with: "_")
         }
         return did;
+    }
+
+    func getPathInfo(_ did: String) -> AppPathInfo {
+        return AppPathInfo(getDIDDir(did));
     }
 
     func getDBAdapter() -> MergeDBAdapter {
@@ -397,10 +411,7 @@ class AppManager: NSObject {
     }
 
     func getAppVisible(_ id: String, _ startupMode: String) -> Bool {
-        if (startupMode == AppManager.STARTUP_INTENT) {
-            return true;
-        }
-        else if (startupMode == AppManager.STARTUP_SERVICE || startupMode == AppManager.STARTUP_SILENCE) {
+        if (startupMode == AppManager.STARTUP_SERVICE || startupMode == AppManager.STARTUP_SILENCE) {
             return false;
         }
 
@@ -514,12 +525,16 @@ class AppManager: NSObject {
     }
 
     @objc func getDataPath(_ id: String) -> String {
+        return getDataPath(id, pathInfo!);
+    }
+
+    func getDataPath(_ id: String, _ pathInfo: AppPathInfo) -> String {
         var appId = id;
         if (isLauncher(appId)) {
             appId = getLauncherInfo()!.app_id;
         }
 
-        return checkPath(pathInfo!.dataPath + appId + "/");
+        return checkPath(pathInfo.dataPath + appId + "/");
     }
 
     @objc func getDataUrl(_ id: String) -> String {
@@ -527,12 +542,16 @@ class AppManager: NSObject {
     }
 
     @objc func getTempPath(_ id: String) -> String {
+        return getTempPath(id, pathInfo!);
+    }
+
+    func getTempPath(_ id: String, _ pathInfo: AppPathInfo) -> String {
         var appId = id;
         if (isLauncher(appId)) {
             appId = getLauncherInfo()!.app_id;
         }
 
-        return checkPath(pathInfo!.tempPath + appId + "/");
+        return checkPath(pathInfo.tempPath + appId + "/");
     }
 
     @objc func getTempUrl(_ id: String) -> String {
@@ -828,15 +847,19 @@ class AppManager: NSObject {
 
             mainViewController.add(viewController!)
             viewControllers[id] = viewController;
+            
+            if (mode == AppManager.STARTUP_INTENT) {
+                setAppVisible(id, "hide");
+            }
 
-            if (!getAppVisible(packageId, mode)) {
+            if (!getAppVisible(id, mode)) {
                 hideViewController(viewController!, mode, id);
             }
 
             viewController!.setReady();
         }
 
-        if (getAppVisible(packageId, mode)) {
+        if (getAppVisible(id, mode)) {
             viewController!.view.isHidden = false;
             switchContent(viewController!, id);
         }
@@ -894,11 +917,15 @@ class AppManager: NSObject {
             throw AppError.error("No such app!");
         }
 
+        id = getIdbyStartupMode(id, startupMode: mode, serviceName: serviceName);
         if (mode == AppManager.STARTUP_APP) {
             setAppVisible(id, info!.start_visible);
         }
+        else if (mode == AppManager.STARTUP_INTENT) {
+            setAppVisible(id, "hide");
+        }
 
-        id = getIdbyStartupMode(id, startupMode: mode, serviceName: serviceName);
+        
         let viewController = getViewControllerById(id);
         if (viewController == nil) {
             return;

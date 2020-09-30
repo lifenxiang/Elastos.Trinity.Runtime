@@ -242,7 +242,7 @@ public class AppBasePlugin extends TrinityPlugin {
     protected void setVisible(JSONArray args, CallbackContext callbackContext) throws Exception {
         String visible = args.getString(0);
 
-        if (!startupMode.equals(AppManager.STARTUP_APP)) {
+        if (!startupMode.equals(AppManager.STARTUP_APP) && !startupMode.equals(AppManager.STARTUP_INTENT)) {
             callbackContext.error("'" + startupMode + "' mode can't setVisible.");
             return;
         }
@@ -251,9 +251,9 @@ public class AppBasePlugin extends TrinityPlugin {
             visible = "show";
         }
 
-        appManager.setAppVisible(appId, visible);
+        appManager.setAppVisible(modeId, visible);
         if (visible.equals("show")) {
-            appManager.start(this.appId, AppManager.STARTUP_APP, null);
+            appManager.start(this.appId, startupMode, null);
         }
         else {
             appManager.loadLauncher();
@@ -359,6 +359,7 @@ public class AppBasePlugin extends TrinityPlugin {
         String dataUrl = appManager.getDataUrl(info.app_id);
         JSONObject ret = new JSONObject();
         ret.put("id", info.app_id);
+        ret.put("did", info.did);
         ret.put("version", info.version);
         ret.put("versionCode", info.version_code);
         ret.put("name", info.name);
@@ -484,15 +485,19 @@ public class AppBasePlugin extends TrinityPlugin {
         String params = args.getString(1);
         long currentTime = System.currentTimeMillis();
         String toId = null;
+        Boolean silent = false;
 
         if (!args.isNull(2)) {
             JSONObject options = args.getJSONObject(2);
             if (options.has("appId")) {
                 toId = options.getString("appId");
             }
+            if (options.has("silentResponse")) {
+                silent = options.getBoolean("silentResponse");
+            }
         }
 
-        IntentInfo info = new IntentInfo(action, params, getModeId(), toId, currentTime, callbackContext);
+        IntentInfo info = new IntentInfo(action, params, getModeId(), toId, currentTime, silent, callbackContext);
 
         IntentManager.getShareInstance().doIntent(info);
         PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);

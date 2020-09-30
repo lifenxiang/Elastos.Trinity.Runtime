@@ -29,6 +29,8 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
+
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.core.content.ContextCompat;
@@ -81,8 +83,28 @@ public class WebViewActivity extends FragmentActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
+
+        /*
+         * When trinity is launched from an external url or native intent, android creates the MainActivity a
+         * second time, no matter what launchMode is configured. As our AppManager instance is static, and is linked
+         * to a main activity pointer, we must ensure that we always work in the first created MainActivity.
+         *
+         * To solve this, we let this second instance of the main activity be created, but we immediatelly close it.
+         * It just handles onNewIntent() to pass the intent info to the app manager.
+         *
+         * We also need to set our primary MainActivity visible.
+         */
+        if (AppManager.getShareInstance() != null) {
+            Log.d(TAG, "A MainActivity already exist. Closing this one and moving the existing activity on top of the visibility stack.");
+            finish();
+
+            Intent i = new Intent(this, MainActivity.class);
+            i.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(i);
+
+            return;
+        }
 
         setContentView(R.layout.activity_view);
         appManager = new AppManager(this);
@@ -120,7 +142,13 @@ public class WebViewActivity extends FragmentActivity {
     @Override
     public void onBackPressed() {
         if (appManager.doBackPressed()) {
-            super.onBackPressed();
+//            super.onBackPressed();
+
+            //Like as Home pressed
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.addCategory(Intent.CATEGORY_HOME);
+            startActivity(intent);
         }
     }
 

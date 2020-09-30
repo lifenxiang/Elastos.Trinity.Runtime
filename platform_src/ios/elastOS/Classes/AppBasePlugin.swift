@@ -71,14 +71,18 @@
     func sendIntent(_ action: String, _ params: String, _ options: [String: Any]?, _ callback: ((String, String?, String)->(Void))?) throws {
         let currentTime = Int64(Date().timeIntervalSince1970);
         var toId: String? = nil;
+        var silent: Bool? = false;
 
         if (options != nil) {
             if (options!["appId"] != nil) {
                 toId = options!["appId"] as? String ?? "";
             }
+            if (options!["silentResponse"] != nil) {
+                silent = options!["silentResponse"] as? Bool ?? false;
+            }
         }
 
-        let info = IntentInfo(action, params, getModeId(), toId, currentTime, callback);
+        let info = IntentInfo(action, params, getModeId(), toId, currentTime, silent!, callback);
         try? IntentManager.getShareInstance().doIntent(info);
     }
 
@@ -519,14 +523,18 @@
         let currentTime = Int64(Date().timeIntervalSince1970);
         let options = command.arguments[2] as? [String: Any] ?? nil
         var toId: String? = nil;
+        var silent: Bool? = false;
 
         if (options != nil) {
             if (options!["appId"] != nil) {
                 toId = options!["appId"] as? String ?? "";
             }
+            if (options!["silentResponse"] != nil) {
+                silent = options!["silentResponse"] as? Bool ?? false;
+            }
         }
 
-        let info = IntentInfo(action, params, getModeId(), toId, currentTime, command.callbackId);
+        let info = IntentInfo(action, params, getModeId(), toId, currentTime, silent!, command.callbackId);
 
         do {
             try IntentManager.getShareInstance().doIntent(info);
@@ -817,7 +825,7 @@
     @objc func setVisible(_ command: CDVInvokedUrlCommand) {
         var visible = command.arguments[0] as? String ?? "show"
 
-        if (startupMode != AppManager.STARTUP_APP) {
+        if (startupMode != AppManager.STARTUP_APP && startupMode != AppManager.STARTUP_INTENT) {
             self.error(command, "'" + startupMode + "' mode can't setVisible.");
             return;
         }
@@ -829,9 +837,9 @@
         do {
             let appManager = AppManager.getShareInstance();
 
-            appManager.setAppVisible(self.appId, visible);
+            appManager.setAppVisible(self.getModeId(), visible);
             if (visible == "show") {
-                try appManager.start(self.appId, AppManager.STARTUP_APP, nil);
+                try appManager.start(self.appId, startupMode, nil);
             }
             else {
                 try appManager.loadLauncher();

@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget android-packageName="org.elastos.trinity.runtime" ios-CFBundleIdentifier="org.elastos.trinity.browser" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget android-packageName="org.elastos.trinity.runtime" ios-CFBundleIdentifier="org.elastos.trinity.essentials" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>elastOS</name>
     <description>
         A elastos dapps runtime.
@@ -39,7 +39,8 @@
         </feature>
         <preference name="CordovaWebViewEngine" value="CDVWKWebViewEngine" />
     </platform>
-
+    <platform name="electron">
+    </platform>
     <preference name="AndroidLaunchMode" value="singleTask" />
     <preference name="SplashShowOnlyFirstTime" value="false" />
     <preference name="ShowSplashScreenSpinner" value="false" />
@@ -94,4 +95,5 @@
     <plugin name="cordova-plugin-vibration" spec="^3.1.1" />
     <engine name="android" spec="8.1.0" />
     <engine name="ios" spec="5.1.1" />
+    <engine name="electron" spec="^2.0.0-nightly.2020.9.12.734bbe7c" />
 </widget>

@@ -3,7 +3,7 @@
         "apps": [],
         "details": [
             {
-                "appID": "X2ZZSKA63B.org.elastos.trinity.browser",
+                "appID": "X2ZZSKA63B.org.elastos.trinity.essentials",
                 "paths": ["*"]
             }
         ]

@@ -33,6 +33,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
@@ -259,7 +260,6 @@ public class AppManager {
         }
     }
 
-
     public static AppManager getShareInstance() {
         return AppManager.appManager;
     }
@@ -280,7 +280,7 @@ public class AppManager {
     private void reInit(String sessionLanguage) {
         curFragment = null;
 
-        pathInfo = new AppPathInfo(getDIDDir());
+        pathInfo = new AppPathInfo(getDIDDir(did));
 
         dbAdapter.setUserDBAdapter(pathInfo.databasePath);
 
@@ -320,15 +320,31 @@ public class AppManager {
     }
 
     private void startStartupServices() {
+        final int FIRST_SERVICE_START_DELAY = 5000;
+        final int DELAY_BETWEEN_EACH_SERVICE = 5000;
+
+        Log.d(TAG, "Starting startup services");
+
+        // Start services one after another, with an arbitrary (for now, to keep things simple) delay between starts
+        int nextDelay = FIRST_SERVICE_START_DELAY;
         for (AppInfo info : appList) {
+            Log.d(TAG, "Startup service - checking if app "+info.app_id+" has services to start");
             for (AppInfo.StartupService service : info.startupServices) {
-                try {
-                    start(info.app_id, STARTUP_SERVICE, service.name);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                Log.d(TAG, "Startup service - App "+info.app_id+" - starting service "+service.name);
+                new Handler().postDelayed(() -> {
+                    try {
+                        Log.d(TAG, "Startup service - App "+info.app_id+" - service "+service.name + " - before start");
+                        start(info.app_id, STARTUP_SERVICE, service.name);
+                        Log.d(TAG, "Startup service - App "+info.app_id+" - service "+service.name + " - after start");
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }, nextDelay);
+                nextDelay += DELAY_BETWEEN_EACH_SERVICE;
             }
         }
+
+        Log.d(TAG, "Finished starting startup services");
     }
 
     private void closeAllApps() throws Exception {
@@ -429,12 +445,15 @@ public class AppManager {
         return did;
     }
 
-    public String getDIDDir() {
-        String did = getDID();
+    public String getDIDDir(String did) {
         if (did != null) {
             did = did.replace(":", "_");
         }
         return did;
+    }
+
+    public AppPathInfo getPathInfo(String did) {
+        return new AppPathInfo(getDIDDir(did));
     }
 
     public MergeDBAdapter getDBAdapter() {
@@ -607,10 +626,7 @@ public class AppManager {
     }
 
     public Boolean getAppVisible(String id, String startupMode) {
-        if (startupMode.equals(STARTUP_INTENT)) {
-            return true;
-        }
-        else if (startupMode.equals(STARTUP_SERVICE) || startupMode.equals(STARTUP_SILENCE)) {
+        if (startupMode.equals(STARTUP_SERVICE) || startupMode.equals(STARTUP_SILENCE)) {
             return false;
         }
 
@@ -726,6 +742,10 @@ public class AppManager {
     }
 
     public String getDataPath(String id) {
+        return getDataPath(id, pathInfo);
+    }
+
+    public String getDataPath(String id, AppPathInfo pathInfo) {
         if (id == null) {
             return null;
         }
@@ -743,6 +763,10 @@ public class AppManager {
 
 
     public String getTempPath(String id) {
+        return getTempPath(id, pathInfo);
+    }
+
+    public String getTempPath(String id, AppPathInfo pathInfo) {
         if (id == null) {
             return null;
         }
@@ -853,7 +877,7 @@ public class AppManager {
                         .show(fragment);
             }
 //            transaction.addToBackStack(null);
-            transaction.commit();
+            transaction.commitAllowingStateLoss();
         }
 
         curFragment = fragment;
@@ -933,13 +957,19 @@ public class AppManager {
                 sendRefreshList("started", info, false);
             }
 
-            if (!getAppVisible(packageId, mode)) {
-                showActivityIndicator(true);
+            if (mode.equals(STARTUP_INTENT)) {
+                setAppVisible(id, "hide");
+            }
+
+            if (!getAppVisible(id, mode)) {
+                if (mode.equals(STARTUP_APP) || mode.equals(STARTUP_INTENT)) {
+                    showActivityIndicator(true);
+                }
                 hideFragment(fragment, mode, id);
             }
         }
 
-        if (getAppVisible(packageId, mode)) {
+        if (getAppVisible(id, mode)) {
             switchContent(fragment, id);
             showActivityIndicator(false);
         }
@@ -1022,11 +1052,14 @@ public class AppManager {
             throw new Exception("No service name!");
         }
 
+        id = getIdbyStartupMode(id, mode, serviceName);
         if (mode.equals(STARTUP_APP)) {
             setAppVisible(id, info.start_visible);
         }
+        else if (mode.equals(STARTUP_INTENT)) {
+            setAppVisible(id, "hide");
+        }
 
-        id = getIdbyStartupMode(id, mode, serviceName);
         WebViewFragment fragment = getFragmentById(id);
         if (fragment == null) {
             return;
