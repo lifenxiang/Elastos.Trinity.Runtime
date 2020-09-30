@@ -407,7 +407,8 @@ public class AppManager {
     }
 
     public String getNativeAppPackageId() {
-        return "org.elastos.trinity.dapp.wallet";
+        return ConfigManager.getShareInstance().getStringValue("native.startup.dapppackage", "");
+        //return "org.elastos.trinity.dapp.wallet";
         //return "org.elastos.trinity.dapp.did";
         //return "org.elastos.trinity.dapp.passwordmanager";
         //return "org.elastos.trinity.dapp.settings";
@@ -1123,7 +1124,10 @@ public class AppManager {
 
     private void installUri(String uri, boolean dev) {
         try {
-            if (dev && PreferenceManager.getShareInstance().getDeveloperMode()) {
+            // Trinity native apps can update their EPKs directly if trinity is built in debug
+            boolean forceTrinityNativeInstall = ConfigManager.getShareInstance().isNativeBuild() && BuildConfig.DEBUG;
+
+            if (forceTrinityNativeInstall || (dev && PreferenceManager.getShareInstance().getDeveloperMode())) {
                 install(uri, true, dev);
             }
             else {
