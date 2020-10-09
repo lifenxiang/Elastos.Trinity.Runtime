@@ -28,9 +28,9 @@ const files_to_download  = [
       "libspvsdk"
     ],
     "targetDir": "../Plugins/Wallet/src/ios",
-    "md5": "426791e81a8674a923975548d9c0eccc"
+    "md5": "157c6056294349d69a8ee4a50a5c9666"
   },{
-    "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/release-v1.1/ElastosDIDSDK-framework-for-trinity.zip",
+    "url": "https://github.com/elastos/Elastos.Trinity.Plugins.Wallet/releases/download/spvsdk-V0.5.7.0/libspvsdk.zip",
     "filename": "ElastosDIDSDK-framework-for-trinity.zip",
     "sourceDirs": [
       "ElastosDIDSDK-framework-for-trinity/ElastosDIDSDK.framework",
