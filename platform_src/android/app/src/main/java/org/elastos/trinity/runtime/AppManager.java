@@ -1105,8 +1105,7 @@ public class AppManager {
     }
 
     public void loadLauncher() throws Exception {
-        start(getNativeAppPackageId(), STARTUP_APP, null);
-        //start(LAUNCHER, STARTUP_APP, null);
+        start(LAUNCHER, STARTUP_APP, null);
     }
 
     public void checkInProtectList(String uri) throws Exception {
@@ -1154,7 +1153,7 @@ public class AppManager {
     public void setIntentUri(Uri uri) {
         if (uri == null) return;
 
-        if (launcherReady) {
+        if (launcherReady || ConfigManager.getShareInstance().isNativeBuild()) {
             IntentManager.getShareInstance().doIntentByUri(uri);
         }
         else {

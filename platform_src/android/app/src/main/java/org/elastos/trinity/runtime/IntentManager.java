@@ -56,6 +56,8 @@ public class IntentManager {
     final static String[] trinitySchemes = {
             "elastos://",
             "https://scheme.elastos.org/",
+            "https://did.trinity-tech.io/",
+            "https://wallet.trinity-tech.io/",
     };
 
     public class ShareIntentParams {
@@ -92,6 +94,21 @@ public class IntentManager {
                 return true;
             }
         }
+
+        // For trinity native, also use native.scheme from config.json as a "trinity scheme" to handle incoming intents
+        if (ConfigManager.getShareInstance().isNativeBuild()) {
+            try {
+                JSONObject nativeSchemeConfig = ConfigManager.getShareInstance().getJSONObjectValue("native.scheme");
+                String nativeScheme = nativeSchemeConfig.getString("scheme") + "://" + nativeSchemeConfig.getString("path");
+                if (url.startsWith(nativeScheme)) {
+                    return true;
+                }
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
         return false;
     }
 
@@ -255,7 +272,15 @@ public class IntentManager {
             // Special case for some specific actions that is always handled by the native OS too.
             if (!info.action.equals("share") && !info.action.equals("openurl")) {
                 if (filters.length == 0) {
-                    throw new Exception("Intent action "+info.action+" isn't supported!");
+                    if (!ConfigManager.getShareInstance().isNativeBuild()) {
+                        // Not a native build - so 0 filter means no one can handle the action
+                        throw new Exception("Intent action " + info.action + " isn't supported!");
+                    }
+                    else {
+                        // We are a trinity native build - launch that action as native intent
+                        sendIntentToNativeOS(info);
+                        return;
+                    }
                 }
             }
 
@@ -429,6 +454,12 @@ public class IntentManager {
             long currentTime = System.currentTimeMillis();
 
             info = new IntentInfo(action, null, fromId, null, currentTime, false, null);
+
+            // TMP BPI TEST
+            // Quick and dirty way to remove the intent action scheme domain name from received urls
+            // END TMP BPI TEST
+
+
             if (set.size() > 0) {
                 getParamsByUri(uri, info);
             }
@@ -437,6 +468,53 @@ public class IntentManager {
             }
         }
         return info;
+    }
+
+    /**
+     * Returns the native app scheme that allows opening this app from native intents.
+     * For example for elastOS, the main app scheme would be https://elastos.trinity-tech.io.
+     * For a DID demo packaged by trinity native, this would be https://diddemo.trinity-tech.io.
+     * Hyper IM would have https://app.hyperim.org, etc.
+     */
+    private String getNativeAppScheme() throws Exception {
+        JSONObject schemeConfig = ConfigManager.getShareInstance().getJSONObjectValue("native.scheme");
+        if (schemeConfig == null) {
+            throw new Exception("No native app scheme found in config.json !");
+        }
+
+        return schemeConfig.getString("scheme") + "://" + schemeConfig.getString("path");
+    }
+
+    // Opposite of parseIntentUri().
+    // From intent info params to url params.
+    // Ex: info.params = "{a:1, b:{x:1}}" returns url?a=1&b={x:1}
+    private String createUriParamsFromIntentInfo(String url, IntentInfo info) throws Exception {
+        if (!Utility.isJSONType(info.params)) {
+            throw new Exception("Intent parameters must be a JSON object");
+        }
+
+        if (url.contains("?")) {
+            url += "&";
+        }
+        else {
+            url += "?";
+        }
+
+        JSONObject jsonObject = new JSONObject(info.params);
+        Iterator<String> firstLevelKeys = jsonObject.keys();
+        while (firstLevelKeys.hasNext()) {
+            String key = firstLevelKeys.next();
+            url += key + "=" + Uri.encode(jsonObject.get(key).toString()) + "&";
+        }
+
+        // If there is no redirect url, we add one to be able to receive responses
+        if (!jsonObject.has("redirecturl")) {
+            // TODO
+            url += "&redirecturl="+getNativeAppScheme(); // Ex: https://diddemo.elastos.org
+        }
+
+        System.out.println("INTENT DEBUG: " + url);
+        return url;
     }
 
     public void sendIntentByUri(Uri uri, String fromId) throws Exception {
@@ -799,6 +877,55 @@ public class IntentManager {
 
             android.content.Intent shareIntent = android.content.Intent.createChooser(sendIntent, null);
             appManager.activity.startActivity(shareIntent);
+        }
+    }
+
+    private IntentInfo tmpOnGoingNativeIntentInfo = null;
+
+    // TODO - QUICK AND DIRTY ATTEMPT - FULL IMPROVEMENT NEEDED
+    public void onExternalIntentResponseReceived(Uri uri) {
+        System.out.println("RECEIVED: "+uri.toString());
+
+        String resultStr = uri.getQueryParameter("result");
+        System.out.println(resultStr);
+        WebViewFragment fragment = appManager.getFragmentById(tmpOnGoingNativeIntentInfo.fromId);
+
+        try {
+            sendIntentResponse(fragment.basePlugin, resultStr, tmpOnGoingNativeIntentInfo.intentId, tmpOnGoingNativeIntentInfo.fromId);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Serializes a sendIntent(info) command info into a url such as https://domain/action/?stringifiedJsonResponseParams
+    // And sends that url to the native OS.
+    void sendIntentToNativeOS(IntentInfo info) throws Exception {
+        android.content.Intent sendIntent = new android.content.Intent();
+        sendIntent.setAction(Intent.ACTION_VIEW);
+
+        // TMP - move to config.json mapping maybe (dongxiao).
+        // Backward compatibility: converts old style "credaccess"-like intent calls to full domain
+        // calls such as https://https://did.trinity-tech.io/credaccess.
+        switch (info.action) {
+            case "credaccess":
+                info.action = "https://did.trinity-tech.io/"+info.action;
+                break;
+        }
+        // END TMP
+
+        // Convert intent info params into a serialized json string for the target url
+        String url = createUriParamsFromIntentInfo(info.action, info); // info.action must be a full action url such as https://did.trinity-tech.io/credaccess
+
+        sendIntent.setData(Uri.parse(url));
+
+        try {
+            tmpOnGoingNativeIntentInfo = info; // TODO - TMP DIRTY
+            putIntentContext(info); // TODO - TMP DIRTY
+
+            appManager.activity.startActivity(sendIntent);
+        }
+        catch (Exception e) {
+            Log.d(LOG_TAG, "No native application able to open this intent");
         }
     }
 }

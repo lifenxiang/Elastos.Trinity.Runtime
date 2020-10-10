@@ -12,7 +12,7 @@ public class IntentInfo {
     public static final String CALLBACK_URL = "callbackurl";
     public static final String REDIRECT_APP_URL = "redirectappurl";
 
-    String action;
+    String action; // Full action as given by the dapp, including domain and action
     String params;
     String fromId;
     String toId;
@@ -41,5 +41,4 @@ public class IntentInfo {
         this.silent = silent;
         this.callbackContext = callbackContext;
     }
-
 }
