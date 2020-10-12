@@ -264,7 +264,7 @@ public class IntentManager {
         actionChooserFragment.show(appManager.activity.getFragmentManager(), "dialog");
     }
 
-    void doIntent(IntentInfo info) throws Exception {
+    public void doIntent(IntentInfo info) throws Exception {
         if (info.toId == null) {
             IntentFilter[] filters = getIntentFilter(info.action);
 
@@ -509,8 +509,8 @@ public class IntentManager {
 
         // If there is no redirect url, we add one to be able to receive responses
         if (!jsonObject.has("redirecturl")) {
-            // TODO
-            url += "&redirecturl="+getNativeAppScheme(); // Ex: https://diddemo.elastos.org
+            // "intentresponse" is added For trinity native. NOTE: we should maybe move this out of this method
+            url += "&redirecturl="+getNativeAppScheme()+"/intentresponse"; // Ex: https://diddemo.elastos.org/intentresponse
         }
 
         System.out.println("INTENT DEBUG: " + url);
@@ -688,54 +688,43 @@ public class IntentManager {
 
             // If there is a provided URL callback for the intent, we want to send the intent response to that url
             if (url != null) {
-                if (info.type == IntentInfo.JWT) {
-                    // Request intent was a JWT payload. We send the response as a JWT payload too
-                    String jwt;
-                    if (intentResult.isAlreadyJWT()) {
-                        jwt = intentResult.jwt;
-                        //System.out.println("DEBUG DELETE THIS - JWT TOKEN = "+jwt);
-                    }
-                    else {
-                        // App did not return a JWT, so we return an unsigned JWT instead
-                        jwt = createUnsignedJWTResponse(info, result);
-                    }
-                    if (IntentManager.checkTrinityScheme(url)) {
-                        // Response url is a trinity url that we can handle internally
-                        url = url + "/" + jwt;
-                        sendIntentByUri(Uri.parse(url), info.fromId);
-                    } else {
-                        // Response url can't be handled by trinity. So we either call an intent to open it, or HTTP POST data
-                        if (info.redirecturl != null) {
-                            url = info.redirecturl + "/" + jwt;
-                            Utility.showWebPage(appManager.activity, url);
-                        } else if (info.callbackurl != null) {
-                            postCallback("jwt", jwt, info.callbackurl);
-                        }
-                    }
+                String jwt;
+                if (intentResult.isAlreadyJWT())
+                    jwt = intentResult.jwt;
+                else {
+                    // App did not return a JWT, so we return an unsigned JWT instead
+                    jwt = createUnsignedJWTResponse(info, result);
                 }
-                else if (info.type == IntentInfo.URL){
-                    // Request intent was a raw url. We send the response as raw data, with decrypted JWT is the app returned a JWT
-                    String ret = createUrlResponse(info, intentResult.payloadAsString());
-                    if (IntentManager.checkTrinityScheme(url)) {
-                        // Response url is a trinity url that we can handle internally
-                        url = getResultUrl(url, ret);
-                        sendIntentByUri(Uri.parse(url), info.fromId);
-                    } else {
-                        // Response url can't be handled by trinity. So we either call an intent to open it, or HTTP POST data
-                        if (info.redirecturl != null) {
-                            url = getResultUrl(url, ret);
-                            Utility.showWebPage(appManager.activity, url);
-                        } else if (info.callbackurl != null) {
-                            postCallback("result", ret, info.callbackurl);
-                        }
+
+                if (IntentManager.checkTrinityScheme(url)) {
+                    // Response url is a trinity url that we can handle internally
+                    if (intentResult.isAlreadyJWT())
+                        url = url + "/" + jwt; // Pass the JWT directly
+                    else {
+                        url = getResultUrl(url, intentResult.payloadAsString()); // Pass the raw data as a result= field
+                    }
+                    sendIntentByUri(Uri.parse(url), info.fromId);
+                } else {
+                    // Response url can't be handled by trinity. So we either call an intent to open it, or HTTP POST data
+                    if (info.redirecturl != null) {
+                        if (intentResult.isAlreadyJWT())
+                            url = info.redirecturl + "/" + jwt;
+                        else
+                            url = getResultUrl(url, intentResult.payloadAsString()); // Pass the raw data as a result= field
+                        Utility.showWebPage(appManager.activity, url);
+                    } else if (info.callbackurl != null) {
+                        if (intentResult.isAlreadyJWT())
+                            postCallback("jwt", jwt, info.callbackurl);
+                        else
+                            postCallback("result", intentResult.payloadAsString(), info.callbackurl);
                     }
                 }
             }
         }
 
         intentContextList.remove(intentId);
-        if (info.filter.startupMode.equals(AppManager.STARTUP_INTENT)
-                || info.filter.startupMode.equals(AppManager.STARTUP_SILENCE)) {
+        if (info.filter != null && info.filter.startupMode != null && (info.filter.startupMode.equals(AppManager.STARTUP_INTENT)
+                || info.filter.startupMode.equals(AppManager.STARTUP_SILENCE))) {
             appManager.close(info.filter.packageId, info.filter.startupMode, info.filter.serviceName);
         }
     }
@@ -886,12 +875,21 @@ public class IntentManager {
     public void onExternalIntentResponseReceived(Uri uri) {
         System.out.println("RECEIVED: "+uri.toString());
 
-        String resultStr = uri.getQueryParameter("result");
+        String resultStr = null;
+        if (uri.toString().contains("result=")) {
+            // result received as a raw string / raw json string
+            resultStr = uri.getQueryParameter("result");
+        }
+        else {
+            // Consider the received result as a JWT token
+            resultStr = "{jwt:\""+uri.getLastPathSegment()+"\"}";
+        }
         System.out.println(resultStr);
         WebViewFragment fragment = appManager.getFragmentById(tmpOnGoingNativeIntentInfo.fromId);
 
         try {
             sendIntentResponse(fragment.basePlugin, resultStr, tmpOnGoingNativeIntentInfo.intentId, tmpOnGoingNativeIntentInfo.fromId);
+            tmpOnGoingNativeIntentInfo = null;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -908,7 +906,21 @@ public class IntentManager {
         // calls such as https://https://did.trinity-tech.io/credaccess.
         switch (info.action) {
             case "credaccess":
+            case "appidcredissue":
+            case "credimport":
+            case "credissue":
+            case "didsign":
+            case "promptpublishdid":
+            case "registerapplicationprofile":
+            case "sethiveprovider":
                 info.action = "https://did.trinity-tech.io/"+info.action;
+                break;
+            case "pay":
+            case "crmembervote":
+            case "dposvotetransaction":
+            case "didtransaction":
+            case "esctransaction":
+                info.action = "https://wallet.trinity-tech.io/"+info.action;
                 break;
         }
         // END TMP

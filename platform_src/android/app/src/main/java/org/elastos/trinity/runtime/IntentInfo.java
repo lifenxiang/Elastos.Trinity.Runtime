@@ -1,8 +1,14 @@
 package org.elastos.trinity.runtime;
 
 import org.apache.cordova.CallbackContext;
+import org.apache.cordova.PluginResult;
+import org.json.JSONObject;
 
 public class IntentInfo {
+
+    public interface OnIntentResponse {
+        void onIntentResponse(boolean success, JSONObject data);
+    }
 
     public static final int API = 0;
     public static final int JWT = 1;
@@ -18,7 +24,8 @@ public class IntentInfo {
     String toId;
     long intentId;
     Boolean silent;
-    CallbackContext callbackContext;
+    //CallbackContext callbackContext;
+    OnIntentResponse onIntentResponseCallback;
 
     IntentFilter filter;
 
@@ -31,14 +38,15 @@ public class IntentInfo {
     String req = null;
     int type = API;
 
-    IntentInfo(String action, String params, String fromId, String toId,
-               long intentId, Boolean silent, CallbackContext callbackContext) {
+    public IntentInfo(String action, String params, String fromId, String toId,
+               long intentId, Boolean silent, OnIntentResponse onIntentResponseCallback) {
         this.action = action;
         this.params = params;
         this.fromId = fromId;
         this.toId = toId;
         this.intentId = intentId;
         this.silent = silent;
-        this.callbackContext = callbackContext;
+        this.onIntentResponseCallback = onIntentResponseCallback;
+        //this.callbackContext = callbackContext;
     }
 }
