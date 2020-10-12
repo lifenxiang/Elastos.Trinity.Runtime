@@ -916,6 +916,7 @@ public class IntentManager {
                 info.action = "https://did.trinity-tech.io/"+info.action;
                 break;
             case "pay":
+            case "walletaccess":
             case "crmembervote":
             case "dposvotetransaction":
             case "didtransaction":

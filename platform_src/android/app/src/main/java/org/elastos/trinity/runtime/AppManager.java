@@ -824,6 +824,10 @@ public class AppManager {
             }
             else {
                 sendRefreshList("installed", info, fromCLI);
+
+                // Trinity CLI: We have to inform user that he must restart to see his changes live.
+                if (ConfigManager.getShareInstance().isNativeBuild())
+                    Utility.alertPrompt("dApp updated", "dApp was updated from the CLI. Please kill and restart the native app.", activity);
             }
         }
 
