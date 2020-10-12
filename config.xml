@@ -75,6 +75,7 @@
     <plugin name="elastos-trinity-plugins-media" spec="../Plugins/Media">
         <variable name="KEEP_AVAUDIOSESSION_ALWAYS_ACTIVE" value="NO" />
     </plugin>
+    <plugin name="elastos-trinity-plugins-capture" spec="../Plugins/MediaCapture" />
     <plugin name="elastos-trinity-plugins-wallet" spec="../Plugins/Wallet" />
     <plugin name="elastos-trinity-plugins-fingerprint" spec="../Plugins/Fingerprint" />
     <plugin name="cordova-plugin-battery-status" spec="^2.0.3" />
@@ -87,7 +88,6 @@
     <plugin name="cordova-plugin-flashlight" spec="^3.2.0" />
     <plugin name="cordova-plugin-geolocation" spec="^4.0.2" />
     <plugin name="cordova-plugin-inappbrowser" spec="^3.1.0" />
-    <plugin name="cordova-plugin-media-capture" spec="^3.0.3" />
     <plugin name="cordova-plugin-network-information" spec="^2.0.2" />
     <plugin name="cordova-plugin-screen-orientation" spec="^3.0.2" />
     <plugin name="cordova-plugin-splashscreen" spec="^5.0.3" />

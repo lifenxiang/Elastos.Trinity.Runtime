@@ -40,7 +40,6 @@
     "cordova-plugin-geolocation": "^4.0.2",
     "cordova-plugin-inappbrowser": "^3.1.0",
     "cordova-plugin-ionic-keyboard": "^2.1.3",
-    "cordova-plugin-media-capture": "^3.0.3",
     "cordova-plugin-network-information": "^2.0.2",
     "cordova-plugin-screen-orientation": "^3.0.2",
     "cordova-plugin-splashscreen": "^5.0.3",
@@ -54,6 +53,7 @@
     "elastos-trinity-plugins-hive": "file:../Plugins/Hive",
     "elastos-trinity-plugins-ionicwebview": "file:../Plugins/IonicWebView",
     "elastos-trinity-plugins-media": "file:../Plugins/Media",
+    "elastos-trinity-plugins-capture": "file:../Plugins/MediaCapture",
     "elastos-trinity-plugins-qrscanner": "file:../Plugins/QRScanner",
     "es6-promise-plugin": "^4.2.2",
     "fs": "0.0.1-security",
@@ -78,6 +78,7 @@
       "elastos-trinity-plugins-media": {
         "KEEP_AVAUDIOSESSION_ALWAYS_ACTIVE": "NO"
       },
+      "elastos-trinity-plugins-capture": {},
       "cordova-plugin-ionic-keyboard": {},
       "cordova-plugin-camera": {
         "ANDROID_SUPPORT_V4_VERSION": "27.+"
@@ -90,7 +91,6 @@
       "cordova-plugin-flashlight": {},
       "cordova-plugin-inappbrowser": {},
       "elastos-trinity-plugins-qrscanner": {},
-      "cordova-plugin-media-capture": {},
       "cordova-plugin-network-information": {},
       "cordova-plugin-geolocation": {},
       "cordova-plugin-screen-orientation": {},
