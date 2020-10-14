@@ -912,7 +912,7 @@ class AppManager: NSObject {
             throw AppError.error("Launcher can't close!");
         }
 
-        let info = appInfos[id];
+        let info = getAppInfo(id);
         if (info == nil) {
             throw AppError.error("No such app!");
         }

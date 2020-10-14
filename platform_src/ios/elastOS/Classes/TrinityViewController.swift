@@ -110,7 +110,7 @@ class TrinityViewController : CDVViewController {
     }
 
     override func newCordovaView(withFrame bounds: CGRect) ->UIView {
-        titlebar = TitleBarView(self, titlebarContainer.frame, packageId == "launcher", packageId)
+        titlebar = TitleBarView(self, titlebarContainer.frame, packageId == "launcher", modeId)
         titlebarContainer.addSubview(titlebar!)
         self.addMatchParentConstraints(view: titlebar, parent: titlebarContainer)
 
