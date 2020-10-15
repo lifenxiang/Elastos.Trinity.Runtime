@@ -180,7 +180,7 @@ public class PasswordManager {
                 onCancel()
             }, onError: { error in
                 onError(error)
-            }, isPasswordRetry: false)
+            }, isPasswordRetry: false, forcePasswordPrompt: options.forceMasterPasswordPrompt)
         }, onCancel: {
             onCancel()
         }, onError: { error in
@@ -449,8 +449,17 @@ public class PasswordManager {
                               onCancel: @escaping ()->Void,
                               onError: @escaping (_ error: String)->Void,
                               isPasswordRetry: Bool) {
+        loadDatabase(did:did, onDatabaseLoaded: onDatabaseLoaded, onCancel: onCancel, onError: onError, isPasswordRetry: isPasswordRetry, forcePasswordPrompt: false);
+    }
+
+    private func loadDatabase(did: String,
+                              onDatabaseLoaded: @escaping ()->Void,
+                              onCancel: @escaping ()->Void,
+                              onError: @escaping (_ error: String)->Void,
+                              isPasswordRetry: Bool,
+                              forcePasswordPrompt: Bool) {
         
-        if (isDatabaseLoaded(did: did) && !sessionExpired(did: did)) {
+        if (isDatabaseLoaded(did: did) && !sessionExpired(did: did) && !forcePasswordPrompt) {
             onDatabaseLoaded()
         }
         else {
@@ -518,7 +527,7 @@ public class PasswordManager {
                 }
                 catch RNCryptor.Error.hmacMismatch {
                     // In case of wrong password exception, try again
-                    self.loadDatabase(did: did, onDatabaseLoaded: onDatabaseLoaded, onCancel: onCancel, onError: onError, isPasswordRetry: true)
+                    self.loadDatabase(did: did, onDatabaseLoaded: onDatabaseLoaded, onCancel: onCancel, onError: onError, isPasswordRetry: true, forcePasswordPrompt: forcePasswordPrompt)
                 }
                 catch (let error) {
                     // Other exceptions are passed raw
