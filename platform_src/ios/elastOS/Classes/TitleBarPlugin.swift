@@ -37,8 +37,12 @@ class TitleBarPlugin : TrinityPlugin {
         self.commandDelegate.send(result, callbackId: command.callbackId)
     }
 
-    private func getTitleBar() -> TitleBarView {
+    private func getTitleBar() -> TitleBarView? {
         let viewController = AppManager.getShareInstance().getViewControllerById(self.getModeId());
+        // TODO: The webview can't be closed for now, so the viewController maybe is nil.
+        if (viewController == nil) {
+            return nil;
+        }
         return viewController!.getTitlebar();
     }
 
@@ -47,7 +51,7 @@ class TitleBarPlugin : TrinityPlugin {
         let hintText = (command.arguments.count >= 2 ? command.arguments[1] as? String : nil)// Optional hint text
 
         DispatchQueue.main.async {
-            self.getTitleBar().showActivityIndicator(activityType: TitleBarActivityType.init(rawValue: activityIndicatoryType) ?? .OTHER, hintText: hintText)
+            self.getTitleBar()?.showActivityIndicator(activityType: TitleBarActivityType.init(rawValue: activityIndicatoryType) ?? .OTHER, hintText: hintText)
         }
 
         self.success(command)
@@ -57,7 +61,7 @@ class TitleBarPlugin : TrinityPlugin {
         let activityIndicatoryType = command.arguments[0] as! Int
 
         DispatchQueue.main.async {
-            self.getTitleBar().hideActivityIndicator(activityType: TitleBarActivityType.init(rawValue: activityIndicatoryType) ?? .OTHER)
+            self.getTitleBar()?.hideActivityIndicator(activityType: TitleBarActivityType.init(rawValue: activityIndicatoryType) ?? .OTHER)
         }
 
         self.success(command)
@@ -69,7 +73,7 @@ class TitleBarPlugin : TrinityPlugin {
             title = command.arguments[0] as? String
         }
 
-        getTitleBar().setTitle(title)
+        getTitleBar()?.setTitle(title)
 
         self.success(command)
     }
@@ -77,7 +81,7 @@ class TitleBarPlugin : TrinityPlugin {
     @objc func setBackgroundColor(_ command: CDVInvokedUrlCommand) {
         let hexColor = command.arguments[0] as? String ?? "#000000"
 
-        if (getTitleBar().setBackgroundColor(hexColor)) {
+        if ((getTitleBar()?.setBackgroundColor(hexColor)) != nil) {
             self.success(command)
         } else {
             self.error(command, "Invalid color \(hexColor)")
@@ -87,7 +91,7 @@ class TitleBarPlugin : TrinityPlugin {
     @objc func setForegroundMode(_ command: CDVInvokedUrlCommand) {
         let modeAsInt = command.arguments[0] as! Int
 
-        getTitleBar().setForegroundMode(TitleBarForegroundMode(rawValue: modeAsInt) ?? .LIGHT)
+        getTitleBar()?.setForegroundMode(TitleBarForegroundMode(rawValue: modeAsInt) ?? .LIGHT)
 
         self.success(command)
     }
@@ -95,7 +99,7 @@ class TitleBarPlugin : TrinityPlugin {
     @objc func setNavigationMode(_ command: CDVInvokedUrlCommand) {
         let modeAsInt = command.arguments[0] as! Int
 
-        getTitleBar().setNavigationMode(TitleBarNavigationMode(rawValue: modeAsInt) ?? .HOME)
+        getTitleBar()?.setNavigationMode(TitleBarNavigationMode(rawValue: modeAsInt) ?? .HOME)
 
         self.success(command)
     }
@@ -104,14 +108,14 @@ class TitleBarPlugin : TrinityPlugin {
     @objc func setNavigationIconVisibility(_ command: CDVInvokedUrlCommand) {
         let visible = command.arguments[0] as? Bool ?? true
 
-        getTitleBar().setNavigationIconVisibility(visible: visible)
+        getTitleBar()?.setNavigationIconVisibility(visible: visible)
 
         self.success(command)
     }
 
     @objc func addOnItemClickedListener(_ command: CDVInvokedUrlCommand) {
         let functionString = (command.arguments[0] as? String)!
-        getTitleBar().addOnItemClickedListener(functionString: functionString) { selectedItem in
+        getTitleBar()?.addOnItemClickedListener(functionString: functionString) { selectedItem in
                 // An item of the menu was clicked by the user
                 let result = try! CDVPluginResult(status: CDVCommandStatus_OK, messageAs: selectedItem.toJSONObject() as? [AnyHashable : Any])
                 result!.setKeepCallbackAs(true)
@@ -125,7 +129,7 @@ class TitleBarPlugin : TrinityPlugin {
 
     @objc func removeOnItemClickedListener(_ command: CDVInvokedUrlCommand) {
         let functionString = (command.arguments[0] as? String)!
-        getTitleBar().removeOnItemClickedListener(functionString: functionString)
+        getTitleBar()?.removeOnItemClickedListener(functionString: functionString)
 
         self.success(command)
     }
@@ -141,7 +145,7 @@ class TitleBarPlugin : TrinityPlugin {
 
         let icon = TitleBarIcon.fromJSONObject(jsonObject: iconObj)
 
-        getTitleBar().setIcon(iconSlot: iconSlot, icon: icon)
+        getTitleBar()?.setIcon(iconSlot: iconSlot, icon: icon)
 
         self.success(command)
     }
@@ -155,7 +159,7 @@ class TitleBarPlugin : TrinityPlugin {
             return
         }
 
-        getTitleBar().setBadgeCount(iconSlot: iconSlot, badgeCount: badgeValue)
+        getTitleBar()?.setBadgeCount(iconSlot: iconSlot, badgeCount: badgeValue)
 
         self.success(command)
     }
@@ -173,7 +177,7 @@ class TitleBarPlugin : TrinityPlugin {
             }
         }
 
-        getTitleBar().setupMenuItems(menuItems: menuItems)
+        getTitleBar()?.setupMenuItems(menuItems: menuItems)
 
         self.success(command)
     }
