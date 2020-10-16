@@ -59,7 +59,6 @@ public class WebViewActivity extends FragmentActivity {
         Intent intent = getIntent();
         String action = intent.getAction();
         if ((action != null) && action.equals("android.intent.action.VIEW")) {
-
             Uri uri = intent.getData();
             if (uri != null) {
                 if (IntentManager.checkTrinityScheme(uri.toString())) {

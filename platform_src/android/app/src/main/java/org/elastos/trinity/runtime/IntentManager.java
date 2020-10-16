@@ -1,9 +1,11 @@
 package org.elastos.trinity.runtime;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.text.TextUtils;
 import android.util.Base64;
@@ -15,6 +17,10 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.elastos.did.DID;
+import org.elastos.did.DIDDocument;
+import org.elastos.did.VerifiableCredential;
+import org.elastos.trinity.plugins.did.DIDPlugin;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -492,11 +498,7 @@ public class IntentManager {
     // Opposite of parseIntentUri().
     // From intent info params to url params.
     // Ex: info.params = "{a:1, b:{x:1}}" returns url?a=1&b={x:1}
-    private String createUriParamsFromIntentInfo(String url, IntentInfo info) throws Exception {
-        if (!Utility.isJSONType(info.params)) {
-            throw new Exception("Intent parameters must be a JSON object");
-        }
-
+    private String createUriParamsFromIntentInfoParams(String url, JSONObject params) throws Exception {
         if (url.contains("?")) {
             url += "&";
         }
@@ -504,15 +506,14 @@ public class IntentManager {
             url += "?";
         }
 
-        JSONObject jsonObject = new JSONObject(info.params);
-        Iterator<String> firstLevelKeys = jsonObject.keys();
+        Iterator<String> firstLevelKeys = params.keys();
         while (firstLevelKeys.hasNext()) {
             String key = firstLevelKeys.next();
-            url += key + "=" + Uri.encode(jsonObject.get(key).toString()) + "&";
+            url += key + "=" + Uri.encode(params.get(key).toString()) + "&";
         }
 
         // If there is no redirect url, we add one to be able to receive responses
-        if (!jsonObject.has("redirecturl")) {
+        if (!params.has("redirecturl")) {
             // "intentresponse" is added For trinity native. NOTE: we should maybe move this out of this method
             url += "&redirecturl="+getNativeAppScheme()+"/intentresponse"; // Ex: https://diddemo.elastos.org/intentresponse
         }
@@ -524,7 +525,20 @@ public class IntentManager {
     public void sendIntentByUri(Uri uri, String fromId) throws Exception {
         IntentInfo info = parseIntentUri(uri, fromId);
         if (info != null && info.params != null) {
-            doIntent(info);
+            // We are receiving an intent from an external application. Do some sanity check.
+            checkExternalIntentValidity(info, (isValid, errorMessage)->{
+                if (isValid) {
+                    try {
+                        doIntent(info);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                else {
+                    // TODO: clear popup error message to user.
+                    System.err.println(errorMessage);
+                }
+            });
         }
     }
 
@@ -543,6 +557,79 @@ public class IntentManager {
         }
     }
 
+    private interface OnExternalIntentValidityListener {
+        void onExternalIntentValid(boolean isValid, String errorMessage);
+    }
+
+    private void checkExternalIntentValidity(IntentInfo info, OnExternalIntentValidityListener callback) throws Exception {
+        // If the intent contains an appDid param and a redirectUrl, then we must check that they match.
+        // This means that the app did document from the ID chain must contain a reference to the expected redirectUrl.
+        // This way, we make sure that an application is not trying to act on behalf of another one by replacing his DID.
+        // Ex: access to hive vault.
+        if (info.redirecturl != null) {
+            try {
+                JSONObject params = new JSONObject(info.params);
+                if (params.has("appdid")) {
+                    // So we need to resolve this DID from chain and make sure that it matches the target redirect url
+                    checkExternalIntentValidityForAppDID(info, params.getString("appdid"), callback);
+                } else {
+                    callback.onExternalIntentValid(true, null);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+                callback.onExternalIntentValid(false, "Intent parameters must be a JSON object");
+            }
+        }
+        else {
+            callback.onExternalIntentValid(true, null);
+        }
+    }
+
+    @SuppressLint("StaticFieldLeak")
+    private void checkExternalIntentValidityForAppDID(IntentInfo info, String appDid, OnExternalIntentValidityListener callback) throws Exception {
+        // DIRTY to call the DID Plugin from here, but no choice for now because of the static DID back end...
+        DIDPlugin.initializeDIDBackend(appManager.activity);
+
+        new AsyncTask<Void, Void, DIDDocument>() {
+            @Override
+            protected DIDDocument doInBackground(Void... voids) {
+                DIDDocument didDocument = null;
+                try {
+                    didDocument = new DID(appDid).resolve(true);
+                    if (didDocument == null) { // Not found
+                        callback.onExternalIntentValid(false, "No DID found on chain matching the application DID "+appDid);
+                    }
+                    else {
+                        // DID document found. Look for the #native -> redirectUrl credential
+                        VerifiableCredential nativeCredential = didDocument.getCredential("#native");
+                        if (nativeCredential == null) {
+                            callback.onExternalIntentValid(false, "No #native credential found in the app DID document. Was the app registered on the DID chain?");
+                        }
+                        else {
+                            String onChainRedirectUrl = nativeCredential.getSubject().getPropertyAsString("redirectUrl");
+                            if (onChainRedirectUrl == null) {
+                                callback.onExternalIntentValid(false, "No redirectUrl found in the app DID document. Was the app registered on the DID chain?");
+                            }
+                            else {
+                                // We found a redirect url in the app DID document. Check that it matches the one in the intent
+                                if (info.redirecturl.startsWith(onChainRedirectUrl)) {
+                                    // Everything ok.
+                                    callback.onExternalIntentValid(true, null);
+                                }
+                                else {
+                                    callback.onExternalIntentValid(false, "The registered redirect url in the App DID document ("+onChainRedirectUrl+") doesn't match with the received intent redirect url");
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception e) {
+                    callback.onExternalIntentValid(false, e.getMessage());
+                }
+                return didDocument;
+            }
+        }.execute();
+    }
 
     public String createUnsignedJWTResponse(IntentInfo info, String result) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
@@ -881,7 +968,7 @@ public class IntentManager {
 
         String resultStr = null;
         if (uri.toString().contains("result=")) {
-            // result received as a raw string / raw json string
+            // Result received as a raw string / raw json string
             resultStr = uri.getQueryParameter("result");
         }
         else {
@@ -930,8 +1017,23 @@ public class IntentManager {
         }
         // END TMP
 
+        if (!Utility.isJSONType(info.params)) {
+            throw new Exception("Intent parameters must be a JSON object");
+        }
+
         // Convert intent info params into a serialized json string for the target url
-        String url = createUriParamsFromIntentInfo(info.action, info); // info.action must be a full action url such as https://did.trinity-tech.io/credaccess
+        JSONObject params = new JSONObject(info.params);
+
+        // Append the current application DID to the intent to let the receiver guess who is requesting
+        // (but that will be checked on ID chain with the redirect url).
+        // For example, in order to send a "app id credential" that gives rights to the calling app to access a hive vault,
+        // We must make sure that the calling trinity native app is who it pretends to be, to not let it access the hive storage space
+        // of another app. For this, we don't blindly trust the sent appDid here, but the receiving trinity runtime will
+        // fetch this app did from chain, and will make sure that the redirect url registered in the app did public document
+        // matches with the redirect url used in this intent.
+        params.put("appDid", appManager.getAppInfo(info.fromId).did);
+
+        String url = createUriParamsFromIntentInfoParams(info.action, params); // info.action must be a full action url such as https://did.trinity-tech.io/credaccess
 
         sendIntent.setData(Uri.parse(url));
 
