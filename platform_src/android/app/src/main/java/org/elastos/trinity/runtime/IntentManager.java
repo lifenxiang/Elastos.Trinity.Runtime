@@ -265,6 +265,10 @@ public class IntentManager {
     }
 
     public void doIntent(IntentInfo info) throws Exception {
+        // Trinity native: dismiss any target app. We use only the full intent domain. dapp package id makes not sense here
+        if (ConfigManager.getShareInstance().isNativeBuild())
+            info.toId = null;
+
         if (info.toId == null) {
             IntentFilter[] filters = getIntentFilter(info.action);
 
