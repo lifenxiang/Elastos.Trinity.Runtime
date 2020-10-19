@@ -139,8 +139,8 @@ public class TitleBar extends FrameLayout {
             setForegroundMode(TitleBarForegroundMode.DARK);
         }
 
-        // Hide the navigation mode icon in native mode.
-        if (ConfigManager.getShareInstance().isNativeBuild())
+        // Hide the navigation mode icon in native mode, but only for the root user app. Built-in hidden apps like the qr code scanner can have a close icon
+        if (ConfigManager.getShareInstance().isNativeBuild() && appId.equals(ConfigManager.getShareInstance().getStringValue("native.startup.dapppackage", null)))
             setNavigationIconVisibility(false);
 
         setAnimationHintText(null);
@@ -271,6 +271,10 @@ public class TitleBar extends FrameLayout {
         // NOTE: NON SENSE ON ANDROID - just kept to keep aligned code on android and ios.
         // Don't show activity indicators on ios/itunes
         if (ConfigManager.getShareInstance().getStringValue("build.variant", "").equals("itunesappstore"))
+            return;
+
+        // Don't show activity indicators in native builds.
+        if (ConfigManager.getShareInstance().isNativeBuild())
             return;
 
         // Increase reference count for this progress animation type
