@@ -302,6 +302,10 @@ public class PreferenceManager {
     }
 
     public Boolean getDeveloperInstallVerify() {
+        // Trinity native: android build in DEBUG = no EPK verification
+        if (ConfigManager.getShareInstance().isNativeBuild() && BuildConfig.DEBUG)
+            return false;
+
         if (getDeveloperMode()) {
             return getBooleanValue("developer.install.verifyDigest", true);
         }

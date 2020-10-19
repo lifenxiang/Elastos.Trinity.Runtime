@@ -1,5 +1,7 @@
 "use strict";
 
+console.log("Running script: merge folders");
+
 //
 // This hook copies various resource files/folders
 // from our version control system directories
@@ -41,7 +43,7 @@ function copyFileSync(source, target) {
     }
   }
 
-  // console.log("copyFileSync: Copying " + source + " to " + targetFile);
+  //console.log("copyFileSync: Copying " + source + " to " + targetFile);
   fs.copyFileSync(source, targetFile);
 }
 

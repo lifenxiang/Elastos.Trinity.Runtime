@@ -1,9 +1,11 @@
 package org.elastos.trinity.runtime;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.text.TextUtils;
 import android.util.Base64;
@@ -15,6 +17,10 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.elastos.did.DID;
+import org.elastos.did.DIDDocument;
+import org.elastos.did.VerifiableCredential;
+import org.elastos.trinity.plugins.did.DIDPlugin;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -56,6 +62,8 @@ public class IntentManager {
     final static String[] trinitySchemes = {
             "elastos://",
             "https://scheme.elastos.org/",
+            "https://did.trinity-tech.io/",
+            "https://wallet.trinity-tech.io/",
     };
 
     public class ShareIntentParams {
@@ -92,6 +100,21 @@ public class IntentManager {
                 return true;
             }
         }
+
+        // For trinity native, also use native.scheme from config.json as a "trinity scheme" to handle incoming intents
+        if (ConfigManager.getShareInstance().isNativeBuild()) {
+            try {
+                JSONObject nativeSchemeConfig = ConfigManager.getShareInstance().getJSONObjectValue("native.scheme");
+                String nativeScheme = nativeSchemeConfig.getString("scheme") + "://" + nativeSchemeConfig.getString("path");
+                if (url.startsWith(nativeScheme)) {
+                    return true;
+                }
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
         return false;
     }
 
@@ -247,7 +270,11 @@ public class IntentManager {
         actionChooserFragment.show(appManager.activity.getFragmentManager(), "dialog");
     }
 
-    void doIntent(IntentInfo info) throws Exception {
+    public void doIntent(IntentInfo info) throws Exception {
+        // Trinity native: dismiss any target app. We use only the full intent domain. dapp package id makes not sense here
+        if (ConfigManager.getShareInstance().isNativeBuild())
+            info.toId = null;
+
         if (info.toId == null) {
             IntentFilter[] filters = getIntentFilter(info.action);
 
@@ -255,7 +282,15 @@ public class IntentManager {
             // Special case for some specific actions that is always handled by the native OS too.
             if (!info.action.equals("share") && !info.action.equals("openurl")) {
                 if (filters.length == 0) {
-                    throw new Exception("Intent action "+info.action+" isn't supported!");
+                    if (!ConfigManager.getShareInstance().isNativeBuild()) {
+                        // Not a native build - so 0 filter means no one can handle the action
+                        throw new Exception("Intent action " + info.action + " isn't supported!");
+                    }
+                    else {
+                        // We are a trinity native build - launch that action as native intent
+                        sendIntentToNativeOS(info);
+                        return;
+                    }
                 }
             }
 
@@ -429,6 +464,12 @@ public class IntentManager {
             long currentTime = System.currentTimeMillis();
 
             info = new IntentInfo(action, null, fromId, null, currentTime, false, null);
+
+            // TMP BPI TEST
+            // Quick and dirty way to remove the intent action scheme domain name from received urls
+            // END TMP BPI TEST
+
+
             if (set.size() > 0) {
                 getParamsByUri(uri, info);
             }
@@ -439,10 +480,65 @@ public class IntentManager {
         return info;
     }
 
+    /**
+     * Returns the native app scheme that allows opening this app from native intents.
+     * For example for elastOS, the main app scheme would be https://elastos.trinity-tech.io.
+     * For a DID demo packaged by trinity native, this would be https://diddemo.trinity-tech.io.
+     * Hyper IM would have https://app.hyperim.org, etc.
+     */
+    private String getNativeAppScheme() throws Exception {
+        JSONObject schemeConfig = ConfigManager.getShareInstance().getJSONObjectValue("native.scheme");
+        if (schemeConfig == null) {
+            throw new Exception("No native app scheme found in config.json !");
+        }
+
+        return schemeConfig.getString("scheme") + "://" + schemeConfig.getString("path");
+    }
+
+    // Opposite of parseIntentUri().
+    // From intent info params to url params.
+    // Ex: info.params = "{a:1, b:{x:1}}" returns url?a=1&b={x:1}
+    private String createUriParamsFromIntentInfoParams(String url, JSONObject params) throws Exception {
+        if (url.contains("?")) {
+            url += "&";
+        }
+        else {
+            url += "?";
+        }
+
+        Iterator<String> firstLevelKeys = params.keys();
+        while (firstLevelKeys.hasNext()) {
+            String key = firstLevelKeys.next();
+            url += key + "=" + Uri.encode(params.get(key).toString()) + "&";
+        }
+
+        // If there is no redirect url, we add one to be able to receive responses
+        if (!params.has("redirecturl")) {
+            // "intentresponse" is added For trinity native. NOTE: we should maybe move this out of this method
+            url += "&redirecturl="+getNativeAppScheme()+"/intentresponse"; // Ex: https://diddemo.elastos.org/intentresponse
+        }
+
+        System.out.println("INTENT DEBUG: " + url);
+        return url;
+    }
+
     public void sendIntentByUri(Uri uri, String fromId) throws Exception {
         IntentInfo info = parseIntentUri(uri, fromId);
         if (info != null && info.params != null) {
-            doIntent(info);
+            // We are receiving an intent from an external application. Do some sanity check.
+            checkExternalIntentValidity(info, (isValid, errorMessage)->{
+                if (isValid) {
+                    try {
+                        doIntent(info);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                else {
+                    // TODO: clear popup error message to user.
+                    System.err.println(errorMessage);
+                }
+            });
         }
     }
 
@@ -461,6 +557,79 @@ public class IntentManager {
         }
     }
 
+    private interface OnExternalIntentValidityListener {
+        void onExternalIntentValid(boolean isValid, String errorMessage);
+    }
+
+    private void checkExternalIntentValidity(IntentInfo info, OnExternalIntentValidityListener callback) throws Exception {
+        // If the intent contains an appDid param and a redirectUrl, then we must check that they match.
+        // This means that the app did document from the ID chain must contain a reference to the expected redirectUrl.
+        // This way, we make sure that an application is not trying to act on behalf of another one by replacing his DID.
+        // Ex: access to hive vault.
+        if (info.redirecturl != null) {
+            try {
+                JSONObject params = new JSONObject(info.params);
+                if (params.has("appdid")) {
+                    // So we need to resolve this DID from chain and make sure that it matches the target redirect url
+                    checkExternalIntentValidityForAppDID(info, params.getString("appdid"), callback);
+                } else {
+                    callback.onExternalIntentValid(true, null);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+                callback.onExternalIntentValid(false, "Intent parameters must be a JSON object");
+            }
+        }
+        else {
+            callback.onExternalIntentValid(true, null);
+        }
+    }
+
+    @SuppressLint("StaticFieldLeak")
+    private void checkExternalIntentValidityForAppDID(IntentInfo info, String appDid, OnExternalIntentValidityListener callback) throws Exception {
+        // DIRTY to call the DID Plugin from here, but no choice for now because of the static DID back end...
+        DIDPlugin.initializeDIDBackend(appManager.activity);
+
+        new AsyncTask<Void, Void, DIDDocument>() {
+            @Override
+            protected DIDDocument doInBackground(Void... voids) {
+                DIDDocument didDocument = null;
+                try {
+                    didDocument = new DID(appDid).resolve(true);
+                    if (didDocument == null) { // Not found
+                        callback.onExternalIntentValid(false, "No DID found on chain matching the application DID "+appDid);
+                    }
+                    else {
+                        // DID document found. Look for the #native -> redirectUrl credential
+                        VerifiableCredential nativeCredential = didDocument.getCredential("#native");
+                        if (nativeCredential == null) {
+                            callback.onExternalIntentValid(false, "No #native credential found in the app DID document. Was the app registered on the DID chain?");
+                        }
+                        else {
+                            String onChainRedirectUrl = nativeCredential.getSubject().getPropertyAsString("redirectUrl");
+                            if (onChainRedirectUrl == null) {
+                                callback.onExternalIntentValid(false, "No redirectUrl found in the app DID document. Was the app registered on the DID chain?");
+                            }
+                            else {
+                                // We found a redirect url in the app DID document. Check that it matches the one in the intent
+                                if (info.redirecturl.startsWith(onChainRedirectUrl)) {
+                                    // Everything ok.
+                                    callback.onExternalIntentValid(true, null);
+                                }
+                                else {
+                                    callback.onExternalIntentValid(false, "The registered redirect url in the App DID document ("+onChainRedirectUrl+") doesn't match with the received intent redirect url");
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception e) {
+                    callback.onExternalIntentValid(false, e.getMessage());
+                }
+                return didDocument;
+            }
+        }.execute();
+    }
 
     public String createUnsignedJWTResponse(IntentInfo info, String result) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
@@ -610,54 +779,43 @@ public class IntentManager {
 
             // If there is a provided URL callback for the intent, we want to send the intent response to that url
             if (url != null) {
-                if (info.type == IntentInfo.JWT) {
-                    // Request intent was a JWT payload. We send the response as a JWT payload too
-                    String jwt;
-                    if (intentResult.isAlreadyJWT()) {
-                        jwt = intentResult.jwt;
-                        //System.out.println("DEBUG DELETE THIS - JWT TOKEN = "+jwt);
-                    }
-                    else {
-                        // App did not return a JWT, so we return an unsigned JWT instead
-                        jwt = createUnsignedJWTResponse(info, result);
-                    }
-                    if (IntentManager.checkTrinityScheme(url)) {
-                        // Response url is a trinity url that we can handle internally
-                        url = url + "/" + jwt;
-                        sendIntentByUri(Uri.parse(url), info.fromId);
-                    } else {
-                        // Response url can't be handled by trinity. So we either call an intent to open it, or HTTP POST data
-                        if (info.redirecturl != null) {
-                            url = info.redirecturl + "/" + jwt;
-                            Utility.showWebPage(appManager.activity, url);
-                        } else if (info.callbackurl != null) {
-                            postCallback("jwt", jwt, info.callbackurl);
-                        }
-                    }
+                String jwt;
+                if (intentResult.isAlreadyJWT())
+                    jwt = intentResult.jwt;
+                else {
+                    // App did not return a JWT, so we return an unsigned JWT instead
+                    jwt = createUnsignedJWTResponse(info, result);
                 }
-                else if (info.type == IntentInfo.URL){
-                    // Request intent was a raw url. We send the response as raw data, with decrypted JWT is the app returned a JWT
-                    String ret = createUrlResponse(info, intentResult.payloadAsString());
-                    if (IntentManager.checkTrinityScheme(url)) {
-                        // Response url is a trinity url that we can handle internally
-                        url = getResultUrl(url, ret);
-                        sendIntentByUri(Uri.parse(url), info.fromId);
-                    } else {
-                        // Response url can't be handled by trinity. So we either call an intent to open it, or HTTP POST data
-                        if (info.redirecturl != null) {
-                            url = getResultUrl(url, ret);
-                            Utility.showWebPage(appManager.activity, url);
-                        } else if (info.callbackurl != null) {
-                            postCallback("result", ret, info.callbackurl);
-                        }
+
+                if (IntentManager.checkTrinityScheme(url)) {
+                    // Response url is a trinity url that we can handle internally
+                    if (intentResult.isAlreadyJWT())
+                        url = url + "/" + jwt; // Pass the JWT directly
+                    else {
+                        url = getResultUrl(url, intentResult.payloadAsString()); // Pass the raw data as a result= field
+                    }
+                    sendIntentByUri(Uri.parse(url), info.fromId);
+                } else {
+                    // Response url can't be handled by trinity. So we either call an intent to open it, or HTTP POST data
+                    if (info.redirecturl != null) {
+                        if (intentResult.isAlreadyJWT())
+                            url = info.redirecturl + "/" + jwt;
+                        else
+                            url = getResultUrl(url, intentResult.payloadAsString()); // Pass the raw data as a result= field
+                        Utility.showWebPage(appManager.activity, url);
+                    } else if (info.callbackurl != null) {
+                        if (intentResult.isAlreadyJWT())
+                            postCallback("jwt", jwt, info.callbackurl);
+                        else
+                            postCallback("result", intentResult.payloadAsString(), info.callbackurl);
                     }
                 }
             }
         }
 
         intentContextList.remove(intentId);
-        if (info.filter.startupMode.equals(AppManager.STARTUP_INTENT)
-                || info.filter.startupMode.equals(AppManager.STARTUP_SILENCE)) {
+        if (info.filter != null && info.filter.startupMode != null && (info.filter.startupMode.equals(AppManager.STARTUP_INTENT)
+                || info.filter.startupMode.equals(AppManager.STARTUP_SILENCE))) {
             appManager.close(info.filter.packageId, info.filter.startupMode, info.filter.serviceName);
         }
     }
@@ -799,6 +957,94 @@ public class IntentManager {
 
             android.content.Intent shareIntent = android.content.Intent.createChooser(sendIntent, null);
             appManager.activity.startActivity(shareIntent);
+        }
+    }
+
+    private IntentInfo tmpOnGoingNativeIntentInfo = null;
+
+    // TODO - QUICK AND DIRTY ATTEMPT - FULL IMPROVEMENT NEEDED
+    public void onExternalIntentResponseReceived(Uri uri) {
+        System.out.println("RECEIVED: "+uri.toString());
+
+        String resultStr = null;
+        if (uri.toString().contains("result=")) {
+            // Result received as a raw string / raw json string
+            resultStr = uri.getQueryParameter("result");
+        }
+        else {
+            // Consider the received result as a JWT token
+            resultStr = "{jwt:\""+uri.getLastPathSegment()+"\"}";
+        }
+        System.out.println(resultStr);
+        WebViewFragment fragment = appManager.getFragmentById(tmpOnGoingNativeIntentInfo.fromId);
+
+        try {
+            sendIntentResponse(fragment.basePlugin, resultStr, tmpOnGoingNativeIntentInfo.intentId, tmpOnGoingNativeIntentInfo.fromId);
+            tmpOnGoingNativeIntentInfo = null;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Serializes a sendIntent(info) command info into a url such as https://domain/action/?stringifiedJsonResponseParams
+    // And sends that url to the native OS.
+    void sendIntentToNativeOS(IntentInfo info) throws Exception {
+        android.content.Intent sendIntent = new android.content.Intent();
+        sendIntent.setAction(Intent.ACTION_VIEW);
+
+        // TMP - move to config.json mapping maybe (dongxiao).
+        // Backward compatibility: converts old style "credaccess"-like intent calls to full domain
+        // calls such as https://https://did.trinity-tech.io/credaccess.
+        switch (info.action) {
+            case "credaccess":
+            case "appidcredissue":
+            case "credimport":
+            case "credissue":
+            case "didsign":
+            case "promptpublishdid":
+            case "registerapplicationprofile":
+            case "sethiveprovider":
+                info.action = "https://did.trinity-tech.io/"+info.action;
+                break;
+            case "pay":
+            case "walletaccess":
+            case "crmembervote":
+            case "dposvotetransaction":
+            case "didtransaction":
+            case "esctransaction":
+                info.action = "https://wallet.trinity-tech.io/"+info.action;
+                break;
+        }
+        // END TMP
+
+        if (!Utility.isJSONType(info.params)) {
+            throw new Exception("Intent parameters must be a JSON object");
+        }
+
+        // Convert intent info params into a serialized json string for the target url
+        JSONObject params = new JSONObject(info.params);
+
+        // Append the current application DID to the intent to let the receiver guess who is requesting
+        // (but that will be checked on ID chain with the redirect url).
+        // For example, in order to send a "app id credential" that gives rights to the calling app to access a hive vault,
+        // We must make sure that the calling trinity native app is who it pretends to be, to not let it access the hive storage space
+        // of another app. For this, we don't blindly trust the sent appDid here, but the receiving trinity runtime will
+        // fetch this app did from chain, and will make sure that the redirect url registered in the app did public document
+        // matches with the redirect url used in this intent.
+        params.put("appDid", appManager.getAppInfo(info.fromId).did);
+
+        String url = createUriParamsFromIntentInfoParams(info.action, params); // info.action must be a full action url such as https://did.trinity-tech.io/credaccess
+
+        sendIntent.setData(Uri.parse(url));
+
+        try {
+            tmpOnGoingNativeIntentInfo = info; // TODO - TMP DIRTY
+            putIntentContext(info); // TODO - TMP DIRTY
+
+            appManager.activity.startActivity(sendIntent);
+        }
+        catch (Exception e) {
+            Log.d(LOG_TAG, "No native application able to open this intent");
         }
     }
 }

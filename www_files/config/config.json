@@ -31,5 +31,10 @@
         "org.elastos.trinity.dapp.wallet": "WalletMainViewController"
     },
     "build.type": "elastOS",
-    "build.variant": ""
+    "build.variant": "",
+    "native.startup.dapppackage": "",
+    "native.scheme": {
+        "scheme": "https",
+        "path": "elastos.trinity-tech.io"
+    }
 }

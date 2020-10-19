@@ -155,6 +155,9 @@ public class ApiAuthorityManager {
     }
 
     private Boolean isInWhitelist(String appId) {
+        if (ConfigManager.getShareInstance().isNativeBuild())
+            return true;
+
         return ConfigManager.getShareInstance().stringArrayContains("api.authority.whitelist", appId);
     }
 

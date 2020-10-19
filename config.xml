@@ -38,6 +38,11 @@
             <param name="ios-package" value="CDVWKWebViewEngine" />
         </feature>
         <preference name="CordovaWebViewEngine" value="CDVWKWebViewEngine" />
+
+        <!-- Tell apple verification that we use encryptions, but we are exempted from complex reporting processes regarding US exportation regulation. -->
+        <config-file target="*-Info.plist" parent="ITSAppUsesNonExemptEncryption">
+            <false/>
+        </config-file>
     </platform>
     <platform name="electron">
     </platform>

@@ -38,6 +38,7 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 
+import org.apache.cordova.LOG;
 import org.apache.cordova.PluginManager;
 import org.elastos.trinity.runtime.contactnotifier.ContactNotifier;
 import org.elastos.trinity.runtime.didsessions.DIDSessionManager;
@@ -134,6 +135,7 @@ public class AppManager {
 
     private AppInfo launcherInfo;
     private AppInfo diddessionInfo;
+    private AppInfo nativeAppInfo;
 
     private class InstallInfo {
         String uri;
@@ -201,6 +203,9 @@ public class AppManager {
         AppManager.appManager = this;
         this.activity = activity;
 
+        // Define a better cordova log level during development of core features
+        LOG.setLogLevel(LOG.DEBUG);
+
         basePathInfo = new AppPathInfo(null);
         pathInfo = basePathInfo;
 
@@ -215,24 +220,36 @@ public class AppManager {
         saveBuiltInApps();
         refreashInfos();
 
-        IdentityEntry entry = null;
-        try {
-            entry = DIDSessionManager.getSharedInstance().getSignedInIdentity();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
         // Apply theming for native popups
         boolean darkMode = PreferenceManager.getShareInstance().getBooleanValue("ui.darkmode", false);
         UIStyling.prepare(darkMode);
 
-         if (entry != null) {
-            signIning = false;
-            did = entry.didString;
-            reInit(null);
-        } else {
+        if (!ConfigManager.getShareInstance().isNativeBuild()) {
+            IdentityEntry entry = null;
             try {
-                startDIDSession();
+                entry = DIDSessionManager.getSharedInstance().getSignedInIdentity();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            if (entry != null) {
+                signIning = false;
+                did = entry.didString;
+                reInit(null);
+            } else {
+                try {
+                    startDIDSession();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        else {
+            did = "dappasnativedid"; // Simulate a DID context for the native app
+
+            try {
+                // Will start the native app
+                reInit(null);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -280,7 +297,10 @@ public class AppManager {
         refreashInfos();
         getLauncherInfo();
         try {
-            loadLauncher();
+            if (!ConfigManager.getShareInstance().isNativeBuild())
+                loadLauncher();
+            else
+                start(getNativeAppPackageId(), STARTUP_APP, null);
         }
         catch (Exception e){
             e.printStackTrace();
@@ -289,10 +309,13 @@ public class AppManager {
         startStartupServices();
         sendRefreshList("initiated", null, false);
 
-        try {
-            ContactNotifier.getSharedInstance(activity, did);
-        } catch (Exception e) {
-            e.printStackTrace();
+        // No contact notifier in native mode.
+        if (!ConfigManager.getShareInstance().isNativeBuild()) {
+            try {
+                ContactNotifier.getSharedInstance(activity, did);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -381,6 +404,24 @@ public class AppManager {
     }
     public boolean isDIDSession(String appId) {
         return appId.equals("didsession") || appId.equals(getDIDSessionId());
+    }
+
+    public String getNativeAppPackageId() {
+        return ConfigManager.getShareInstance().getStringValue("native.startup.dapppackage", "");
+        //return "org.elastos.trinity.dapp.wallet";
+        //return "org.elastos.trinity.dapp.did";
+        //return "org.elastos.trinity.dapp.passwordmanager";
+        //return "org.elastos.trinity.dapp.settings";
+        //return "tech.tuum.academy";
+        //return "com.hyper.messenger";
+        //return "org.elastos.trinity.launcher";
+        //return "org.elastos.trinity.dapp.didsession";
+    }
+
+    public AppInfo getNativeAppInfo() {
+        if (nativeAppInfo == null)
+            nativeAppInfo = dbAdapter.getAppInfo(getNativeAppPackageId());
+        return nativeAppInfo;
     }
 
     public AppInfo getDIDSessionAppInfo() {
@@ -590,6 +631,11 @@ public class AppManager {
             return false;
         }
 
+        // In native mode, the native app is forced to start visible.
+        if (id.equals(getNativeAppPackageId())) {
+            return true;
+        }
+
         Boolean ret = visibles.get(id);
         if (ret == null) {
             return true;
@@ -778,6 +824,10 @@ public class AppManager {
             }
             else {
                 sendRefreshList("installed", info, fromCLI);
+
+                // Trinity CLI: We have to inform user that he must restart to see his changes live.
+                if (ConfigManager.getShareInstance().isNativeBuild())
+                    Utility.alertPrompt("dApp updated", "dApp was updated from the CLI. Please kill and restart the native app.", activity);
             }
         }
 
@@ -932,7 +982,7 @@ public class AppManager {
 
     private void showActivityIndicator(boolean show) {
         activity.runOnUiThread((Runnable) () -> {
-            if (curFragment.titlebar != null) {
+            if (curFragment != null && curFragment.titlebar != null) {
                 if (show) {
                     curFragment.titlebar.showActivityIndicator(TitleBarActivityType.LAUNCH, activity.getResources().getString(R.string.app_starting));
                 } else {
@@ -1077,7 +1127,10 @@ public class AppManager {
 
     private void installUri(String uri, boolean dev) {
         try {
-            if (dev && PreferenceManager.getShareInstance().getDeveloperMode()) {
+            // Trinity native apps can update their EPKs directly if trinity is built in debug
+            boolean forceTrinityNativeInstall = ConfigManager.getShareInstance().isNativeBuild() && BuildConfig.DEBUG;
+
+            if (forceTrinityNativeInstall || (dev && PreferenceManager.getShareInstance().getDeveloperMode())) {
                 install(uri, true, dev);
             }
             else {
@@ -1104,8 +1157,12 @@ public class AppManager {
     public void setIntentUri(Uri uri) {
         if (uri == null) return;
 
-        if (launcherReady) {
-            IntentManager.getShareInstance().doIntentByUri(uri);
+        if (launcherReady || ConfigManager.getShareInstance().isNativeBuild()) {
+            // Did we receive an intent response? (contains "intentresponse" in the path, but no redirecturl, otherwise this could be the request intent, not the response)
+            if (!uri.toString().contains("redirecturl") && uri.toString().contains("/intentresponse"))
+                IntentManager.getShareInstance().onExternalIntentResponseReceived(uri);
+            else
+                IntentManager.getShareInstance().doIntentByUri(uri);
         }
         else {
             intentUriList.add(uri);

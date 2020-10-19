@@ -497,7 +497,12 @@ public class AppBasePlugin extends TrinityPlugin {
             }
         }
 
-        IntentInfo info = new IntentInfo(action, params, getModeId(), toId, currentTime, silent, callbackContext);
+        IntentInfo info = new IntentInfo(action, params, getModeId(), toId, currentTime, silent, (success, data)->{
+            PluginResult result = new PluginResult(PluginResult.Status.OK, data);
+            result.setKeepCallback(false);
+
+            callbackContext.sendPluginResult(result);
+        });
 
         IntentManager.getShareInstance().doIntent(info);
         PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
@@ -585,9 +590,7 @@ public class AppBasePlugin extends TrinityPlugin {
             if (info.responseJwt != null)
                 obj.put("responseJWT", info.responseJwt);
 
-            PluginResult result = new PluginResult(PluginResult.Status.OK, obj);
-            result.setKeepCallback(false);
-            info.callbackContext.sendPluginResult(result);
+            info.onIntentResponseCallback.onIntentResponse(true, obj);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -878,7 +881,7 @@ public class AppBasePlugin extends TrinityPlugin {
 
     @Override
     public Boolean shouldAllowNavigation(String url) {
-        if (appManager.isLauncher(this.appId) || appManager.isDIDSession(this.appId)) {
+        if (appManager.isLauncher(this.appId) || appManager.isDIDSession(this.appId) || ConfigManager.getShareInstance().isNativeBuild()) {
             return true;
         }
         else if (checkIntentScheme(url)) {
