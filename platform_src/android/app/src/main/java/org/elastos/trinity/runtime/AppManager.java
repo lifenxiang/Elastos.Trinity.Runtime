@@ -964,6 +964,8 @@ public class AppManager {
             fragment = WebViewFragment.newInstance(packageId, mode, serviceName);
             if (!isLauncher(packageId)) {
                 sendRefreshList("started", info, false);
+                sendPackageIdMessage(packageId, AppManager.MSG_TYPE_INTERNAL,
+                        "{\"action\":\"started\"}", id);
             }
 
             if (mode.equals(STARTUP_INTENT)) {
