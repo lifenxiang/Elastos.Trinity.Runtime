@@ -867,19 +867,23 @@ public class AppManager {
         return null;
     }
 
-    public void switchContent(WebViewFragment fragment, String id) {
+    public void switchContent(WebViewFragment fragment, String id)  throws Exception {
         FragmentManager manager = activity.getSupportFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
         if ((curFragment != null) && (curFragment != fragment)) {
             transaction.hide(curFragment);
+            sendPackageIdMessage(curFragment.packageId, AppManager.MSG_TYPE_INTERNAL,
+                    "{\"action\":\"hidden\"}", curFragment.modeId);
         }
         if (curFragment != fragment) {
             if (!fragment.isAdded()) {
                 transaction.add(R.id.content, fragment, id);
             }
-            else if (curFragment != fragment) {
+            else {
                 transaction.setCustomAnimations(android.R.animator.fade_in, android.R.animator.fade_out)
                         .show(fragment);
+                sendPackageIdMessage(fragment.packageId, AppManager.MSG_TYPE_INTERNAL,
+                        "{\"action\":\"visible\"}", fragment.modeId);
             }
 //            transaction.addToBackStack(null);
             transaction.commitAllowingStateLoss();
@@ -900,7 +904,7 @@ public class AppManager {
             transaction.add(R.id.content, fragment, id);
         }
         transaction.hide(fragment);
-        transaction.commit();
+        transaction.commitAllowingStateLoss();
 
         if (startupMode.equals(STARTUP_APP)) {
             runningList.add(0, id);
@@ -923,8 +927,8 @@ public class AppManager {
             if ((curFragment != null)  && (curFragment.titlebar != null)) {
                 curFragment.titlebar.handleOuterLeftClicked();
             } else {
-                switchContent(getFragmentById(launcherInfo.app_id), launcherInfo.app_id);
                 try {
+                    switchContent(getFragmentById(launcherInfo.app_id), launcherInfo.app_id);
                     AppManager.getShareInstance().sendLauncherMessageMinimize(curFragment.modeId);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -1092,6 +1096,9 @@ public class AppManager {
             }
         }
 
+        sendPackageIdMessage(fragment.packageId, AppManager.MSG_TYPE_INTERNAL,
+                "{\"action\":\"closed\"}", fragment.modeId);
+
         FragmentManager manager = activity.getSupportFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
         transaction.remove(fragment);
@@ -1184,6 +1191,20 @@ public class AppManager {
         for (int i = 0; i < intentUriList.size(); i++) {
             Uri uri = intentUriList.get(i);
             IntentManager.getShareInstance().doIntentByUri(uri);
+        }
+    }
+
+    public void sendPackageIdMessage(String packageId, int type, String msg, String fromId) throws Exception {
+        FragmentManager manager = activity.getSupportFragmentManager();
+        List<Fragment> fragments = manager.getFragments();
+        for (int i = 0; i < fragments.size(); i++) {
+            Fragment fragment = fragments.get(i);
+            if (fragment instanceof WebViewFragment) {
+                WebViewFragment webViewFragment = (WebViewFragment)fragment;
+                if (webViewFragment.packageId.equals(packageId)) {
+                    sendMessage(webViewFragment.modeId, type, msg, fromId);
+                }
+            }
         }
     }
 
