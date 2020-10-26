@@ -45,8 +45,8 @@
          }
 +
 +        targetSdkVersion 29
-+        versionCode 10009
-+        versionName "1.2.4"
++        versionCode 10010
++        versionName "1.2.5"
 +    }
 +
 +    sourceSets {
