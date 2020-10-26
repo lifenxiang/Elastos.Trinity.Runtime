@@ -333,6 +333,9 @@ public class AppManager {
                 Log.d(TAG, "Startup service - App "+info.app_id+" - starting service "+service.name);
                 new Handler().postDelayed(() -> {
                     try {
+                        // Do not start service if user signout.
+                        if (signIning) return;
+
                         Log.d(TAG, "Startup service - App "+info.app_id+" - service "+service.name + " - before start");
                         start(info.app_id, STARTUP_SERVICE, service.name);
                         Log.d(TAG, "Startup service - App "+info.app_id+" - service "+service.name + " - after start");
