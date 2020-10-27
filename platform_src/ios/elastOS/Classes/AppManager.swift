@@ -279,6 +279,11 @@ class AppManager: NSObject {
                     // Start must be called from the main thread
                     DispatchQueue.main.async {
                         do {
+                            // Do not start service if user signout.
+                            if (self.signIning) {
+                                return;
+                            }
+
                             try self.start(info.app_id, AppManager.STARTUP_SERVICE, service.name);
                         }
                         catch let error {
@@ -847,7 +852,7 @@ class AppManager: NSObject {
 
             mainViewController.add(viewController!)
             viewControllers[id] = viewController;
-            
+
             if (mode == AppManager.STARTUP_INTENT) {
                 setAppVisible(id, "hide");
             }
@@ -925,7 +930,7 @@ class AppManager: NSObject {
             setAppVisible(id, "hide");
         }
 
-        
+
         let viewController = getViewControllerById(id);
         if (viewController == nil) {
             return;
