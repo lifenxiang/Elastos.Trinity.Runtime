@@ -776,9 +776,17 @@ class AppManager: NSObject {
         return viewControllers[id];
     }
 
-    func switchContent(_ to: TrinityViewController, _ id: String) {
+    func switchContent(_ to: TrinityViewController, _ id: String) throws {
         if ((curController != nil) && (curController != to)) {
             mainViewController.switchController(from: curController!, to: to)
+            try sendPackageIdMessage(curController!.packageId, AppManager.MSG_TYPE_INTERNAL,
+                                "{\"action\":\"hidden\"}", curController!.modeId);
+            
+        }
+        
+        if (curController != to) {
+            try sendPackageIdMessage(to.packageId, AppManager.MSG_TYPE_INTERNAL,
+                    "{\"action\":\"visible\"}", to.modeId);
         }
 
         curController = to
@@ -849,6 +857,9 @@ class AppManager: NSObject {
                 }
                 sendRefreshList("started", appInfo!);
             }
+            
+            try sendPackageIdMessage(packageId, AppManager.MSG_TYPE_INTERNAL,
+                                    "{\"action\":\"started\"}", id);
 
             mainViewController.add(viewController!)
             viewControllers[id] = viewController;
@@ -866,7 +877,7 @@ class AppManager: NSObject {
 
         if (getAppVisible(id, mode)) {
             viewController!.view.isHidden = false;
-            switchContent(viewController!, id);
+            try switchContent(viewController!, id);
         }
     }
 
@@ -951,9 +962,12 @@ class AppManager: NSObject {
             if (viewController2 == nil) {
                 throw AppError.error("RT inner error!");
             }
-            switchContent(viewController2!, id2);
+            try switchContent(viewController2!, id2);
         }
 
+        try sendPackageIdMessage(viewController.packageId, AppManager.MSG_TYPE_INTERNAL,
+                "{\"action\":\"closed\"}", viewController.modeId);
+        
         viewControllers[id] = nil;
         viewController.remove();
 
@@ -1031,6 +1045,14 @@ class AppManager: NSObject {
 
         for uri in intentUriList {
             IntentManager.getShareInstance().doIntentByUri(uri);
+        }
+    }
+    
+    func sendPackageIdMessage(_ packageId: String, _ type: Int, _ msg: String, _ fromId: String) throws {
+        for viewController in viewControllers.values {
+            if (viewController.packageId == packageId) {
+                try sendMessage(viewController.modeId, type, msg, fromId);
+            }
         }
     }
 
