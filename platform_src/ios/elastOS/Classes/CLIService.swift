@@ -45,7 +45,7 @@ public class CLIService: NSObject, NetServiceBrowserDelegate, NetServiceDelegate
     private func log(_ str: String) {
         print("CLIService - \(str)")
     }
-
+    
     private func searchForServices() {
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(5), execute: {
             self.log("Searching for local CLI service...")
@@ -98,10 +98,10 @@ public class CLIService: NSObject, NetServiceBrowserDelegate, NetServiceDelegate
         log("\(service.port)")
 
         services.append(service)
+        self.stopSearching(shouldRestart: false)
+
         service.delegate = self
         service.resolve(withTimeout:10)
-
-        //self.stopSearching(shouldRestart: false)
     }
 
     public func netService(_ sender: NetService, didNotResolve errorDict: [String : NSNumber]) {
