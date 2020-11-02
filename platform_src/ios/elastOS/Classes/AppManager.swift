@@ -382,10 +382,11 @@ class AppManager: NSObject {
     }
 
     func getDIDDir(_ did: String?) -> String? {
-        if (did != nil) {
-            did!.replacingOccurrences(of: ":", with: "_")
+        guard did != nil else {
+            return nil;
         }
-        return did;
+
+        return did!.replacingOccurrences(of: ":", with: "_");
     }
 
     func getPathInfo(_ did: String) -> AppPathInfo {
@@ -511,7 +512,7 @@ class AppManager: NSObject {
     @objc func getAppUrl(_ info: AppInfo) -> String {
         var url = getAppPath(info);
         if (!info.remote) {
-            url = "file://" + url;
+            url = URL(fileURLWithPath:url).absoluteString;
         }
         return url;
     }
@@ -543,7 +544,7 @@ class AppManager: NSObject {
     }
 
     @objc func getDataUrl(_ id: String) -> String {
-        return "file://" + getDataPath(id);
+        return URL(fileURLWithPath:getDataPath(id)).absoluteString;
     }
 
     @objc func getTempPath(_ id: String) -> String {
@@ -560,7 +561,7 @@ class AppManager: NSObject {
     }
 
     @objc func getTempUrl(_ id: String) -> String {
-        return "file://" + getTempPath(id);
+        return URL(fileURLWithPath:getTempPath(id)).absoluteString;
     }
 
     @objc func getConfigPath() -> String {
@@ -568,7 +569,7 @@ class AppManager: NSObject {
     }
 
     func getIconUrl(_ info: AppInfo, _ iconSrc: String) -> String {
-        let url = "file://" + getAppLocalPath(info);
+        let url = URL(fileURLWithPath:getAppLocalPath(info)).absoluteString;
         return resetPath(url, iconSrc);
     }
 
@@ -781,9 +782,9 @@ class AppManager: NSObject {
             mainViewController.switchController(from: curController!, to: to)
             try sendPackageIdMessage(curController!.packageId, AppManager.MSG_TYPE_INTERNAL,
                                 "{\"action\":\"hidden\"}", curController!.modeId);
-            
+
         }
-        
+
         if (curController != to) {
             try sendPackageIdMessage(to.packageId, AppManager.MSG_TYPE_INTERNAL,
                     "{\"action\":\"visible\"}", to.modeId);
@@ -857,7 +858,7 @@ class AppManager: NSObject {
                 }
                 sendRefreshList("started", appInfo!);
             }
-            
+
             try sendPackageIdMessage(packageId, AppManager.MSG_TYPE_INTERNAL,
                                     "{\"action\":\"started\"}", id);
 
@@ -967,7 +968,7 @@ class AppManager: NSObject {
 
         try sendPackageIdMessage(viewController.packageId, AppManager.MSG_TYPE_INTERNAL,
                 "{\"action\":\"closed\"}", viewController.modeId);
-        
+
         viewControllers[id] = nil;
         viewController.remove();
 
@@ -1047,7 +1048,7 @@ class AppManager: NSObject {
             IntentManager.getShareInstance().doIntentByUri(uri);
         }
     }
-    
+
     func sendPackageIdMessage(_ packageId: String, _ type: Int, _ msg: String, _ fromId: String) throws {
         for viewController in viewControllers.values {
             if (viewController.packageId == packageId) {
