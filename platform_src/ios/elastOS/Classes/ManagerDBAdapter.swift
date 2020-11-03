@@ -25,7 +25,7 @@ import SQLite
 
 class ManagerDBAdapter {
     @objc static let DATABASE_NAME = "manager.db";
-    @objc static let VERSION = 2;
+    @objc static let VERSION = 3;
     @objc static let AUTH_PLUGIN_TABLE = "auth_plugin";
     @objc static let AUTH_URL_TABLE = "auth_url";
     @objc static let AUTH_INTENT_TABLE = "auth_intent";
@@ -47,6 +47,7 @@ class ManagerDBAdapter {
     let app_tid = Expression<Int64>(AppInfo.APP_TID);
 
     let app_id = Expression<String>(AppInfo.APP_ID)
+    let did = Expression<String?>(AppInfo.DID)
     let version = Expression<String>(AppInfo.VERSION)
     let version_code = Expression<Int>(AppInfo.VERSION_CODE)
     let name = Expression<String>(AppInfo.NAME)
@@ -215,6 +216,7 @@ class ManagerDBAdapter {
         try db.run(apps.create(ifNotExists: true) { t in
             t.column(tid, primaryKey: .autoincrement)
             t.column(app_id, unique: true)
+            t.column(did)
             t.column(version)
             t.column(version_code)
             t.column(name)
@@ -259,6 +261,7 @@ class ManagerDBAdapter {
         try db.transaction {
             info.tid = try db.run(apps.insert(
                 app_id <- info.app_id,
+                did <- info.did,
                 version <- info.version,
                 version_code <- info.version_code,
                 name <- info.name,
@@ -353,6 +356,7 @@ class ManagerDBAdapter {
             let info = AppInfo();
             info.tid = app[tid];
             info.app_id = app[app_id];
+            info.did = app[did];
             info.version = app[version];
             info.version_code = app[version_code];
             info.name = app[name];
@@ -705,6 +709,10 @@ class ManagerDBAdapter {
            Log.d("ManagerDBHelper", "Upgrading database to v2");
            try upgradeToV2();
         }
+        if (oldVersion < 3) {
+           Log.d("ManagerDBHelper", "Upgrading database to v3");
+           try upgradeToV3();
+        }
     }
     
     private func upgradeToV1() throws {
@@ -725,6 +733,12 @@ class ManagerDBAdapter {
         try db.run(row.update(startup_mode <-  AppManager.STARTUP_INTENT));
         
         db.userVersion = 2;
+    }
+    
+    private func upgradeToV3() throws {
+        try db.run(apps.addColumn(did, defaultValue: nil))
+        
+        db.userVersion = 3;
     }
     
  }

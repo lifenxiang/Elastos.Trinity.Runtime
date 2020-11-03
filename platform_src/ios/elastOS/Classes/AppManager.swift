@@ -1304,7 +1304,7 @@ class AppManager: NSObject {
         var ret = [String]();
         for id in serviceRunningList {
             if (id.hasPrefix(prefix)) {
-                ret.append(id.subStringFrom(index: prefix.count));
+                ret.append(id.subString(from: prefix.count));
             }
         }
         return ret;

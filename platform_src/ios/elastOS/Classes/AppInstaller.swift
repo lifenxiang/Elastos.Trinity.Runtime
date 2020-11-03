@@ -19,14 +19,14 @@
   * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   * SOFTWARE.
   */
- 
+
  import Foundation
  import SSZipArchive
  import WebKit
- 
+
  extension Data {
     private static let hexAlphabet = "0123456789abcdef".unicodeScalars.map { $0 }
-    
+
     public func hexEncodedString() -> String {
         return String(self.reduce(into: "".unicodeScalars, { (result, value) in
             result.append(Data.hexAlphabet[Int(value/16)])
@@ -34,18 +34,18 @@
         }))
     }
  }
- 
+
  @available(iOS 11.0, *)
  class LocalStorageClearHandler : NSObject, WKNavigationDelegate, WKURLSchemeHandler {
-    
+
     @objc func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
-        
+
     }
-    
+
     @objc func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {
-        
+
     }
-    
+
     @objc func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         let dataStore = webView.configuration.websiteDataStore
         dataStore.fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
@@ -54,37 +54,37 @@
             }
         }
     }
-    
+
  }
- 
+
  class AppInstaller {
-    
+
     let pluginWhitelist = [
         "device",
         "networkstatus",
         "splashscreen",
     ];
-    
+
     let urlWhitelist = [
         "http://www.elastos.org/*",
     ];
-    
+
     var appPath: String = "";
     var dataPath: String = "";
     var tempPath: String = "";
     var dbAdapter: MergeDBAdapter;
     var webView: WKWebView?
-    
+
     init(_ appPath: String, _ tempPath: String, _ dbAdapter: MergeDBAdapter) {
         self.appPath = appPath;
         self.tempPath = tempPath;
         self.dbAdapter = dbAdapter;
     }
-    
+
     func unpackZip(_ srcZip: String, _ destPath: String) -> Bool {
         return SSZipArchive.unzipFile(atPath: srcZip, toDestination: destPath);
     }
-    
+
     private func sha256(data : Data) -> Data {
         var hash = [UInt8](repeating: 0,  count: Int(CC_SHA256_DIGEST_LENGTH))
         data.withUnsafeBytes {
@@ -92,10 +92,10 @@
         }
         return Data(bytes: hash)
     }
-    
+
     private func verifyEpkDigest(_ destPath: String) -> Bool {
         let fileManager = FileManager.default
-        
+
         let dirEnum = fileManager.enumerator(atPath: destPath)
         var fileHashMap = [String: String]()
         var fileListSHA = "EPK-SIGN/FILELIST.SHA not found"
@@ -119,12 +119,12 @@
                 }
             }
         }
-        
+
         var fileList = ""
         for (k,v) in fileHashMap.sorted(by: {$0.0 < $1.0}) {
             fileList = "\(fileList)\(v) \(k)\n"
         }
-        
+
         let epkHash = sha256(data: fileList.data(using: .utf8)!).hexEncodedString()
         if (epkHash == fileListSHA) {
             print("Matched EPK digest with \(fileListSHA)")
@@ -133,10 +133,10 @@
         print("Failed to match EPK digest")
         return false;
     }
-    
+
     private func contentsOf(file fileURL: NSURL) -> String? {
         let fileManager = FileManager.default
-        
+
         var isDir : ObjCBool = false
         if (fileManager.fileExists(atPath: fileURL.path!, isDirectory: &isDir) && !isDir.boolValue) {
             do {
@@ -148,43 +148,25 @@
                 return nil
             }
         }
-        
+
         print("Failed to read file " + fileURL.path!)
         return nil
     }
-    
-    private func verifyEpkSignature(_ destPath: String) -> Bool {
-        let publicKey = contentsOf(file: NSURL(fileURLWithPath: destPath).appendingPathComponent("EPK-SIGN/SIGN.PUB")! as NSURL)
-        //        let payload = contentsOf(file: NSURL(fileURLWithPath: destPath).appendingPathComponent("EPK-SIGN/FILELIST.SHA")! as NSURL)
-        //        let signed_payload = contentsOf(file: NSURL(fileURLWithPath: destPath).appendingPathComponent("EPK-SIGN/FILELIST.SIGN")! as NSURL)
-        
-        //TODO:: need to check
-        //        let succeeded = ela_verify_message(publicKey, payload, signed_payload)
-        let succeeded = true;
-        
-        if (succeeded) {
-            print("Successfully verified EPK signature")
-            print("The public key of the EPK is \(publicKey!)")
-        } else {
-            print("Failed to verify EPK signature")
-        }
-        return succeeded
-    }
-    
+
     func deleteAllFiles(_ path: String) throws {
         let fileManager = FileManager.default;
         try fileManager.removeItem(atPath: path)
     }
-    
+
     func copyAssetsFolder(_ src: String, _ dest: String) throws {
         let fileManager = FileManager.default
         if fileManager.fileExists(atPath: dest){
             try fileManager.removeItem(atPath: dest)
         }
-        
+
         try fileManager.copyItem(atPath: src, toPath: dest)
     }
-    
+
     private func updateAppInfo(_ info: AppInfo, _ oldInfo: AppInfo) {
         for auth in info.plugins {
             for oldAuth in oldInfo.plugins {
@@ -193,7 +175,7 @@
                 }
             }
         }
-        
+
         for auth in info.urls {
             for oldAuth in oldInfo.urls {
                 if (auth.url == oldAuth.url) {
@@ -201,28 +183,28 @@
                 }
             }
         }
-        
+
         info.built_in = oldInfo.built_in;
         info.launcher = oldInfo.launcher;
     }
-    
+
     func renameFolder(_ from: String, _ path: String, _ name: String) throws  {
         let to = path + name;
         if (FileManager.default.fileExists(atPath: to)) {
             try deleteAllFiles(to);
         }
         try FileManager.default.moveItem(atPath: from, toPath: to);
-        
+
     }
-    
+
     private func sendInstallingMessage(_ action: String, _ appId: String, _ url: String) throws {
-        try AppManager.getShareInstance().sendLauncherMessage(AppManager.MSG_TYPE_INSTALLING,
-                                                              "{\"action\":\"" + action + "\", \"id\":\"" + appId + "\" , \"url\":\"" + url + "\"}", "system");
+       try AppManager.getShareInstance().sendLauncherMessage(AppManager.MSG_TYPE_INSTALLING,
+                                                             "{\"action\":\"" + action + "\", \"id\":\"" + appId + "\" , \"url\":\"" + url + "\"}", "system");
     }
-    
+
     func getPathFromUrl(_ url: String) -> String {
         var path = url;
-        
+
         if (url.hasPrefix("asset://")) {
             path = getAssetPath(url);
         }
@@ -232,63 +214,87 @@
         }
         return path;
     }
-    
+
     func getInfoFromUrl(_ url: String) throws -> AppInfo? {
         let zipPath = getPathFromUrl(url);
-        
+
         let temp = "tmp_" + UUID().uuidString
         let temPath = self.tempPath + temp;
-        
+
         if (FileManager.default.fileExists(atPath:temPath)) {
             try deleteAllFiles(temPath);
         }
-        
+
         var info: AppInfo? = nil;
         if (unpackZip(zipPath, temPath)) {
             info = try getInfoByManifest(temPath);
         }
         try deleteAllFiles(temPath);
-        
+
         return info!;
     }
-    
+
     func install(_ url: String, _ update: Bool) throws -> AppInfo? {
         let originUrl = url;
         let zipPath = getPathFromUrl(url);
-        
+        var epkDid: String? = nil;
+
         try sendInstallingMessage("start", "", originUrl);
-        
+
         let temp = "tmp_" + UUID().uuidString
         let temPath = appPath + temp;
-        
+
         if (FileManager.default.fileExists(atPath:temPath)) {
             try deleteAllFiles(temPath);
         }
-        
+
         if (!unpackZip(zipPath, temPath)) {
             throw AppError.error("UnpackZip fail!");
         }
         try sendInstallingMessage("unpacked", "", originUrl);
-        
+
         let verifyDigest = PreferenceManager.getShareInstance().getDeveloperInstallVerify();
-        
+
         if (verifyDigest) {
             if (!verifyEpkDigest(temPath)) {
                 throw AppError.error("verifyEpkDigest fail!");
             }
-            
-            if (!verifyEpkSignature(temPath)) {
-                throw AppError.error("verifyEpkSignature fail!");
+
+            var did_url = contentsOf(file: NSURL(fileURLWithPath: temPath).appendingPathComponent("EPK-SIGN/SIGN.DIDURL")! as NSURL)
+            let public_key = contentsOf(file: NSURL(fileURLWithPath: temPath).appendingPathComponent("EPK-SIGN/SIGN.PUB")! as NSURL)
+            let payload = contentsOf(file: NSURL(fileURLWithPath: temPath).appendingPathComponent("EPK-SIGN/FILELIST.SHA")! as NSURL)
+            let signed_payload = contentsOf(file: NSURL(fileURLWithPath: temPath).appendingPathComponent("EPK-SIGN/FILELIST.SIGN")! as NSURL)
+
+            if (did_url != nil && public_key != nil && payload != nil && signed_payload != nil && DIDVerifier.verify(epk_didurl: did_url!, epk_pubkey: public_key!, epk_sha_str: payload!, epk_signature: signed_payload!)) {
+                // Successfully verify the DID signature.
+                Log.d("AppInstaller", "The EPK was signed by (DID URL): " + did_url!);
             }
+            else {
+                // Failed to verify the DID signature.
+                throw AppError.error("Failed to verify EPK DID signature!");
+            }
+
+            //Get did from did_url
+            var index = did_url!.indexOf("/");
+            if (index == -1) {
+                index = did_url!.indexOf("#");
+            }
+            if (index != -1) {
+                did_url = did_url!.subString(to: index);
+            }
+            epkDid = did_url!;
+
+            Log.d("AppInstaller", "The EPK was signed by (Public Key): " + public_key!);
+
             try sendInstallingMessage("verified", "", originUrl);
         }
-        
+
         let info = try getInfoByManifest(temPath);
         guard (info != nil && info!.app_id != "") else {
             try deleteAllFiles(temPath);
             throw AppError.error("Get app info error!");
         }
-        
+
         let appManager = AppManager.getShareInstance();
         let oldInfo = appManager.getAppInfo(info!.app_id);
         if (oldInfo != nil) {
@@ -310,7 +316,11 @@
             print("AppInstaller", "install() - No old info - nothing to uninstall or delete");
             info!.built_in = false;
         }
-        
+
+        if (epkDid != nil) {
+            info!.did = epkDid!;
+        }
+
         if (oldInfo != nil && oldInfo!.launcher) {
             try renameFolder(temPath, appPath, AppManager.LAUNCHER);
         }
@@ -321,16 +331,16 @@
             try renameFolder(temPath, appPath, info!.app_id);
             try appManager.dbAdapter.addAppInfo(info!, true);
         }
-        
+
         try sendInstallingMessage("finish", info!.app_id, originUrl);
-        
+
         return info!;
     }
-    
+
     private func clearLocalStorage(_ did: String, _ packageId: String) {
         let hostname = getCustomHostname(did, packageId);
         let url = "ionic://" + hostname;
-        
+
         let dataStore = WKWebsiteDataStore.default()
         dataStore.fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
             dataStore.removeData(
@@ -340,33 +350,33 @@
                   // this is where the completion handler code goes
                 })
         }
-        
+
         if (webView == nil) {
             var configuration = WKWebViewConfiguration()
             configuration.preferences.javaScriptEnabled = true;
             configuration.processPool = CDVWKProcessPoolFactory.shared()?.sharedProcessPool() as! WKProcessPool;
-            
+
             let schemeHandler = LocalStorageClearHandler()
             configuration.setURLSchemeHandler(schemeHandler, forURLScheme: "ionic")
             webView = WKWebView(frame: CGRect.zero, configuration: configuration)
         }
         webView!.loadHTMLString("<script>localStorage.clear();</script>", baseURL: URL(string:url))
     }
-    
+
     func unInstall(_ info: AppInfo?, _ update: Bool) throws {
         guard info != nil else {
             throw AppError.error("No such app!");
         }
-        
+
         //        guard !info!.built_in else {
         //            throw AppError.error("App is a built in!");
         //        }
-        
+
         try dbAdapter.removeAppInfo(info!, true);
-        
+
         let appPath = self.appPath + info!.app_id
         try deleteAllFiles(appPath);
-        
+
         if (!update) {
             //            Log.d("AppInstaller", "unInstall() - update = false - deleting all files");
             let packageId = info!.app_id
@@ -376,14 +386,14 @@
                 let pathInfo = AppManager.getShareInstance().getPathInfo(did);
                 let dataPath = AppManager.getShareInstance().getDataPath(info!.app_id, pathInfo);
                 try deleteAllFiles(dataPath);
-                
+
                 let tempPath = AppManager.getShareInstance().getTempPath(info!.app_id, pathInfo);
                 try deleteAllFiles(tempPath);
                 clearLocalStorage(did, packageId);
             }
         }
     }
-    
+
     private func isAllowPlugin(_ plugin: String) -> Bool {
         for item in pluginWhitelist {
             if (item == plugin) {
@@ -392,7 +402,7 @@
         }
         return false;
     }
-    
+
     private func isAllowUrl(_ url: String) -> Bool {
         for item in urlWhitelist {
             if (item == url) {
@@ -401,7 +411,7 @@
         }
         return false;
     }
-    
+
     func getInfoByManifest(_ path: String, _ launcher: Bool = false) throws -> AppInfo? {
         var dir = path + "/assets";
         let fileManager = FileManager.default;
@@ -421,7 +431,7 @@
         }
         return info;
     }
-    
+
     private func getMustStrValue(_ json: [String: Any], _ name: String) throws -> String {
         let value = json[name] as? String;
         if (value != nil) {
@@ -431,7 +441,7 @@
             throw AppError.error("Parse Manifest.json error: '\(name)' no exist!");
         }
     }
-    
+
     private func getMustIntValue(_ json: [String: Any], _ name: String) throws -> Int {
         let value = json[name] as? Int;
         if (value != nil) {
@@ -441,16 +451,16 @@
             throw AppError.error("Parse Manifest.json error: '\(name)' no exist!");
         }
     }
-    
+
     func parseManifest(_ path: String, _ launcher: Bool = false) throws -> AppInfo? {
         let appInfo = AppInfo();
         let url = URL.init(fileURLWithPath: path)
         var value: String?;
-        
+
         let data = try Data(contentsOf: url);
         let json = try JSONSerialization.jsonObject(with: data,
                                                     options: []) as! [String: Any];
-        
+
         //Must
         appInfo.app_id = try getMustStrValue(json, "id");
         appInfo.version = try getMustStrValue(json, "version");
@@ -464,7 +474,7 @@
         else {
             appInfo.remote = false;
         }
-        
+
         let icons = json["icons"] as? [Dictionary<String, String>];
         if !launcher {
             if icons != nil {
@@ -479,7 +489,7 @@
                 throw AppError.error("Parse Manifest.json error: 'icons' no exist!");
             }
         }
-        
+
         //Optional
         value = json[AppInfo.START_VISIBLE] as? String;
         if value != nil {
@@ -488,17 +498,17 @@
         else {
             appInfo.start_visible = "show";
         }
-        
+
         value = json["short_name"] as? String;
         if value != nil {
             appInfo.short_name = value!;
         }
-        
+
         value = json["description"] as? String;
         if value != nil {
             appInfo.desc = value!;
         }
-        
+
         value = json["default_locale"] as? String;
         if value != nil {
             appInfo.default_locale = value!;
@@ -506,7 +516,7 @@
         else {
             appInfo.default_locale = "en";
         }
-        
+
         value = json["type"] as? String;
         if value != nil {
             appInfo.type = value!;
@@ -514,7 +524,7 @@
         else {
             appInfo.type = "app";
         }
-        
+
         let author = json["author"] as? [String: Any];
         if author != nil {
             value = author!["name"] as? String;
@@ -526,7 +536,7 @@
                 appInfo.author_email = value!;
             }
         }
-        
+
         value = json["category"] as? String;
         if value != nil {
             appInfo.category = value!;
@@ -534,7 +544,7 @@
         else {
             appInfo.category = "other";
         }
-        
+
         value = json["key_words"] as? String;
         if value != nil {
             appInfo.key_words = value!;
@@ -542,7 +552,7 @@
         else {
             appInfo.key_words = "";
         }
-        
+
         var authority = AppInfo.AUTHORITY_NOINIT;
         let plugins = json["plugins"] as? [String];
         if (plugins != nil) {
@@ -555,7 +565,7 @@
                 appInfo.addPlugin(pluginName, authority);
             }
         }
-        
+
         let urls = json["urls"] as? [String];
         if (urls != nil) {
             for url in urls! {
@@ -567,7 +577,7 @@
                 appInfo.addUrl(urlString, authority);
             }
         }
-        
+
         let intents = json["intents"] as? [String];
         if (intents != nil) {
             for intent in intents! {
@@ -576,7 +586,7 @@
                 appInfo.addIntent(urlString, authority);
             }
         }
-        
+
         let frameworks = json["framework"] as? [String];
         if (frameworks != nil) {
             for framework in frameworks! {
@@ -589,7 +599,7 @@
                 }
             }
         }
-        
+
         let platforms = json["platform"] as? [String];
         if (platforms != nil) {
             for platform in platforms! {
@@ -602,13 +612,13 @@
                 }
             }
         }
-        
-        
+
+
         value = json["background_color"] as? String;
         if value != nil {
             appInfo.background_color = value!;
         }
-        
+
         let theme = json["theme"] as? [String: Any];
         if (theme != nil) {
             value = theme!["display"] as? String;
@@ -619,18 +629,18 @@
             if value != nil {
                 appInfo.theme_color = value!;
             }
-            
+
             value = theme!["font_name"] as? String;
             if value != nil {
                 appInfo.theme_font_name = value!;
             }
-            
+
             value = theme!["font_color"] as? String;
             if value != nil {
                 appInfo.theme_font_color = value!;
             }
         }
-        
+
         let intent_filters = json["intent_filters"] as? [Dictionary<String, String>];
         if intent_filters != nil {
             for intent_filter in intent_filters! {
@@ -653,28 +663,32 @@
                 }
             }
         }
-        
-        
+
+
         let startup_services = json["startup_service"] as? [String];
         if (startup_services != nil) {
             for startup_service in startup_services! {
                 appInfo.addStartService(startup_service);
             }
         }
-        
-        
+
+        value = json[AppInfo.DID] as? String;
+        if value != nil {
+            appInfo.did = value!;
+        }
+
         appInfo.install_time = Int64(Date().timeIntervalSince1970);
         appInfo.launcher = launcher;
-        
+
         return appInfo;
     }
-    
+
     func parseManifestLocale(_ path: String, _ info:AppInfo) throws {
         let url = URL.init(fileURLWithPath: path)
         let data = try Data(contentsOf: url);
         let locales = try JSONSerialization.jsonObject(with: data,
                                                        options: []) as! [String: Any];
-        
+
         var exist:Bool = false;
         for (lang, dict) in locales {
             let locale = dict as! [String: String];
@@ -683,15 +697,15 @@
             let description = try getMustStrValue(locale, "author_name");
             let author_name = try getMustStrValue(locale, "author_name");
             info.addLocale(lang, name, short_name, description, author_name);
-            
+
             if (lang == info.default_locale) {
                 exist = true;
             }
         }
-        
+
         if (!exist) {
             info.addLocale(info.default_locale, info.name, info.short_name, info.desc, info.author_name);
         }
     }
  }
- 
+

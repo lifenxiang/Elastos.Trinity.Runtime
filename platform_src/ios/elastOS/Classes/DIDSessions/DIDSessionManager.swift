@@ -33,6 +33,7 @@ public class DIDSessionManager {
     init() {
         dbAdapter = DIDSessionDatabaseAdapter()
         self.appManager = AppManager.getShareInstance();
+        DIDVerifier.initDidStore(dataPath: self.appManager!.getBaseDataPath());
     }
     
     public static func getSharedInstance() -> DIDSessionManager {

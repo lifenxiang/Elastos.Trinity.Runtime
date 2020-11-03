@@ -396,6 +396,7 @@
         let dataUrl = AppManager.getShareInstance().getDataUrl(info.app_id);
         return [
             "id": info.app_id,
+            "did": info.did,
             "version": info.version,
             "versionCode": info.version_code,
             "name": info.name,
@@ -464,7 +465,7 @@
         }
 
         if (toId.hasPrefix("#")) {
-            if (toId.hasPrefix("#service:") || AppManager.isStartupMode(toId.subStringFrom(index: 1))) {
+            if (toId.hasPrefix("#service:") || AppManager.isStartupMode(toId.subString(from: 1))) {
                 toId = appId + toId;
             }
             else {
