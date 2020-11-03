@@ -43,7 +43,7 @@ const files_to_download  = [
       "ElastosDIDSDK-framework-for-trinity/Logging.framework"
     ],
     "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "751150601bb54cc738d9bbcb9bd3e298"
+    "md5": "9e09f2a27a2d6f0148b023fd0c3186cf"
   }
 ]
 // no need to configure below
