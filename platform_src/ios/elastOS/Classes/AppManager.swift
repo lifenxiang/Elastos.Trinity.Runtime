@@ -150,6 +150,8 @@ class AppManager: NSObject {
 
     private var launcherInfo: AppInfo? = nil;
     private var diddessionInfo: AppInfo? = nil;
+    private var nativeAppInfo: AppInfo? = nil
+    
     private var signIning = true;
     private var did: String? = nil;
 
@@ -231,39 +233,48 @@ class AppManager: NSObject {
     private func reInit(_ sessionLanguage: String?) {
         curController = nil;
 
-        pathInfo = AppPathInfo(getDIDDir(self.did));
+        pathInfo = AppPathInfo(getDIDDir(self.did))
 
-        dbAdapter.setUserDBAdapter(pathInfo?.databasePath);
+        dbAdapter.setUserDBAdapter(pathInfo?.databasePath)
 
         // If we have received an optional language info, we set the DID session language preference with it.
         // This is normally passed by the DID session app to force the initial session language
         if (sessionLanguage != nil) {
             do {
-                try PreferenceManager.getShareInstance().setPreference("locale.language", sessionLanguage);
+                try PreferenceManager.getShareInstance().setPreference("locale.language", sessionLanguage)
             }
             catch let error {
-                    print("setPreference error: locale.language \(error)");
+                    print("setPreference error: locale.language \(error)")
             }
         }
 
-        refreashInfos();
-        getLauncherInfo();
+        refreashInfos()
+        getLauncherInfo()
         do {
-            try loadLauncher();
+            if !ConfigManager.getShareInstance().isNativeBuild() {
+                try loadLauncher()
+            }
+            else {
+                try start(getNativeAppPackageId(), AppManager.STARTUP_APP, nil)
+            }
         }
         catch let error {
-            print("loadLauncher error: \(error)");
+            print("loadLauncher error: \(error)")
         }
-        refreashInfos();
-        startStartupServices();
-        sendRefreshList("initiated", nil);
+        
+        refreashInfos()
+        startStartupServices()
+        sendRefreshList("initiated", nil)
 
-        do {
-            _ = try ContactNotifier.getSharedInstance(did: did!)
-        }
-        catch (let error) {
-            print("Unable to initialize contact notifier with error:")
-            print(error)
+        // No contact notifier in native mode.
+        if !ConfigManager.getShareInstance().isNativeBuild() {
+            do {
+                _ = try ContactNotifier.getSharedInstance(did: did!)
+            }
+            catch (let error) {
+                print("Unable to initialize contact notifier with error:")
+                print(error)
+            }
         }
     }
 
@@ -356,14 +367,26 @@ class AppManager: NSObject {
     }
 
     public func isDIDSession(_ appId: String) -> Bool {
-        return appId == "didsession" || appId == getDIDSessionId();
+        return appId == "didsession" || appId == getDIDSessionId()
     }
 
+    public func getNativeAppPackageId() -> String {
+        return ConfigManager.getShareInstance().getStringValue("native.startup.dapppackage", "")!
+    }
+
+    @objc func getNativeAppInfo() -> AppInfo? {
+        if nativeAppInfo == nil {
+            nativeAppInfo = try? dbAdapter.getAppInfo(getNativeAppPackageId())
+        }
+        return nativeAppInfo
+    }
+
+    
     @objc func getDIDSessionAppInfo() -> AppInfo? {
         if (diddessionInfo == nil) {
-            diddessionInfo = try? dbAdapter.getAppInfo(getDIDSessionId());
+            diddessionInfo = try? dbAdapter.getAppInfo(getDIDSessionId())
         }
-        return diddessionInfo;
+        return diddessionInfo
     }
 
     func startDIDSession() throws {
@@ -417,15 +440,20 @@ class AppManager: NSObject {
     }
 
     func getAppVisible(_ id: String, _ startupMode: String) -> Bool {
-        if (startupMode == AppManager.STARTUP_SERVICE || startupMode == AppManager.STARTUP_SILENCE) {
-            return false;
+        if startupMode == AppManager.STARTUP_SERVICE || startupMode == AppManager.STARTUP_SILENCE {
+            return false
+        }
+        
+        // In native mode, the native app is forced to start visible.
+        if id == getNativeAppPackageId() {
+            return true
         }
 
-        let ret = visibles[id];
+        let ret = visibles[id]
         if (ret == nil) {
-            return true;
+            return true
         }
-        return ret!;
+        return ret!
     }
 
     @objc func getLauncherInfo() -> AppInfo? {
@@ -712,15 +740,20 @@ class AppManager: NSObject {
     }
 
     func install(_ url: String, _ update: Bool) throws -> AppInfo? {
-        let info = try shareInstaller.install(url, update);
-        if (info != nil) {
-            refreashInfos();
+        let info = try shareInstaller.install(url, update)
+        if info != nil {
+            refreashInfos()
 
             if (info!.launcher) {
-                sendRefreshList("launcher_upgraded", info!);
+                sendRefreshList("launcher_upgraded", info!)
             }
             else {
-                sendRefreshList("installed", info);
+                sendRefreshList("installed", info)
+                
+                // Trinity CLI: We have to inform user that he must restart to see his changes live.
+                if ConfigManager.getShareInstance().isNativeBuild() {
+                    alertDialog("dApp updated", "dApp was updated from the CLI. Please kill and restart the native app.")
+                }
             }
         }
 
@@ -999,8 +1032,15 @@ class AppManager: NSObject {
 
     func installUri(_ uri: String, _ dev:Bool) {
         do {
-            if (dev && PreferenceManager.getShareInstance().getDeveloperMode()) {
-                let _ = try install(uri, true);
+            // Trinity native apps can update their EPKs directly if trinity is built in debug
+            #if DEBUG
+            let forceTrinityNativeInstall = ConfigManager.getShareInstance().isNativeBuild()
+            #else
+            let forceTrinityNativeInstall = false
+            #endif
+
+            if forceTrinityNativeInstall || (dev && PreferenceManager.getShareInstance().getDeveloperMode()) {
+                let _ = try install(uri, true)
             }
             else {
                 try checkInProtectList(uri);
@@ -1025,8 +1065,14 @@ class AppManager: NSObject {
     }
 
     func setIntentUri(_ uri: URL) {
-        if (launcherReady) {
-            IntentManager.getShareInstance().doIntentByUri(uri);
+        if launcherReady || ConfigManager.getShareInstance().isNativeBuild() {
+            // Did we receive an intent response? (contains "intentresponse" in the path, but no redirecturl, otherwise this could be the request intent, not the response)
+            if !uri.absoluteString.contains("redirecturl") && uri.absoluteString.contains("/intentresponse") {
+                IntentManager.getShareInstance().onExternalIntentResponseReceived(uri: uri)
+            }
+            else {
+                IntentManager.getShareInstance().doIntentByUri(uri)
+            }
         }
         else {
             intentUriList.append(uri);

@@ -193,6 +193,15 @@ func getAssetPath(_ url: String) -> String {
     }
     return UIImage(data: data!)
  }
+ 
+ public func isJSONType(_ str: String) -> Bool {
+    let _str = str.trimmingCharacters(in: .whitespacesAndNewlines)
+     if (_str.hasPrefix("{") && _str.hasSuffix("}"))
+             || (_str.hasPrefix("[") && _str.hasSuffix("]")) {
+         return true
+     }
+     return false
+ }
 
 //----------------------------------------------------------------------
  // Extend String to be able to throw simple String Errors

@@ -85,87 +85,106 @@ public class DIDSessionManager {
     }
     
     public func authenticate(nonce: String, realm: String, expiresIn: Int, onJWTCreated: @escaping (String?)->Void) throws {
-        // Make sure there is a signed in user
-        guard let signedInIdentity = try? DIDSessionManager.getSharedInstance().getSignedInIdentity() else {
-            throw "No signed in user, cannot authenticate"
-        }
-
-        // Retrieve the master password
-        let passwordInfoKey = "didstore-"+signedInIdentity.didStoreId
-        let appId = "org.elastos.trinity.dapp.didsession" // act as the did session app to be able to retrieve a DID store password
-        try PasswordManager.getSharedInstance().getPasswordInfo(key: passwordInfoKey, did: signedInIdentity.didString, appID: appId, options: PasswordGetInfoOptions(), onPasswordInfoRetrieved: { info in
-            
-            let genericPasswordInfo = info as? GenericPasswordInfo
-            if genericPasswordInfo == nil || genericPasswordInfo!.password == nil || genericPasswordInfo!.password == "" {
-                Log.e(DIDSessionManager.LOG_TAG, "Unable to generate an authentication JWT: no master password")
-                onJWTCreated(nil)
-            }
-            else {
-                // Now we have the did store password. Open the did store and sign
-                // Use the same paths as the DID plugin
-                let cacheDir = NSHomeDirectory() + "/Documents/data/did/.cache.did.elastos"
-                let resolver = PreferenceManager.getShareInstance().getDIDResolver()
-
+        
+        if ConfigManager.getShareInstance().isNativeBuild() {
+            // Trinity native has no active DID session context, so we must send an intent to elastOS to realize this.
+            let params = "{claims={}, &nonce=\""+nonce+"\", realm=\""+realm+"\"}"
+            let fromId = appManager!.curController!.appInfo!.app_id
+            let intentId = Int64(Date().timeIntervalSince1970)
+            let info = IntentInfo("https://did.trinity-tech.io/credaccess", params, fromId, nil, intentId, false) { todo1, todo2, todo3 in
                 do {
-                    class AuthDIDAdapter : DIDAdapter {
-                        func createIdTransaction(_ payload: String, _ memo: String?) {
-                        }
-                    }
-                    
-                    // Initialize the DID store
-                    try DIDBackend.initializeInstance(resolver, cacheDir)
-                    let dataDir = NSHomeDirectory() + "/Documents/data/did/useridentities/" + signedInIdentity.didStoreId
-                    let didStore = try DIDStore.open(atPath: dataDir, withType: "filesystem", adapter: AuthDIDAdapter())
-
-                    // Load the did document
-                    guard let didDocument = try? didStore.loadDid(signedInIdentity.didString) else {
-                        Log.e(DIDSessionManager.LOG_TAG, "Unable to generate an authentication JWT: unable to load the did")
-                        onJWTCreated(nil)
-                        return
-                    }
-                        
-                    // Create an empty presentation just to pass the DID string but nothing else
-                    let did = try DID(signedInIdentity.didString)
-
-                    // Empty list of credentials
-                    let builder = try VerifiablePresentation.editingVerifiablePresentation(for: did, using: didStore)
-                    let presentation = try builder.withCredentials(Array())
-                        .withNonce(nonce)
-                        .withRealm(realm)
-                        .sealed(using: genericPasswordInfo!.password!)
-
-                    // Generate a JWT payload that holds the same format as the "credaccess" scheme intent
-                    var jwtPayloadJson = Dictionary<String, Any>()
-                    jwtPayloadJson["presentation"] = presentation.description.toDict()
-                    
-                    // Sign as JWT
-                    let header = JwtBuilder.createHeader()
-                    _ = header.setType(Header.JWT_TYPE).setContentType("json")
-
-                    let iat = Date()
-                    let expire = Calendar.current.date(byAdding: .minute, value: expiresIn, to: iat)!
-
-                    let jwtToken = try didDocument.jwtBuilder()
-                        .setIssuer(iss: signedInIdentity.didString)
-                        .setHeader(header)
-                        .setIssuedAt(issuedAt: iat)
-                        .setExpiration(expiration: expire)
-                        .addClaimsWithJson(jsonClaims: jwtPayloadJson.toString()!)
-                        .sign(using: genericPasswordInfo!.password!)
-                        .compact()
-
-                    onJWTCreated(jwtToken)
+                    // TODO let responseJWT = data.getString("responseJWT")
+                    // TODO listener.onJWTCreated(responseJWT)
+                } catch (let e) {
+                    // TODO e.printStackTrace();
+                    // TODO listener.onJWTCreated(null);
                 }
-                catch (let error) {
-                    Log.e(DIDSessionManager.LOG_TAG, "Unable to generate an authentication JWT: "+error.localizedDescription)
+            }
+            try IntentManager.getShareInstance().doIntent(info)
+        }
+        else {
+            // Make sure there is a signed in user
+            guard let signedInIdentity = try? DIDSessionManager.getSharedInstance().getSignedInIdentity() else {
+                throw "No signed in user, cannot authenticate"
+            }
+
+            // Retrieve the master password
+            let passwordInfoKey = "didstore-"+signedInIdentity.didStoreId
+            let appId = "org.elastos.trinity.dapp.didsession" // act as the did session app to be able to retrieve a DID store password
+            try PasswordManager.getSharedInstance().getPasswordInfo(key: passwordInfoKey, did: signedInIdentity.didString, appID: appId, options: PasswordGetInfoOptions(), onPasswordInfoRetrieved: { info in
+                
+                let genericPasswordInfo = info as? GenericPasswordInfo
+                if genericPasswordInfo == nil || genericPasswordInfo!.password == nil || genericPasswordInfo!.password == "" {
+                    Log.e(DIDSessionManager.LOG_TAG, "Unable to generate an authentication JWT: no master password")
                     onJWTCreated(nil)
                 }
-            }
-        }, onCancel: {
-            onJWTCreated(nil)
-        }, onError: { error in
-            Log.e(DIDSessionManager.LOG_TAG, "Unable to access master password database to create an authentication JWT: "+error)
-            onJWTCreated(nil)
-        })
+                else {
+                    // Now we have the did store password. Open the did store and sign
+                    // Use the same paths as the DID plugin
+                    let cacheDir = NSHomeDirectory() + "/Documents/data/did/.cache.did.elastos"
+                    let resolver = PreferenceManager.getShareInstance().getDIDResolver()
+
+                    do {
+                        class AuthDIDAdapter : DIDAdapter {
+                            func createIdTransaction(_ payload: String, _ memo: String?) {
+                            }
+                        }
+                        
+                        // Initialize the DID store
+                        try DIDBackend.initializeInstance(resolver, cacheDir)
+                        let dataDir = NSHomeDirectory() + "/Documents/data/did/useridentities/" + signedInIdentity.didStoreId
+                        let didStore = try DIDStore.open(atPath: dataDir, withType: "filesystem", adapter: AuthDIDAdapter())
+
+                        // Load the did document
+                        guard let didDocument = try? didStore.loadDid(signedInIdentity.didString) else {
+                            Log.e(DIDSessionManager.LOG_TAG, "Unable to generate an authentication JWT: unable to load the did")
+                            onJWTCreated(nil)
+                            return
+                        }
+                            
+                        // Create an empty presentation just to pass the DID string but nothing else
+                        let did = try DID(signedInIdentity.didString)
+
+                        // Empty list of credentials
+                        let builder = try VerifiablePresentation.editingVerifiablePresentation(for: did, using: didStore)
+                        let presentation = try builder.withCredentials(Array())
+                            .withNonce(nonce)
+                            .withRealm(realm)
+                            .sealed(using: genericPasswordInfo!.password!)
+
+                        // Generate a JWT payload that holds the same format as the "credaccess" scheme intent
+                        var jwtPayloadJson = Dictionary<String, Any>()
+                        jwtPayloadJson["presentation"] = presentation.description.toDict()
+                        
+                        // Sign as JWT
+                        let header = JwtBuilder.createHeader()
+                        _ = header.setType(Header.JWT_TYPE).setContentType("json")
+
+                        let iat = Date()
+                        let expire = Calendar.current.date(byAdding: .minute, value: expiresIn, to: iat)!
+
+                        let jwtToken = try didDocument.jwtBuilder()
+                            .setIssuer(iss: signedInIdentity.didString)
+                            .setHeader(header)
+                            .setIssuedAt(issuedAt: iat)
+                            .setExpiration(expiration: expire)
+                            .addClaimsWithJson(jsonClaims: jwtPayloadJson.toString()!)
+                            .sign(using: genericPasswordInfo!.password!)
+                            .compact()
+
+                        onJWTCreated(jwtToken)
+                    }
+                    catch (let error) {
+                        Log.e(DIDSessionManager.LOG_TAG, "Unable to generate an authentication JWT: "+error.localizedDescription)
+                        onJWTCreated(nil)
+                    }
+                }
+            }, onCancel: {
+                onJWTCreated(nil)
+            }, onError: { error in
+                Log.e(DIDSessionManager.LOG_TAG, "Unable to access master password database to create an authentication JWT: "+error)
+                onJWTCreated(nil)
+            })
+        }
     }
 }

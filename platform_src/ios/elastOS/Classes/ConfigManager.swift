@@ -52,7 +52,7 @@ class ConfigManager: NSObject {
 
     }
 
-    @objc func getStringValue(_ key: String, _ defaultValue: String) -> String {
+    @objc func getStringValue(_ key: String, _ defaultValue: String?) -> String? {
         guard configPreferences != nil else {
             return defaultValue;
         }
@@ -88,18 +88,6 @@ class ConfigManager: NSObject {
         return ret!;
     }
 
-    func getDictionaryValue(_ key: String, _ defaultValue: [String: String]) -> [String: String] {
-        guard configPreferences != nil else {
-            return defaultValue;
-        }
-
-        var ret = configPreferences![key] as? [String: String];
-        if (ret == nil) {
-            ret = defaultValue;
-        }
-        return ret!;
-    }
-
     func getNativeMainViewControllerName(_ appInfo: AppInfo) -> String? {
         guard configPreferences != nil else {
             return nil;
@@ -124,6 +112,25 @@ class ConfigManager: NSObject {
         let array = getStringArrayValue(key, [String]());
         return array.contains(value);
     }
+    
+    @objc public func getDictionaryValue(_ key: String, _ defaultValue: [String: String]? = nil) -> [String: String]? {
+        guard configPreferences != nil else {
+            return defaultValue
+        }
 
+        var ret = configPreferences![key] as? [String: String]
+        if (ret == nil) {
+            ret = defaultValue
+        }
+        return ret
+    }
+
+    /**
+     * Tells if this runtime is currently built inside elastOS, or as native (packaging a dapp as a native app using trinity).
+     */
+    @objc public func isNativeBuild() -> Bool {
+        let type = ConfigManager.getShareInstance().getStringValue("build.type", nil)
+        return (type != nil && type == "native")
+    }
 }
 

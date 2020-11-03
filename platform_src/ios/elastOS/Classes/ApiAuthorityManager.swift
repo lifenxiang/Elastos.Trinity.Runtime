@@ -200,6 +200,10 @@ class ApiAuthorityManager {
     }
 
     private func isInWhitelist(_ appId: String) -> Bool {
+        if ConfigManager.getShareInstance().isNativeBuild() {
+            return true
+        }
+
         return ConfigManager.getShareInstance().stringArrayContains("api.authority.whitelist", appId);
     }
 

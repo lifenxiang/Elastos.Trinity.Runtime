@@ -54,21 +54,23 @@ extension CDVPlugin {
             let appView: AppViewController? = self.viewController as? AppViewController
             if (appView != nil ) {
                 //checkApiPermission
-                let ret = appView!.getPermissionGroup().getApiPermission(pluginName, command.methodName);
-                if (!ret) {
-                    refuseAccess(command);
-                    return true;
-                }
-                
-                let authority = ApiAuthorityManager.getShareInstance().getApiAuthority(appView!.packageId, self.pluginName, self, command);
-                if (authority == AppInfo.AUTHORITY_NOEXIST || authority == AppInfo.AUTHORITY_DENY) {
-                    refuseAccess(command);
-                    return true;
-                }
-                else if (authority == AppInfo.AUTHORITY_NOINIT || authority == AppInfo.AUTHORITY_ASK) {
-                    return true;
+                if !ConfigManager.getShareInstance().isNativeBuild() {
+                    let ret = appView!.getPermissionGroup().getApiPermission(pluginName, command.methodName);
+                    if (!ret) {
+                        refuseAccess(command);
+                        return true;
+                    }
+
+                    let authority = ApiAuthorityManager.getShareInstance().getApiAuthority(appView!.packageId, self.pluginName, self, command);
+                    if (authority == AppInfo.AUTHORITY_NOEXIST || authority == AppInfo.AUTHORITY_DENY) {
+                        refuseAccess(command);
+                        return true;
+                    }
+                    else if (authority == AppInfo.AUTHORITY_NOINIT || authority == AppInfo.AUTHORITY_ASK) {
+                        return true;
+                    }
                 }
             }
-            return self.execute(command);
+            return self.execute(command)
         }
      }

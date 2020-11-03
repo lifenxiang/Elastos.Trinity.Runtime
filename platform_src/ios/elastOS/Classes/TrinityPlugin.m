@@ -268,7 +268,10 @@
 
 - (void)pluginInitialize {
     if (appInfo == NULL) {
-        if ([[AppManager getShareInstance] isSignIning]) {
+        if ([[ConfigManager getShareInstance] isNativeBuild]) {
+            [self setInfo:[[AppManager getShareInstance] getNativeAppInfo] startupMode:AppManager.STARTUP_APP serviceName:nil];
+        }
+        else if ([[AppManager getShareInstance] isSignIning]) {
             [self setInfo:[[AppManager getShareInstance] getDIDSessionAppInfo] startupMode:AppManager.STARTUP_APP serviceName:nil];
         }
         else {

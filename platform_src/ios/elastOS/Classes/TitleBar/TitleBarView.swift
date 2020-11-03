@@ -228,6 +228,12 @@ class TitleBarView: UIView {
             _ = setBackgroundColor("#f8f8ff")
             setForegroundMode(.DARK)
         }
+        
+        // Hide the navigation mode icon in native mode, but only for the root user app. Built-in hidden apps like the qr code scanner can have a close icon
+        if ConfigManager.getShareInstance().isNativeBuild() && appId == ConfigManager.getShareInstance().getStringValue("native.startup.dapppackage", nil) {
+            setNavigationIconVisibility(visible: false)
+        }
+
         setAnimationHintText(nil)
 
         updateIcons()
@@ -302,6 +308,11 @@ class TitleBarView: UIView {
     public func showActivityIndicator(activityType: TitleBarActivityType, hintText: String?) {
         // Don't show activity indicators on ios/itunes
         if ConfigManager.getShareInstance().getStringValue("build.variant", "") == "itunesappstore" {
+            return
+        }
+        
+        // Don't show activity indicators in native builds.
+        if ConfigManager.getShareInstance().isNativeBuild() {
             return
         }
 
