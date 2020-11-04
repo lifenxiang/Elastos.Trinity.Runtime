@@ -20,7 +20,7 @@ const files_to_download  = [
       "ElastosHiveSDK-framework-for-trinity/Swifter.framework"
     ],
     "targetDir": "../Plugins/Hive/src/ios/libs",
-    "md5": "60fd8bdce3b99b252383d2e7baded748"
+    "md5": "d880459853b2e65940de1bee1638d8d0"
   },{
     "url": "https://github.com/elastos/Elastos.Trinity.Plugins.Wallet/releases/download/spvsdk-V0.5.7.0/libspvsdk.zip",
     "filename": "libspvsdk.zip",
@@ -43,7 +43,7 @@ const files_to_download  = [
       "ElastosDIDSDK-framework-for-trinity/Logging.framework"
     ],
     "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "9e09f2a27a2d6f0148b023fd0c3186cf"
+    "md5": "9704bc4a272c34102a092a5e3f45c2d2"
   }
 ]
 // no need to configure below
