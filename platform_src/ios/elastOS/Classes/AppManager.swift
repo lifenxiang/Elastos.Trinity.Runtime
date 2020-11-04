@@ -151,7 +151,7 @@ class AppManager: NSObject {
     private var launcherInfo: AppInfo? = nil;
     private var diddessionInfo: AppInfo? = nil;
     private var nativeAppInfo: AppInfo? = nil
-    
+
     private var signIning = true;
     private var did: String? = nil;
 
@@ -190,27 +190,34 @@ class AppManager: NSObject {
         saveBuiltInApps();
         refreashInfos();
 
-        var entry: IdentityEntry? = nil;
-        do {
-            entry = try DIDSessionManager.getSharedInstance().getSignedInIdentity();
-        }
-        catch let error {
-            print("getSignedInIdentity error: \(error)");
-        }
-
-
-        if (entry != nil) {
-            signIning = false;
-            did = entry!.didString;
-            reInit(nil);
-        }
-        else {
+        if (!ConfigManager.getShareInstance().isNativeBuild()) {
+            var entry: IdentityEntry? = nil
             do {
-                try startDIDSession();
+                entry = try DIDSessionManager.getSharedInstance().getSignedInIdentity()
             }
             catch let error {
-                print("startDIDSession error: \(error)");
+                print("getSignedInIdentity error: \(error)")
             }
+
+            if (entry != nil) {
+                signIning = false
+                did = entry!.didString
+                reInit(nil)
+            }
+            else {
+                do {
+                    try startDIDSession()
+                }
+                catch let error {
+                    print("startDIDSession error: \(error)")
+                }
+            }
+        }
+        else {
+            did = "dappasnativedid" // Simulate a DID context for the native app
+
+            // Will start the native app
+            reInit(nil)
         }
 
         if (PreferenceManager.getShareInstance().getDeveloperMode()) {
@@ -261,7 +268,7 @@ class AppManager: NSObject {
         catch let error {
             print("loadLauncher error: \(error)")
         }
-        
+
         refreashInfos()
         startStartupServices()
         sendRefreshList("initiated", nil)
@@ -381,7 +388,7 @@ class AppManager: NSObject {
         return nativeAppInfo
     }
 
-    
+
     @objc func getDIDSessionAppInfo() -> AppInfo? {
         if (diddessionInfo == nil) {
             diddessionInfo = try? dbAdapter.getAppInfo(getDIDSessionId())
@@ -443,7 +450,7 @@ class AppManager: NSObject {
         if startupMode == AppManager.STARTUP_SERVICE || startupMode == AppManager.STARTUP_SILENCE {
             return false
         }
-        
+
         // In native mode, the native app is forced to start visible.
         if id == getNativeAppPackageId() {
             return true
@@ -620,7 +627,8 @@ class AppManager: NSObject {
             path = originPath + "/manifest.json";
             ret = fileManager.fileExists(atPath: path);
             guard ret else {
-                fatalError("installBuiltInApp error: Can't find manifest.json in / or /assets/, do not install this dapp.")
+                print("Can't find manifest.json in / or /assets/, do not install this dapp.")
+                return
             }
         }
 
@@ -749,7 +757,7 @@ class AppManager: NSObject {
             }
             else {
                 sendRefreshList("installed", info)
-                
+
                 // Trinity CLI: We have to inform user that he must restart to see his changes live.
                 if ConfigManager.getShareInstance().isNativeBuild() {
                     alertDialog("dApp updated", "dApp was updated from the CLI. Please kill and restart the native app.")
@@ -880,6 +888,9 @@ class AppManager: NSObject {
             }
             else if (isDIDSession(packageId)) {
                 viewController = LauncherViewController(getDIDSessionAppInfo()!, mode, serviceName);
+            }
+            else if (packageId == getNativeAppPackageId()) {
+                viewController = LauncherViewController(appInfo!, mode, serviceName);
             }
             else {
                 let nativeClassName = ConfigManager.getShareInstance().getNativeMainViewControllerName(appInfo!);
