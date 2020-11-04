@@ -467,10 +467,10 @@ public class PasswordManager {
                 lockDatabase(did: did)
             }
             
-            // First make sure to cancel any on going popup instance.
             if activeMasterPasswordPrompt != nil {
-                activeMasterPasswordPrompt!.dismiss()
-                activeMasterPasswordPrompt = nil
+                print("Another password prompt is already active. Cancelling this request.");
+                onCancel()
+                return
             }
             
             // Master password is locked - prompt it to user

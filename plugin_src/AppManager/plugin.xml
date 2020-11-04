@@ -98,11 +98,15 @@
         <config-file parent="com.apple.developer.associated-domains" target="*-Debug.plist">
             <array>
                 <string>applinks:scheme.elastos.org</string>
+                <string>applinks:did.trinity-tech.io</string>
+		        <string>applinks:wallet.trinity-tech.io</string>
             </array>
         </config-file>
         <config-file parent="com.apple.developer.associated-domains" target="*-Release.plist">
             <array>
                 <string>applinks:scheme.elastos.org</string>
+                <string>applinks:did.trinity-tech.io</string>
+		        <string>applinks:wallet.trinity-tech.io</string>
             </array>
         </config-file>
 
