@@ -20,22 +20,22 @@
   * SOFTWARE.
   */
 
-import Foundation
-import WebKit
+ import Foundation
+ import WebKit
 
-func resetPath(_ dir: String, _ origin: String) -> String {
+ func resetPath(_ dir: String, _ origin: String) -> String {
     var ret = origin;
     if (!ret.hasPrefix("http://") && !ret.hasPrefix("https://")
-        && !ret.hasPrefix("file:///")) {
+            && !ret.hasPrefix("file:///")) {
         while (ret.first == "/") {
             ret.remove(at: ret.startIndex);
         }
         ret = dir + ret;
     }
     return ret;
-}
+ }
 
-func getAbsolutePath(_ path: String, _ type: String? = nil) -> String {
+ func getAbsolutePath(_ path: String, _ type: String? = nil) -> String {
     let nsPath: NSString = path as NSString;
     if !nsPath.isAbsolutePath {
         let absolutePath = Bundle.main.path(forResource: path, ofType: nil)
@@ -44,13 +44,13 @@ func getAbsolutePath(_ path: String, _ type: String? = nil) -> String {
         }
     }
     return path;
-}
+ }
 
-func getAssetPath(_ url: String) -> String {
+ func getAssetPath(_ url: String) -> String {
     let index = url.index(url.startIndex, offsetBy: 8)
     let substr = url[index ..< url.endIndex];
     return getAbsolutePath(String(substr));
-}
+ }
 
  func getTrinityPath(_ url: String, _ mainUrl: String) -> String {
     let appManager = AppManager.getShareInstance();
@@ -138,49 +138,49 @@ func getAssetPath(_ url: String) -> String {
  func alertDialog(_ title: String, _ msg: String,
                   _ cancel: Bool  = false) {
 
-     func doOKHandler(alerAction:UIAlertAction) {
+    func doOKHandler(alerAction:UIAlertAction) {
 
-     }
+    }
 
-     func doCancelHandler(alerAction:UIAlertAction) {
+    func doCancelHandler(alerAction:UIAlertAction) {
 
-     }
+    }
 
-     let alertController = UIAlertController(title: title,
-                                     message: msg,
-                                     preferredStyle: UIAlertController.Style.alert)
-     if (cancel) {
-         let cancelAlertAction = UIAlertAction(title: "cancel".localized, style:
-             UIAlertAction.Style.cancel, handler: doCancelHandler)
-         alertController.addAction(cancelAlertAction)
-     }
-     let sureAlertAction = UIAlertAction(title: "ok".localized, style: UIAlertAction.Style.default, handler: doOKHandler)
-     alertController.addAction(sureAlertAction)
+    let alertController = UIAlertController(title: title,
+                                            message: msg,
+                                            preferredStyle: UIAlertController.Style.alert)
+    if (cancel) {
+        let cancelAlertAction = UIAlertAction(title: "cancel".localized, style:
+                                                UIAlertAction.Style.cancel, handler: doCancelHandler)
+        alertController.addAction(cancelAlertAction)
+    }
+    let sureAlertAction = UIAlertAction(title: "ok".localized, style: UIAlertAction.Style.default, handler: doOKHandler)
+    alertController.addAction(sureAlertAction)
 
     DispatchQueue.main.async { AppManager.getShareInstance().mainViewController.present(alertController, animated: true, completion: nil)
     }
  }
 
  func getCurrentLanguage() -> String {
-     let preferredLang = NSLocale.preferredLanguages.first!
+    let preferredLang = NSLocale.preferredLanguages.first!
 
-     switch preferredLang {
-     case "en-US", "en-CN":
-         return "en"
-     case "zh-Hans-US","zh-Hans-CN","zh-Hant-CN","zh-TW","zh-HK","zh-Hans":
-         return "zh"
-     default:
-         return "en"
-     }
+    switch preferredLang {
+    case "en-US", "en-CN":
+        return "en"
+    case "zh-Hans-US","zh-Hans-CN","zh-Hant-CN","zh-TW","zh-HK","zh-Hans":
+        return "zh"
+    default:
+        return "en"
+    }
  }
 
  func getCustomHostname(_ did: String?, _ appId: String) -> String {
-     var hostname = "";
+    var hostname = "";
 
-     if (did != nil) {
+    if (did != nil) {
         hostname += did!.replacingOccurrences(of: ":", with: ".");
-     }
-     hostname += appId;
+    }
+    hostname += appId;
 
     return hostname.lowercased().encodingURL();
  }
@@ -203,7 +203,7 @@ func getAssetPath(_ url: String) -> String {
      return false
  }
 
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
  // Extend String to be able to throw simple String Errors
  extension String: LocalizedError{
 
@@ -217,20 +217,20 @@ func getAssetPath(_ url: String) -> String {
         return nil
     }
 
-     func fromBase64() -> String? {
-         guard let data = Data(base64Encoded: self, options: Data.Base64DecodingOptions(rawValue: 0)) else {
-             return nil
-         }
+    func fromBase64() -> String? {
+        guard let data = Data(base64Encoded: self, options: Data.Base64DecodingOptions(rawValue: 0)) else {
+            return nil
+        }
 
-         return String(data: data as Data, encoding: String.Encoding.utf8)
-     }
+        return String(data: data as Data, encoding: String.Encoding.utf8)
+    }
 
     func toBase64() -> String? {
-         guard let data = self.data(using: String.Encoding.utf8) else {
-             return nil
-         }
+        guard let data = self.data(using: String.Encoding.utf8) else {
+            return nil
+        }
 
-         return data.base64EncodedString(options: Data.Base64EncodingOptions(rawValue: 0))
+        return data.base64EncodedString(options: Data.Base64EncodingOptions(rawValue: 0))
     }
 
     func toBase64Data() -> Data? {
@@ -257,14 +257,9 @@ func getAssetPath(_ url: String) -> String {
             return false;
         }
     }
-    
-    func subStringFrom(index: Int) -> String {
-        let temporaryString: String = self
-        let temporaryIndex = temporaryString.index(temporaryString.startIndex, offsetBy: index)
-        return String(temporaryString[temporaryIndex...])
-    }
-    
-    func indexOf(sub:String, backwards:Bool = false)->Int {
+
+
+    func indexOf(_ sub:String, backwards:Bool = false) -> Int {
         var pos = -1
         if let range = range(of:sub, options: backwards ? .backwards : .literal ) {
             if !range.isEmpty {
@@ -272,6 +267,37 @@ func getAssetPath(_ url: String) -> String {
             }
         }
         return pos
+    }
+
+    func trim() -> String {
+        return self.trimmingCharacters(in: CharacterSet.whitespaces)
+    }
+
+    func subString(to: Int) -> String {
+        var to = to
+        if to > self.count {
+            to = self.count
+        }
+        return String(self.prefix(to))
+    }
+
+    func subString(from: Int) -> String {
+        if from >= self.count {
+            return ""
+        }
+        let startIndex = self.index(self.startIndex, offsetBy: from)
+        let endIndex = self.endIndex
+        return String(self[startIndex..<endIndex])
+    }
+
+    func subString(start: Int, end: Int) -> String {
+        if start < end {
+            let startIndex = self.index(self.startIndex, offsetBy: start)
+            let endIndex = self.index(self.startIndex, offsetBy: end)
+
+            return String(self[startIndex..<endIndex])
+        }
+        return ""
     }
  }
 
@@ -282,15 +308,15 @@ func getAssetPath(_ url: String) -> String {
  }
 
  extension Dictionary {
-     func percentEncoded() -> Data? {
-         return map { key, value in
-             let escapedKey = "\(key)".addingPercentEncoding(withAllowedCharacters: .urlQueryValueAllowed) ?? ""
-             let escapedValue = "\(value)".addingPercentEncoding(withAllowedCharacters: .urlQueryValueAllowed) ?? ""
-             return escapedKey + "=" + escapedValue
-         }
-         .joined(separator: "&")
-         .data(using: .utf8)
-     }
+    func percentEncoded() -> Data? {
+        return map { key, value in
+            let escapedKey = "\(key)".addingPercentEncoding(withAllowedCharacters: .urlQueryValueAllowed) ?? ""
+            let escapedValue = "\(value)".addingPercentEncoding(withAllowedCharacters: .urlQueryValueAllowed) ?? ""
+            return escapedKey + "=" + escapedValue
+        }
+        .joined(separator: "&")
+        .data(using: .utf8)
+    }
 
     func toString() -> String? {
         let data = try? JSONSerialization.data(withJSONObject: self, options: [])
@@ -305,24 +331,24 @@ func getAssetPath(_ url: String) -> String {
  }
 
  extension CharacterSet {
-     static let urlQueryValueAllowed: CharacterSet = {
-         let generalDelimitersToEncode = ":#[]@" // does not include "?" or "/" due to RFC 3986 - Section 3.4
-         let subDelimitersToEncode = "!$&'()*+,;="
+    static let urlQueryValueAllowed: CharacterSet = {
+        let generalDelimitersToEncode = ":#[]@" // does not include "?" or "/" due to RFC 3986 - Section 3.4
+        let subDelimitersToEncode = "!$&'()*+,;="
 
-         var allowed = CharacterSet.urlQueryAllowed
-         allowed.remove(charactersIn: "\(generalDelimitersToEncode)\(subDelimitersToEncode)")
-         return allowed
-     }()
+        var allowed = CharacterSet.urlQueryAllowed
+        allowed.remove(charactersIn: "\(generalDelimitersToEncode)\(subDelimitersToEncode)")
+        return allowed
+    }()
  }
 
  extension URL {
-     public var parametersFromQueryString : [String: String]? {
-         guard let components = URLComponents(url: self, resolvingAgainstBaseURL: true),
-         let queryItems = components.queryItems else { return nil }
-         return queryItems.reduce(into: [String: String]()) { (result, item) in
-             result[item.name] = item.value
-         }
-     }
+    public var parametersFromQueryString : [String: String]? {
+        guard let components = URLComponents(url: self, resolvingAgainstBaseURL: true),
+              let queryItems = components.queryItems else { return nil }
+        return queryItems.reduce(into: [String: String]()) { (result, item) in
+            result[item.name] = item.value
+        }
+    }
  }
 
  extension UIColor {
@@ -388,7 +414,7 @@ func getAssetPath(_ url: String) -> String {
         guard let currentFilter = CIFilter(name: "CIPhotoEffectNoir") else { return nil }
         currentFilter.setValue(CIImage(image: self), forKey: kCIInputImageKey)
         if let output = currentFilter.outputImage,
-            let cgImage = context.createCGImage(output, from: output.extent) {
+           let cgImage = context.createCGImage(output, from: output.extent) {
             return UIImage(cgImage: cgImage, scale: scale, orientation: imageOrientation)
         }
         return nil
@@ -429,27 +455,27 @@ func getAssetPath(_ url: String) -> String {
  }
 
  public extension FileManager {
-     func temporaryFileURL(fileName: String = UUID().uuidString) -> URL? {
-         return URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true).appendingPathComponent(fileName)
-     }
+    func temporaryFileURL(fileName: String = UUID().uuidString) -> URL? {
+        return URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true).appendingPathComponent(fileName)
+    }
  }
 
  /** i18n - strings localization */
  extension String {
-     var localized: String {
-         if let _ = UserDefaults.standard.string(forKey: "i18n_language") {} else {
-             // we set a default, just in case
-             UserDefaults.standard.set("en", forKey: "i18n_language")
-             UserDefaults.standard.synchronize()
-         }
+    var localized: String {
+        if let _ = UserDefaults.standard.string(forKey: "i18n_language") {} else {
+            // we set a default, just in case
+            UserDefaults.standard.set("en", forKey: "i18n_language")
+            UserDefaults.standard.synchronize()
+        }
 
         let lang = UserDefaults.standard.string(forKey: "i18n_language") ?? "en"
 
-         let path = Bundle.main.path(forResource: "Strings/" + lang, ofType: "lproj")
-         let bundle = Bundle(path: path!)
+        let path = Bundle.main.path(forResource: "Strings/" + lang, ofType: "lproj")
+        let bundle = Bundle(path: path!)
 
-         return NSLocalizedString(self, tableName: nil, bundle: bundle!, value: "", comment: "")
-     }
+        return NSLocalizedString(self, tableName: nil, bundle: bundle!, value: "", comment: "")
+    }
  }
 
  /** 20200611 - Remove scroll bounce effect from all scroll views in the app. NOTE: Works well for dapps, but could have side effect if using scroll view at other location, careful. */

@@ -32,7 +32,7 @@ class RuntimeDIDAdapter: DIDAdapter {
 public class DIDVerifier {
     private static var mDIDStore: DIDStore? = nil
 
-    public static func initDidStore(dataPath: String) throws {
+    public static func initDidStore(dataPath: String) {
         let dataDir = dataPath + "/did_stores/" + "DIDVerifier"
         let cacheDir = dataPath + "/did_stores/" + ".cache.did.elastos"
 
@@ -51,22 +51,22 @@ public class DIDVerifier {
     }
 
     public static func verify(epk_didurl: String, epk_pubkey: String, epk_sha_str: String, epk_signature: String) -> Bool {
-        
+
         var didurl: DIDURL
         var ret = false
-        
+
         guard let didStore = mDIDStore else {
             print("DID Verifier's DID store not initialized")
             return false
         }
-        
+
         do {
             didurl = try DIDURL(epk_didurl)
-            
+
             guard let did = didurl.did as DID? else {
                 return false
             }
-            
+
             var diddoc = try did.resolve(true)
             if diddoc == nil {
                 diddoc = try didStore.loadDid(did)
