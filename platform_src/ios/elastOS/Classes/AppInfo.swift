@@ -29,6 +29,7 @@ class AppInfo: NSObject {
     @objc static let APP_TID = "app_tid";
     @objc static let APP_ID = "app_id";
     @objc static let DID = "did";
+    @objc static let PUBLIC_KEY = "public_key";
     @objc static let VERSION = "version";
     @objc static let VERSION_CODE = "version_code";
     @objc static let NAME = "name";
@@ -69,6 +70,7 @@ class AppInfo: NSObject {
     @objc dynamic var tid: Int64 = 0;
     @objc dynamic var app_id = "";
     @objc dynamic var did: String? = nil;
+    @objc dynamic var public_key: String? = nil;
     @objc dynamic var version = "";
     @objc dynamic var version_code = 0;
     @objc dynamic var name = "";

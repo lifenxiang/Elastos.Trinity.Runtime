@@ -25,7 +25,7 @@ import SQLite
 
 class ManagerDBAdapter {
     @objc static let DATABASE_NAME = "manager.db";
-    @objc static let VERSION = 3;
+    @objc static let VERSION = 4;
     @objc static let AUTH_PLUGIN_TABLE = "auth_plugin";
     @objc static let AUTH_URL_TABLE = "auth_url";
     @objc static let AUTH_INTENT_TABLE = "auth_intent";
@@ -48,6 +48,7 @@ class ManagerDBAdapter {
 
     let app_id = Expression<String>(AppInfo.APP_ID)
     let did = Expression<String?>(AppInfo.DID)
+    let public_key = Expression<String?>(AppInfo.PUBLIC_KEY)
     let version = Expression<String>(AppInfo.VERSION)
     let version_code = Expression<Int>(AppInfo.VERSION_CODE)
     let name = Expression<String>(AppInfo.NAME)
@@ -217,6 +218,7 @@ class ManagerDBAdapter {
             t.column(tid, primaryKey: .autoincrement)
             t.column(app_id, unique: true)
             t.column(did)
+            t.column(public_key)
             t.column(version)
             t.column(version_code)
             t.column(name)
@@ -262,6 +264,7 @@ class ManagerDBAdapter {
             info.tid = try db.run(apps.insert(
                 app_id <- info.app_id,
                 did <- info.did,
+                public_key <- info.public_key,
                 version <- info.version,
                 version_code <- info.version_code,
                 name <- info.name,
@@ -357,6 +360,7 @@ class ManagerDBAdapter {
             info.tid = app[tid];
             info.app_id = app[app_id];
             info.did = app[did];
+            info.public_key = app[public_key];
             info.version = app[version];
             info.version_code = app[version_code];
             info.name = app[name];
@@ -713,6 +717,10 @@ class ManagerDBAdapter {
            Log.d("ManagerDBHelper", "Upgrading database to v3");
            try upgradeToV3();
         }
+        if (oldVersion < 4) {
+           Log.d("ManagerDBHelper", "Upgrading database to v4");
+           try upgradeToV4();
+        }
     }
     
     private func upgradeToV1() throws {
@@ -739,6 +747,12 @@ class ManagerDBAdapter {
         try db.run(apps.addColumn(did, defaultValue: nil))
         
         db.userVersion = 3;
+    }
+    
+    private func upgradeToV4() throws {
+        try db.run(apps.addColumn(public_key, defaultValue: nil))
+        
+        db.userVersion = 4;
     }
     
  }

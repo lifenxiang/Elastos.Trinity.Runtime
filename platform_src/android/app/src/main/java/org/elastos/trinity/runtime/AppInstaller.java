@@ -423,7 +423,6 @@ public class AppInstaller {
             }
             epkDid = did_url;
 
-            //Get did from did_url
             publicKey = public_key;
 
             Log.d("AppInstaller", "The EPK was signed by (Public Key): " + public_key);

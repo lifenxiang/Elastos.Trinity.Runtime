@@ -238,6 +238,7 @@
         let originUrl = url;
         let zipPath = getPathFromUrl(url);
         var epkDid: String? = nil;
+        var publicKey: String? = nil;
 
         try sendInstallingMessage("start", "", originUrl);
 
@@ -283,6 +284,8 @@
                 did_url = did_url!.subString(to: index);
             }
             epkDid = did_url!;
+            
+            publicKey = public_key;
 
             Log.d("AppInstaller", "The EPK was signed by (Public Key): " + public_key!);
 
@@ -299,6 +302,15 @@
         let oldInfo = appManager.getAppInfo(info!.app_id);
         if (oldInfo != nil) {
             if (update) {
+                if (verifyDigest && oldInfo!.public_key != nil) {
+                    if (oldInfo!.public_key != publicKey) {
+                        throw AppError.error("The epk's public key is different!");
+                    }
+                    if ((info!.public_key != nil) && (oldInfo!.public_key != info!.public_key)) {
+                        throw AppError.error("The mainfest's public key is different!");
+                    }
+                }
+                
                 print("AppInstaller install() - uninstalling " + info!.app_id+" - update = true");
                 if (!oldInfo!.launcher  && !appManager.isDIDSession(oldInfo!.app_id)) {
                     try AppManager.getShareInstance().unInstall(info!.app_id, true);
@@ -319,6 +331,10 @@
 
         if (epkDid != nil) {
             info!.did = epkDid!;
+        }
+        
+        if (publicKey != nil) {
+            info!.public_key = publicKey;
         }
 
         if (oldInfo != nil && oldInfo!.launcher) {
@@ -675,6 +691,11 @@
         value = json[AppInfo.DID] as? String;
         if value != nil {
             appInfo.did = value!;
+        }
+        
+        value = json[AppInfo.PUBLIC_KEY] as? String;
+        if value != nil {
+            appInfo.public_key = value!;
         }
 
         appInfo.install_time = Int64(Date().timeIntervalSince1970);
