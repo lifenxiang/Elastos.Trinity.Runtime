@@ -488,6 +488,7 @@ class ShareIntentParams {
     }
 
     func getParamsByUri(_ params: [String: String], _ info: IntentInfo) {
+        var json = Dictionary<String, Any>()
         for (key, value) in params {
             if (key == IntentInfo.REDIRECT_URL) {
                 info.redirecturl = value;
@@ -505,10 +506,17 @@ class ShareIntentParams {
                 else if (key == "appid") {
                     info.req = value;
                 }
+                
+                if isJSONType(value) {
+                    json[key] = value.toDict()
+                }
+                else {
+                    json[key] = value
+                }
             }
-            info.type = IntentInfo.URL;
-            info.params = params.toString() ?? "";
         }
+        info.type = IntentInfo.URL
+        info.params = json.toString() ?? ""
     }
 
     func  parseIntentUri(_ _uri: URL, _ fromId: String) throws -> IntentInfo? {
@@ -842,42 +850,40 @@ class ShareIntentParams {
 
             // If there is a provided URL callback for the intent, we want to send the intent response to that url
             if (urlString != nil) {
-                if (info!.type == IntentInfo.JWT) {
-                    var jwt: String? = nil
+                var jwt: String? = nil
+                if intentResult.isAlreadyJWT() {
+                    jwt = intentResult.jwt
+                }
+                else {
+                    // App did not return a JWT, so we return an unsigned JWT instead
+                    jwt = try createUnsignedJWTResponse(info!, result)
+                }
+
+                if (IntentManager.checkTrinityScheme(urlString!)) {
+                    // Response url is a trinity url that we can handle internally
                     if intentResult.isAlreadyJWT() {
-                        jwt = intentResult.jwt
+                        urlString = urlString! + "/" + jwt!
                     }
                     else {
-                        // App did not return a JWT, so we return an unsigned JWT instead
-                        jwt = try createUnsignedJWTResponse(info!, result)
+                        urlString = getResultUrl(urlString!, intentResult.payloadAsString()) // Pass the raw data as a result= field
                     }
-
-                    if (IntentManager.checkTrinityScheme(urlString!)) {
-                        // Response url is a trinity url that we can handle internally
+                    try sendIntentByUri(URL(string: urlString!)!, info!.fromId);
+                } else {
+                    // Response url can't be handled by trinity. So we either call an intent to open it, or HTTP POST data
+                    if (info!.redirecturl != nil) {
                         if intentResult.isAlreadyJWT() {
-                            urlString = urlString! + "/" + jwt!
+                            urlString = info!.redirecturl! + "/" + jwt!
                         }
                         else {
                             urlString = getResultUrl(urlString!, intentResult.payloadAsString()) // Pass the raw data as a result= field
                         }
-                        try sendIntentByUri(URL(string: urlString!)!, info!.fromId);
-                    } else {
-                        // Response url can't be handled by trinity. So we either call an intent to open it, or HTTP POST data
-                        if (info!.redirecturl != nil) {
-                            if intentResult.isAlreadyJWT() {
-                                urlString = info!.redirecturl! + "/" + jwt!
-                            }
-                            else {
-                                urlString = getResultUrl(urlString!, intentResult.payloadAsString()) // Pass the raw data as a result= field
-                            }
-                            IntentManager.openUrl(URL(string: urlString!)!)
-                        } else if (info!.callbackurl != nil) {
-                            if (intentResult.isAlreadyJWT()) {
-                                try postCallback("jwt", jwt!, info!.callbackurl!)
-                            }
-                            else {
-                                try postCallback("result", intentResult.payloadAsString(), info!.callbackurl!)
-                            }
+                        IntentManager.openUrl(URL(string: urlString!)!)
+                    } else if (info!.callbackurl != nil) {
+                        if (intentResult.isAlreadyJWT()) {
+                            try postCallback("jwt", jwt!, info!.callbackurl!)
+                        }
+                        else {
+                            try postCallback("result", intentResult.payloadAsString(), info!.callbackurl!)
                         }
                     }
                 }
@@ -1033,15 +1039,11 @@ class ShareIntentParams {
 
         let url = try createUriParamsFromIntentInfoParams(url: info.action, params: params!) // info.action must be a full action url such as https://did.trinity-tech.io/credaccess
 
-        var activityItems: [Any] = []
-        activityItems.append(url)
-
         do {
             tmpOnGoingNativeIntentInfo = info // TODO - TMP DIRTY
             saveIntentContext(info) // TODO - TMP DIRTY
 
-            let vc = UIActivityViewController(activityItems: activityItems, applicationActivities: [])
-            self.appManager.curController!.present(vc, animated: true, completion: nil)
+            UIApplication.shared.open(URL(string: url)!, options: [:], completionHandler: nil)
         }
         catch let error {
             print("No native application able to open this intent")

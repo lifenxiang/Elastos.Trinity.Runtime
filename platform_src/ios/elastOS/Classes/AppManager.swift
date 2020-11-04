@@ -270,7 +270,7 @@ class AppManager: NSObject {
         }
 
         refreashInfos()
-        startStartupServices()
+        // TMP BPI startStartupServices()
         sendRefreshList("initiated", nil)
 
         // No contact notifier in native mode.
