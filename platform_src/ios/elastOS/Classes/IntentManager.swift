@@ -780,7 +780,7 @@ class ShareIntentParams {
         init(rawResult: String) throws {
             self.rawResult = rawResult
 
-            if let resultAsJson = rawResult.toDict() {
+            if let resultAsJson = rawResult.quotedJsonStringKeys().toDict() {
                 if resultAsJson.keys.contains("jwt") {
                     // The result is a single field named "jwt", that contains an already encoded JWT token
                     jwt = resultAsJson["jwt"] as? String
@@ -891,8 +891,8 @@ class ShareIntentParams {
         }
 
         intentContextList[intentId] = nil;
-        if (info!.filter!.startupMode == AppManager.STARTUP_INTENT
-            || info!.filter!.startupMode == AppManager.STARTUP_SILENCE) {
+        if (info!.filter != nil && (info!.filter!.startupMode == AppManager.STARTUP_INTENT
+            || info!.filter!.startupMode == AppManager.STARTUP_SILENCE)) {
             try appManager.close(info!.filter!.packageId, info!.filter!.startupMode, info!.filter!.serviceName);
         }
     }

@@ -248,6 +248,15 @@
     func encodingQuery() -> String {
         return self.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
     }
+    
+    /*
+     * Considering that the current string is a string representation of a (invalid but common) JSON object such as:
+     * {key:"value"}
+     * This methods makes sure to quote all keys are quoted so a further conversion to a dictionary would always succeed.
+     */
+    func quotedJsonStringKeys() -> String {
+        return self.replacingOccurrences(of: "(\\\"(.*?)\\\"|(\\w+))(\\s*:\\s*(\\\".*?\\\"|.))", with: "\"$2$3\"$4", options: .regularExpression)
+    }
 
     func toBool() -> Bool {
         if (self == "true") {
