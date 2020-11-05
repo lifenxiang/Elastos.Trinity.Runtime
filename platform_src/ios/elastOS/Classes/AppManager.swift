@@ -220,7 +220,15 @@ class AppManager: NSObject {
             reInit(nil)
         }
 
-        if (PreferenceManager.getShareInstance().getDeveloperMode()) {
+        // If trinity native in DEBUG mode,or if in elastOS with the developer mode enabled by the user
+        // we can start the CLI service to get dapp updates dynamically.
+        var shouldStartCLIService = PreferenceManager.getShareInstance().getDeveloperMode()
+        if _isDebugAssertConfiguration() {
+            if (ConfigManager.getShareInstance().isNativeBuild()) {
+                shouldStartCLIService = true
+            }
+        }
+        if (shouldStartCLIService) {
             CLIService.getShareInstance().start();
         }
     }
@@ -1002,12 +1010,14 @@ class AppManager: NSObject {
         try IntentManager.getShareInstance().removeAppFromIntentList(info.app_id);
 
         if (viewController == curController) {
-            let id2 = lastList[1];
-            let viewController2 = getViewControllerById(id2);
-            if (viewController2 == nil) {
-                throw AppError.error("RT inner error!");
+            if (lastList.count > 1) {
+                let id2 = lastList[1];
+                let viewController2 = getViewControllerById(id2);
+                if (viewController2 == nil) {
+                    throw AppError.error("RT inner error!");
+                }
+                try switchContent(viewController2!, id2);
             }
-            try switchContent(viewController2!, id2);
         }
 
         try sendPackageIdMessage(viewController.packageId, AppManager.MSG_TYPE_INTERNAL,
@@ -1044,11 +1054,13 @@ class AppManager: NSObject {
     func installUri(_ uri: String, _ dev:Bool) {
         do {
             // Trinity native apps can update their EPKs directly if trinity is built in debug
-            #if DEBUG
-            let forceTrinityNativeInstall = ConfigManager.getShareInstance().isNativeBuild()
-            #else
-            let forceTrinityNativeInstall = false
-            #endif
+            var forceTrinityNativeInstall: Bool
+            if _isDebugAssertConfiguration() {
+                forceTrinityNativeInstall = ConfigManager.getShareInstance().isNativeBuild()
+            }
+            else {
+                forceTrinityNativeInstall = false
+            }
 
             if forceTrinityNativeInstall || (dev && PreferenceManager.getShareInstance().getDeveloperMode()) {
                 let _ = try install(uri, true)

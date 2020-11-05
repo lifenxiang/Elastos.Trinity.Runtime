@@ -303,11 +303,11 @@ import Foundation
 
     public func getDeveloperInstallVerify() -> Bool {
         // Trinity native: ios build in DEBUG = no EPK verification
-        #if DEBUG
-        if ConfigManager.getShareInstance().isNativeBuild() {
-            return false
+        if _isDebugAssertConfiguration() {
+            if ConfigManager.getShareInstance().isNativeBuild() {
+                return false
+            }
         }
-        #endif
 
         if (getDeveloperMode()) {
             return getBoolValue("developer.install.verifyDigest", true);
