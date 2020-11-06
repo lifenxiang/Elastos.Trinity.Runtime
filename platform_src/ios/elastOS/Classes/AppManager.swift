@@ -189,6 +189,10 @@ class AppManager: NSObject {
         checkAndUpateDIDSession();
         saveBuiltInApps();
         refreashInfos();
+        
+        // Apply theming for native popups
+        let darkMode = PreferenceManager.getShareInstance().getBoolValue("ui.darkmode", false)
+        UIStyling.prepare(useDarkMode: darkMode)
 
         if (!ConfigManager.getShareInstance().isNativeBuild()) {
             var entry: IdentityEntry? = nil

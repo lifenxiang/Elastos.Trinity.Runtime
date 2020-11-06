@@ -44,6 +44,11 @@ class TrinityViewController : CDVViewController {
     
     convenience init(_ appInfo: AppInfo, _ startupMode: String, _ serviceName: String?) {
         self.init();
+        
+        // Apply theming for native popups
+        let darkMode = PreferenceManager.getShareInstance().getBoolValue("ui.darkmode", false)
+        UIStyling.prepare(useDarkMode: darkMode)
+        
         self.appInfo = appInfo;
         self.packageId = appInfo.app_id;
         self.startupMode = startupMode;
