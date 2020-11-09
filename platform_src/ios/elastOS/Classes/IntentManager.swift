@@ -153,7 +153,8 @@
         "elastos://",
         "https://scheme.elastos.org/",
         "https://did.elastos.net/",
-        "https://wallet.elastos.net/"
+        "https://wallet.elastos.net/",
+        "https://hive.elastos.net/"
     ];
 
     init() {
@@ -1059,6 +1060,9 @@
                 break
             case "pay", "walletaccess", "crmembervote", "dposvotetransaction", "didtransaction", "esctransaction":
                 info.action = "https://wallet.elastos.net/"+info.action
+                break
+            case "setupvaultprompt":
+                info.action = "https://hive.elastos.net/"+info.action
                 break
         default:
             break

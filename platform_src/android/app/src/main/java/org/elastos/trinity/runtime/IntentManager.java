@@ -64,6 +64,7 @@ public class IntentManager {
             "https://scheme.elastos.org/",
             "https://did.elastos.net/",
             "https://wallet.elastos.net/",
+            "https://hive.elastos.net/",
     };
 
     public class ShareIntentParams {
@@ -1012,6 +1013,9 @@ public class IntentManager {
             case "didtransaction":
             case "esctransaction":
                 info.action = "https://wallet.elastos.net/"+info.action;
+                break;
+            case "setupvaultprompt":
+                info.action = "https://hive.elastos.net/"+info.action;
                 break;
         }
         // END TMP

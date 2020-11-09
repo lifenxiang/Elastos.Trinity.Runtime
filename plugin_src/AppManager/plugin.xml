@@ -100,6 +100,7 @@
                 <string>applinks:scheme.elastos.org</string>
                 <string>applinks:did.elastos.net</string>
 		        <string>applinks:wallet.elastos.net</string>
+                <string>applinks:hive.elastos.net</string>
             </array>
         </config-file>
         <config-file parent="com.apple.developer.associated-domains" target="*-Release.plist">
@@ -107,6 +108,7 @@
                 <string>applinks:scheme.elastos.org</string>
                 <string>applinks:did.elastos.net</string>
 		        <string>applinks:wallet.elastos.net</string>
+                <string>applinks:hive.elastos.net</string>
             </array>
         </config-file>
 
