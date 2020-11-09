@@ -62,8 +62,8 @@ public class IntentManager {
     final static String[] trinitySchemes = {
             "elastos://",
             "https://scheme.elastos.org/",
-            "https://did.trinity-tech.io/",
-            "https://wallet.trinity-tech.io/",
+            "https://did.elastos.net/",
+            "https://wallet.elastos.net/",
     };
 
     public class ShareIntentParams {
@@ -482,8 +482,7 @@ public class IntentManager {
 
     /**
      * Returns the native app scheme that allows opening this app from native intents.
-     * For example for elastOS, the main app scheme would be https://elastos.trinity-tech.io.
-     * For a DID demo packaged by trinity native, this would be https://diddemo.trinity-tech.io.
+     * For example the elastOS DID demo packaged by trinity native, this would be https://diddemo.trinity-tech.io.
      * Hyper IM would have https://app.hyperim.org, etc.
      */
     private String getNativeAppScheme() throws Exception {
@@ -994,7 +993,7 @@ public class IntentManager {
 
         // TMP - move to config.json mapping maybe (dongxiao).
         // Backward compatibility: converts old style "credaccess"-like intent calls to full domain
-        // calls such as https://https://did.trinity-tech.io/credaccess.
+        // calls such as https://did.elastos.net/credaccess.
         switch (info.action) {
             case "credaccess":
             case "appidcredissue":
@@ -1004,7 +1003,7 @@ public class IntentManager {
             case "promptpublishdid":
             case "registerapplicationprofile":
             case "sethiveprovider":
-                info.action = "https://did.trinity-tech.io/"+info.action;
+                info.action = "https://did.elastos.net/"+info.action;
                 break;
             case "pay":
             case "walletaccess":
@@ -1012,7 +1011,7 @@ public class IntentManager {
             case "dposvotetransaction":
             case "didtransaction":
             case "esctransaction":
-                info.action = "https://wallet.trinity-tech.io/"+info.action;
+                info.action = "https://wallet.elastos.net/"+info.action;
                 break;
         }
         // END TMP
@@ -1033,7 +1032,7 @@ public class IntentManager {
         // matches with the redirect url used in this intent.
         params.put("appDid", appManager.getAppInfo(info.fromId).did);
 
-        String url = createUriParamsFromIntentInfoParams(info.action, params); // info.action must be a full action url such as https://did.trinity-tech.io/credaccess
+        String url = createUriParamsFromIntentInfoParams(info.action, params); // info.action must be a full action url such as https://did.elastos.net/credaccess
 
         sendIntent.setData(Uri.parse(url));
 

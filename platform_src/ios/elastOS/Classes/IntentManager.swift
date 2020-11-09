@@ -130,7 +130,7 @@
     var title: String?
     var url: URL?
  }
- 
+
  class OpenUrlIntentParams {
     var url: URL?
  }
@@ -152,8 +152,8 @@
     static let trinitySchemes: [String] = [
         "elastos://",
         "https://scheme.elastos.org/",
-        "https://did.trinity-tech.io/",
-        "https://wallet.trinity-tech.io/"
+        "https://did.elastos.net/",
+        "https://wallet.elastos.net/"
     ];
 
     init() {
@@ -373,7 +373,7 @@
         if ConfigManager.getShareInstance().isNativeBuild() {
             info.toId = nil
         }
-        
+
         if (info.toId == nil) {
             let filters = try getIntentFilter(info.action);
 
@@ -519,7 +519,7 @@
                 else if (key == "appid") {
                     info.req = value;
                 }
-                
+
                 if isJSONType(value) {
                     json[key] = value.toDict()
                 }
@@ -562,8 +562,7 @@
 
     /**
      * Returns the native app scheme that allows opening this app from native intents.
-     * For example for elastOS, the main app scheme would be https://elastos.trinity-tech.io.
-     * For a DID demo packaged by trinity native, this would be https://diddemo.trinity-tech.io.
+     * For example the elastOS DID demo packaged by trinity native, this would be https://diddemo.trinity-tech.io.
      * Hyper IM would have https://app.hyperim.org, etc.
      */
     private func getNativeAppScheme() throws -> String {
@@ -988,17 +987,17 @@
             self.appManager.curController!.present(vc, animated: true, completion: nil)
         }
     }
-    
+
     private func extractOpenUrlIntentParams(info: IntentInfo) -> OpenUrlIntentParams? {
         // Extract JSON params from the open url intent. Expected format is {url:""}.
         if info.params == nil {
             print("Openurl intent params are not set!")
             return nil
         }
-        
+
         if let jsonParams = info.params!.toDict() {
             let openUrlIntentParams = OpenUrlIntentParams()
-            
+
             if jsonParams.keys.contains("url"), let url = jsonParams["url"] as? String {
                 openUrlIntentParams.url = URL(string: url)
             }
@@ -1009,14 +1008,14 @@
             return nil
         }
     }
-    
+
     func sendNativeOpenUrlAction(info: IntentInfo) {
         if let extractedParams = extractOpenUrlIntentParams(info: info) {
             // Can't send an empty open url action
             if extractedParams.url == nil {
                 return
             }
-            
+
             UIApplication.shared.open(URL(string: extractedParams.url!.absoluteString)!, options: [:], completionHandler: nil)
         }
     }
@@ -1052,14 +1051,14 @@
     func sendIntentToNativeOS(info: IntentInfo) throws {
         // TMP - move to config.json mapping maybe (dongxiao).
         // Backward compatibility: converts old style "credaccess"-like intent calls to full domain
-        // calls such as https://https://did.trinity-tech.io/credaccess.
+        // calls such as https://did.elastos.net/credaccess.
         switch (info.action) {
             case "credaccess", "appidcredissue", "credimport", "credissue", "didsign", "promptpublishdid",
                  "registerapplicationprofile", "sethiveprovider":
-                info.action = "https://did.trinity-tech.io/"+info.action
+                info.action = "https://did.elastos.net/"+info.action
                 break
             case "pay", "walletaccess", "crmembervote", "dposvotetransaction", "didtransaction", "esctransaction":
-                info.action = "https://wallet.trinity-tech.io/"+info.action
+                info.action = "https://wallet.elastos.net/"+info.action
                 break
         default:
             break
@@ -1082,7 +1081,7 @@
         // matches with the redirect url used in this intent.
         params!["appDid"] = appManager.getAppInfo(info.fromId)!.did
 
-        let url = try createUriParamsFromIntentInfoParams(url: info.action, params: params!) // info.action must be a full action url such as https://did.trinity-tech.io/credaccess
+        let url = try createUriParamsFromIntentInfoParams(url: info.action, params: params!) // info.action must be a full action url such as https://did.elastos.net/credaccess
 
         do {
             tmpOnGoingNativeIntentInfo = info // TODO - TMP DIRTY

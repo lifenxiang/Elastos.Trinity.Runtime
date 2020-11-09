@@ -26,7 +26,7 @@ public class DIDSessionManager {
     private static let LOG_TAG = "DIDSessionManager"
     private static let DID_SESSION_APPLICATION_APP_ID = "org.elastos.trinity.dapp.didsession"
     private static var instance: DIDSessionManager? = nil
-    
+
     private let dbAdapter: DIDSessionDatabaseAdapter
     private var appManager: AppManager? = nil
 
@@ -35,7 +35,7 @@ public class DIDSessionManager {
         self.appManager = AppManager.getShareInstance();
         DIDVerifier.initDidStore(dataPath: self.appManager!.getBaseDataPath());
     }
-    
+
     public static func getSharedInstance() -> DIDSessionManager {
         if (DIDSessionManager.instance == nil) {
             DIDSessionManager.instance = DIDSessionManager();
@@ -66,9 +66,9 @@ public class DIDSessionManager {
         }
 
         try dbAdapter.setDIDSessionSignedInIdentity(entry: identityToSignIn)
-        
+
         let sessionLanguage = options?.sessionLanguage
-      
+
         // Ask the manager to handle the UI sign in flow.
         try appManager!.signIn(sessionLanguage: sessionLanguage)
     }
@@ -78,21 +78,21 @@ public class DIDSessionManager {
             // Lock password manager session database
             try PasswordManager.getSharedInstance().lockMasterPassword(did: signedInIdentity.didString)
         }
-            
+
         try dbAdapter.setDIDSessionSignedInIdentity(entry: nil)
 
         // Ask the app manager to sign out and redirect user to the right screen
         try appManager!.signOut()
     }
-    
+
     public func authenticate(nonce: String, realm: String, expiresIn: Int, onJWTCreated: @escaping (String?)->Void) throws {
-        
+
         if ConfigManager.getShareInstance().isNativeBuild() {
             // Trinity native has no active DID session context, so we must send an intent to elastOS to realize this.
             let params = "{claims={}, &nonce=\""+nonce+"\", realm=\""+realm+"\"}"
             let fromId = appManager!.curController!.appInfo!.app_id
             let intentId = Int64(Date().timeIntervalSince1970)
-            let info = IntentInfo("https://did.trinity-tech.io/credaccess", params, fromId, nil, intentId, false) { todo1, todo2, todo3 in
+            let info = IntentInfo("https://did.elastos.net/credaccess", params, fromId, nil, intentId, false) { todo1, todo2, todo3 in
                 do {
                     // TODO let responseJWT = data.getString("responseJWT")
                     // TODO listener.onJWTCreated(responseJWT)
@@ -113,7 +113,7 @@ public class DIDSessionManager {
             let passwordInfoKey = "didstore-"+signedInIdentity.didStoreId
             let appId = "org.elastos.trinity.dapp.didsession" // act as the did session app to be able to retrieve a DID store password
             try PasswordManager.getSharedInstance().getPasswordInfo(key: passwordInfoKey, did: signedInIdentity.didString, appID: appId, options: PasswordGetInfoOptions(), onPasswordInfoRetrieved: { info in
-                
+
                 let genericPasswordInfo = info as? GenericPasswordInfo
                 if genericPasswordInfo == nil || genericPasswordInfo!.password == nil || genericPasswordInfo!.password == "" {
                     Log.e(DIDSessionManager.LOG_TAG, "Unable to generate an authentication JWT: no master password")
@@ -130,7 +130,7 @@ public class DIDSessionManager {
                             func createIdTransaction(_ payload: String, _ memo: String?) {
                             }
                         }
-                        
+
                         // Initialize the DID store
                         try DIDBackend.initializeInstance(resolver, cacheDir)
                         let dataDir = NSHomeDirectory() + "/Documents/data/did/useridentities/" + signedInIdentity.didStoreId
@@ -142,7 +142,7 @@ public class DIDSessionManager {
                             onJWTCreated(nil)
                             return
                         }
-                            
+
                         // Create an empty presentation just to pass the DID string but nothing else
                         let did = try DID(signedInIdentity.didString)
 
@@ -156,7 +156,7 @@ public class DIDSessionManager {
                         // Generate a JWT payload that holds the same format as the "credaccess" scheme intent
                         var jwtPayloadJson = Dictionary<String, Any>()
                         jwtPayloadJson["presentation"] = presentation.description.toDict()
-                        
+
                         // Sign as JWT
                         let header = JwtBuilder.createHeader()
                         _ = header.setType(Header.JWT_TYPE).setContentType("json")
