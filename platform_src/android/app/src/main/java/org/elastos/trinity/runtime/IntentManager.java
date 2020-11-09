@@ -937,7 +937,7 @@ public class IntentManager {
         OpenUrlIntentParams openUrlIntentParams = new OpenUrlIntentParams();
 
         String url = jsonParams.optString("url");
-        if (openUrlIntentParams != null) {
+        if (url != null) {
             openUrlIntentParams.url = Uri.parse(url);
         }
 

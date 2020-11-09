@@ -126,8 +126,12 @@
     }
  }
 
-class ShareIntentParams {
+ class ShareIntentParams {
     var title: String?
+    var url: URL?
+ }
+ 
+ class OpenUrlIntentParams {
     var url: URL?
  }
 
@@ -365,12 +369,17 @@ class ShareIntentParams {
     }
 
     func doIntent(_ info: IntentInfo) throws {
+        // Trinity native: dismiss any target app. We use only the full intent domain. dapp package id makes not sense here
+        if ConfigManager.getShareInstance().isNativeBuild() {
+            info.toId = nil
+        }
+        
         if (info.toId == nil) {
             let filters = try getIntentFilter(info.action);
 
             // Throw an error in case no one can handle the action.
             // Special case for the "share" action that is always handled by the native OS too.
-            if info.action != "share" {
+            if info.action != "share" && info.action != "openurl" {
                 if filters.isEmpty {
                     if !ConfigManager.getShareInstance().isNativeBuild() {
                         // Not a native build - so 0 filter means no one can handle the action
@@ -391,7 +400,11 @@ class ShareIntentParams {
             // If there is only one application able to handle this intent, we directly use it.
             // Otherwise, we display a prompt so that user can pick the right application.
             // "share" action is special, as it must deal with the native share action.
-            if info.action != "share" {
+            if info.action == "openurl" {
+                // We don't let apps handle the openurl intent. It's always a native call.
+                sendNativeOpenUrlAction(info: info)
+            }
+            else if info.action != "share" {
                 if filters.count == 1 {
                     info.toId = getIdbyFilter(filters[0])
                     info.filter = filters[0]
@@ -973,6 +986,38 @@ class ShareIntentParams {
 
             let vc = UIActivityViewController(activityItems: activityItems, applicationActivities: [])
             self.appManager.curController!.present(vc, animated: true, completion: nil)
+        }
+    }
+    
+    private func extractOpenUrlIntentParams(info: IntentInfo) -> OpenUrlIntentParams? {
+        // Extract JSON params from the open url intent. Expected format is {url:""}.
+        if info.params == nil {
+            print("Openurl intent params are not set!")
+            return nil
+        }
+        
+        if let jsonParams = info.params!.toDict() {
+            let openUrlIntentParams = OpenUrlIntentParams()
+            
+            if jsonParams.keys.contains("url"), let url = jsonParams["url"] as? String {
+                openUrlIntentParams.url = URL(string: url)
+            }
+            return openUrlIntentParams
+        }
+        else    {
+            print("Openurl intent parameters are not JSON format")
+            return nil
+        }
+    }
+    
+    func sendNativeOpenUrlAction(info: IntentInfo) {
+        if let extractedParams = extractOpenUrlIntentParams(info: info) {
+            // Can't send an empty open url action
+            if extractedParams.url == nil {
+                return
+            }
+            
+            UIApplication.shared.open(URL(string: extractedParams.url!.absoluteString)!, options: [:], completionHandler: nil)
         }
     }
 
