@@ -1109,12 +1109,13 @@ public class AppManager {
         transaction.remove(fragment);
         transaction.commit();
 
-        if (mode.equals(STARTUP_APP)) {
+        if (mode.equals(STARTUP_SERVICE)) {
+            serviceRunningList.remove(id);
+        }
+        else {
+            // App, Intent, Silence
             lastList.remove(id);
             runningList.remove(id);
-        }
-        else if (mode.equals(STARTUP_SERVICE)) {
-            serviceRunningList.remove(id);
         }
 
         sendRefreshList("closed", info, false);

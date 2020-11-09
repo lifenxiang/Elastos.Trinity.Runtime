@@ -1030,12 +1030,13 @@ class AppManager: NSObject {
         viewControllers[id] = nil;
         viewController.remove();
 
-        if (mode == AppManager.STARTUP_APP) {
+        if (mode == AppManager.STARTUP_SERVICE) {
+            removeServiceRunningList(id);
+        }
+        else {
+            // App, Intent, Silence
             removeLastlistItem(id);
             removeRunninglistItem(id);
-        }
-        else if (mode == AppManager.STARTUP_SERVICE) {
-            removeServiceRunningList(id);
         }
 
         sendRefreshList("closed", info);
