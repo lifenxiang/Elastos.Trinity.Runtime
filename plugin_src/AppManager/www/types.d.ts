@@ -715,5 +715,16 @@ declare namespace AppManagerPlugin {
          * @param onSuccess  Callback returning the  {type: value, variant: value, platform: value}.
          */
         getBuildInfo(onSuccess:(info: BuildInfo)=>void);
+
+        /**
+         * Wipe app data.
+         *
+         * Wipe dapp settings, file storage, webview local storage data.
+         *
+         * @param id         The dapp id.
+         * @param onSuccess  The function to call when success.
+         * @param onError    The function to call when error, the param is a String. Or set to null.
+         */
+        wipeAppData(id: string, onSuccess?: () => void, onError?: (err: string) => void);
     }
 }

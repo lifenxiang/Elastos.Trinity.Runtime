@@ -280,6 +280,10 @@ class AppManagerImpl implements AppManagerPlugin.AppManager {
     getBuildInfo(onSuccess:(info: AppManagerPlugin.BuildInfo)=>void) {
         exec(onSuccess, null, 'AppManager', 'getBuildInfo', []);
     }
+
+    wipeAppData(id: string, onSuccess?: () => void, onError?: (err: string) => void) {
+        exec(onSuccess, onError, 'AppManager', 'wipeAppData', [id]);
+    }
 }
 
 function jsonInfo(info) {

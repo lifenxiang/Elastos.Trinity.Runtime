@@ -851,6 +851,10 @@ public class AppManager {
         }
     }
 
+    public void wipeAppData(String packageId) throws Exception {
+        shareInstaller.wipeAppData(packageId);
+    }
+
     public WebViewFragment getFragmentById(String modeId) {
         if (isLauncher(modeId)) {
             modeId = LAUNCHER;

@@ -512,6 +512,13 @@ import org.json.JSONObject;
         return ret;
     }
 
+     public int removeSettings(String id) {
+         SQLiteDatabase db = helper.getWritableDatabase();
+         String where = AppInfo.APP_ID + "=?";
+         String[] args = {id};
+         return db.delete(ManagerDBHelper.SETTING_TABLE, where, args);
+     }
+
      public long setPreference(String key, Object value) throws Exception {
          SQLiteDatabase db = helper.getWritableDatabase();
          long ret = 0;

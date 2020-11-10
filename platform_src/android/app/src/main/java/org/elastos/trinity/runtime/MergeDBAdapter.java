@@ -214,6 +214,15 @@ public class MergeDBAdapter {
         }
     }
 
+    public int removeSettings(String id) {
+        if (userDBAdapter != null) {
+            return userDBAdapter.removeSettings(id);
+        }
+        else {
+            return baseDBAdapter.removeSettings(id);
+        }
+    }
+
     public long setPreference(String key, Object value) throws Exception {
         if (userDBAdapter != null) {
             return userDBAdapter.setPreference(key, value);

@@ -555,7 +555,22 @@ public class AppInstaller {
 
     }
 
-    public void unInstall(AppInfo info, boolean update)  throws Exception {
+    public void wipeAppData(String packageId) throws Exception {
+        dbAdapter.removeSettings(packageId);
+
+        ArrayList<IdentityEntry> entries = DIDSessionManager.getSharedInstance().getIdentityEntries();
+        for (IdentityEntry entry: entries) {
+            String did = entry.didString;
+            AppManager.AppPathInfo pathInfo = appManager.getPathInfo(did);
+            File root = new File(appManager.getDataPath(packageId, pathInfo));
+            deleteAllFiles(root);
+            root = new File(appManager.getTempPath(packageId, pathInfo));
+            deleteAllFiles(root);
+            clearLocalStorage(did, packageId);
+        }
+    }
+
+    public void unInstall(AppInfo info, boolean update) throws Exception {
         if (info == null) {
             throw new Exception("No such app!");
         }
@@ -574,17 +589,7 @@ public class AppInstaller {
         deleteAllFiles(root);
         if (!update) {
             Log.d("AppInstaller", "unInstall() - update = false - deleting all files");
-            String packageId = info.app_id;
-            ArrayList<IdentityEntry> entries = DIDSessionManager.getSharedInstance().getIdentityEntries();
-            for (IdentityEntry entry: entries) {
-                String did = entry.didString;
-                AppManager.AppPathInfo pathInfo = appManager.getPathInfo(did);
-                root = new File(appManager.getDataPath(packageId, pathInfo));
-                deleteAllFiles(root);
-                root = new File(appManager.getTempPath(packageId, pathInfo));
-                deleteAllFiles(root);
-                clearLocalStorage(did, packageId);
-            }
+            wipeAppData(info.app_id);
         }
     }
 

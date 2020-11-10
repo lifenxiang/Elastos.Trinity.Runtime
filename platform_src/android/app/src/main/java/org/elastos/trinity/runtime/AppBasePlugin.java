@@ -70,6 +70,9 @@ public class AppBasePlugin extends TrinityPlugin {
                 case "unInstall":
                     this.unInstall(args, callbackContext);
                     break;
+                case "wipeAppData":
+                    this.wipeAppData(args, callbackContext);
+                    break;
                 case "setPluginAuthority":
                     this.setPluginAuthority(args, callbackContext);
                     break;
@@ -620,6 +623,12 @@ public class AppBasePlugin extends TrinityPlugin {
     protected void unInstall(JSONArray args, CallbackContext callbackContext) throws Exception {
         String id = args.getString(0);
         appManager.unInstall(id, false);
+        callbackContext.success(id);
+    }
+
+    protected void wipeAppData(JSONArray args, CallbackContext callbackContext) throws Exception {
+        String id = args.getString(0);
+        appManager.wipeAppData(id);
         callbackContext.success(id);
     }
 
