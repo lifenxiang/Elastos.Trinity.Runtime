@@ -189,7 +189,7 @@ class AppManager: NSObject {
         checkAndUpateDIDSession();
         saveBuiltInApps();
         refreashInfos();
-        
+
         // Apply theming for native popups
         let darkMode = PreferenceManager.getShareInstance().getBoolValue("ui.darkmode", false)
         UIStyling.prepare(useDarkMode: darkMode)
@@ -792,6 +792,10 @@ class AppManager: NSObject {
             }
            sendRefreshList("unInstalled", info);
         }
+    }
+
+    func wipeAppData(_ packageId: String) throws {
+        try shareInstaller.wipeAppData(packageId);
     }
 
     func removeLastlistItem(_ id: String) {

@@ -693,6 +693,19 @@
             self.error(command, error.localizedDescription);
         }
     }
+    
+    @objc func wipeAppData(_ command: CDVInvokedUrlCommand) {
+        let id = command.arguments[0] as? String ?? ""
+
+        do {
+            try AppManager.getShareInstance().wipeAppData(id);
+            self.success(command, id);
+        } catch AppError.error(let err) {
+            self.error(command, err);
+        } catch let error {
+            self.error(command, error.localizedDescription);
+        }
+    }
 
     @objc func getAppInfos(_ command: CDVInvokedUrlCommand) {
         let appInfos = AppManager.getShareInstance().getAppInfos();

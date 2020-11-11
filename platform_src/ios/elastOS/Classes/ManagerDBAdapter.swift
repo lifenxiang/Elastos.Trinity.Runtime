@@ -592,6 +592,11 @@ class ManagerDBAdapter {
 
         return ret;
     }
+    
+    func removeSettings(_ id: String) throws {
+        let items = setting.filter(app_id == id);
+        try db.run(items.delete());
+    }
 
     func setPreference(_ k: String, _ v: Any?) throws {
         var data: String? = nil;

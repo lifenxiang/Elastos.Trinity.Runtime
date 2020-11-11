@@ -181,6 +181,15 @@ class MergeDBAdapter {
             return try baseDBAdapter.getSettings(id);
         }
     }
+    
+    func removeSettings(_ id: String) throws {
+        if (userDBAdapter != nil) {
+            return try userDBAdapter!.removeSettings(id);
+        }
+        else {
+            return try baseDBAdapter.removeSettings(id);
+        }
+    }
 
     func setPreference(_ k: String, _ v: Any?) throws {
         if (userDBAdapter != nil) {

@@ -36,7 +36,8 @@
             "unInstall",
             "setUrlAuthority",
             "setPluginAuthority",
-            "alertPrompt"
+            "alertPrompt",
+            "wipeAppData"
         ],
         "DIDSessionManagerPlugin": [
             "getSignedInIdentity",

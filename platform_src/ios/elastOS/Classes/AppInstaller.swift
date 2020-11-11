@@ -378,6 +378,22 @@
         }
         webView!.loadHTMLString("<script>localStorage.clear();</script>", baseURL: URL(string:url))
     }
+    
+    func wipeAppData(_ packageId: String) throws {
+        try dbAdapter.removeSettings(packageId);
+        
+        let entries = try DIDSessionManager.getSharedInstance().getIdentityEntries();
+        for entry in entries {
+            let did = entry.didString;
+            let pathInfo = AppManager.getShareInstance().getPathInfo(did);
+            let dataPath = AppManager.getShareInstance().getDataPath(packageId, pathInfo);
+            try deleteAllFiles(dataPath);
+
+            let tempPath = AppManager.getShareInstance().getTempPath(packageId, pathInfo);
+            try deleteAllFiles(tempPath);
+            clearLocalStorage(did, packageId);
+        }
+    }
 
     func unInstall(_ info: AppInfo?, _ update: Bool) throws {
         guard info != nil else {
@@ -395,18 +411,7 @@
 
         if (!update) {
             //            Log.d("AppInstaller", "unInstall() - update = false - deleting all files");
-            let packageId = info!.app_id
-            let entries = try DIDSessionManager.getSharedInstance().getIdentityEntries();
-            for entry in entries {
-                let did = entry.didString;
-                let pathInfo = AppManager.getShareInstance().getPathInfo(did);
-                let dataPath = AppManager.getShareInstance().getDataPath(info!.app_id, pathInfo);
-                try deleteAllFiles(dataPath);
-
-                let tempPath = AppManager.getShareInstance().getTempPath(info!.app_id, pathInfo);
-                try deleteAllFiles(tempPath);
-                clearLocalStorage(did, packageId);
-            }
+            try wipeAppData(info!.app_id)
         }
     }
 
