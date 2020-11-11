@@ -516,8 +516,7 @@ public class AppInstaller {
         return true;
     }
 
-    private void clearLocalStorage(String did, String packageId) {
-        String url = "http://" + Utility.getCustomHostname(did, packageId);
+    private void clearLocalStorage(String url) {
 
         //Clear cookies
         CookieManager cm = CookieManager.getInstance();
@@ -555,8 +554,12 @@ public class AppInstaller {
 
     }
 
-    public void wipeAppData(String packageId) throws Exception {
+    public void wipeAppData(AppInfo info) throws Exception {
+        String packageId = info.app_id;
         dbAdapter.removeSettings(packageId);
+        if (info.remote == 1) {
+            clearLocalStorage(info.start_url);
+        }
 
         ArrayList<IdentityEntry> entries = DIDSessionManager.getSharedInstance().getIdentityEntries();
         for (IdentityEntry entry: entries) {
@@ -566,7 +569,10 @@ public class AppInstaller {
             deleteAllFiles(root);
             root = new File(appManager.getTempPath(packageId, pathInfo));
             deleteAllFiles(root);
-            clearLocalStorage(did, packageId);
+            if (info.remote == 0) {
+                String url = "http://" + Utility.getCustomHostname(did, packageId);
+                clearLocalStorage(url);
+            }
         }
     }
 
@@ -589,7 +595,7 @@ public class AppInstaller {
         deleteAllFiles(root);
         if (!update) {
             Log.d("AppInstaller", "unInstall() - update = false - deleting all files");
-            wipeAppData(info.app_id);
+            wipeAppData(info);
         }
     }
 

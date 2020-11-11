@@ -353,34 +353,38 @@
         return info!;
     }
 
-    private func clearLocalStorage(_ did: String, _ packageId: String) {
-        let hostname = getCustomHostname(did, packageId);
-        let url = "ionic://" + hostname;
+    private func clearLocalStorage(_ urlStr: String) {
+        let url = URL(string: urlStr)!;
+        let hostname = url.host;
 
         let dataStore = WKWebsiteDataStore.default()
         dataStore.fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
             dataStore.removeData(
                 ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(),
-                for: records.filter { $0.displayName.contains(hostname) },
+                for: records.filter { $0.displayName.contains(hostname!) },
                 completionHandler: { () in
                   // this is where the completion handler code goes
                 })
         }
 
         if (webView == nil) {
-            var configuration = WKWebViewConfiguration()
+            let configuration = WKWebViewConfiguration()
             configuration.preferences.javaScriptEnabled = true;
-            configuration.processPool = CDVWKProcessPoolFactory.shared()?.sharedProcessPool() as! WKProcessPool;
+            configuration.processPool = (CDVWKProcessPoolFactory.shared()?.sharedProcessPool()!)!;
 
             let schemeHandler = LocalStorageClearHandler()
             configuration.setURLSchemeHandler(schemeHandler, forURLScheme: "ionic")
             webView = WKWebView(frame: CGRect.zero, configuration: configuration)
         }
-        webView!.loadHTMLString("<script>localStorage.clear();</script>", baseURL: URL(string:url))
+        webView!.loadHTMLString("<script>localStorage.clear();</script>", baseURL: url)
     }
     
-    func wipeAppData(_ packageId: String) throws {
+    func wipeAppData(_ info: AppInfo) throws {
+        let packageId = info.app_id;
         try dbAdapter.removeSettings(packageId);
+        if (info.remote) {
+            clearLocalStorage(info.start_url);
+        }
         
         let entries = try DIDSessionManager.getSharedInstance().getIdentityEntries();
         for entry in entries {
@@ -391,7 +395,10 @@
 
             let tempPath = AppManager.getShareInstance().getTempPath(packageId, pathInfo);
             try deleteAllFiles(tempPath);
-            clearLocalStorage(did, packageId);
+            if (!info.remote) {
+                let url = "ionic://" + getCustomHostname(did, packageId);
+                clearLocalStorage(url);
+            }
         }
     }
 
@@ -411,7 +418,7 @@
 
         if (!update) {
             //            Log.d("AppInstaller", "unInstall() - update = false - deleting all files");
-            try wipeAppData(info!.app_id)
+            try wipeAppData(info!)
         }
     }
 

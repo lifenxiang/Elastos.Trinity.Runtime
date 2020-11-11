@@ -795,7 +795,10 @@ class AppManager: NSObject {
     }
 
     func wipeAppData(_ packageId: String) throws {
-        try shareInstaller.wipeAppData(packageId);
+        let info = appInfos[packageId];
+        if (info != nil) {
+            try shareInstaller.wipeAppData(info!);
+        }
     }
 
     func removeLastlistItem(_ id: String) {
