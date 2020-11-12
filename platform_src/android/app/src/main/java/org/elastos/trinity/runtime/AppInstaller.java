@@ -539,7 +539,15 @@ public class AppInstaller {
                     webView.setWebViewClient(new WebViewClient() {
                         @Override
                         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                            String str = "<script>localStorage.clear();</script>";
+                            String str = "<script>" +
+                                    "localStorage.clear();" +
+                                    "if (window.indexedDB.databases) {" +
+                                    "   window.indexedDB.databases().then((r) => {" +
+                                    "       for (var i = 0; i < r.length; i++) " +
+                                    "           window.indexedDB.deleteDatabase(r[i].name);" +
+                                    "   });" +
+                                     "}" +
+                                    "</script>";
                             InputStream data = new ByteArrayInputStream(str.getBytes());
                             WebResourceResponse response = new WebResourceResponse("text/html", "UTF-8", data);
                             return response;

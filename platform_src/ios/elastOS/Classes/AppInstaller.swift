@@ -376,7 +376,16 @@
             configuration.setURLSchemeHandler(schemeHandler, forURLScheme: "ionic")
             webView = WKWebView(frame: CGRect.zero, configuration: configuration)
         }
-        webView!.loadHTMLString("<script>localStorage.clear();</script>", baseURL: url)
+        let str = "<script>" +
+            "localStorage.clear();" +
+            "if (window.indexedDB.databases) {" +
+            "   window.indexedDB.databases().then((r) => {" +
+            "       for (var i = 0; i < r.length; i++) " +
+            "           window.indexedDB.deleteDatabase(r[i].name);" +
+            "   });" +
+             "}" +
+            "</script>";
+        webView!.loadHTMLString(str, baseURL: url)
     }
     
     func wipeAppData(_ info: AppInfo) throws {
