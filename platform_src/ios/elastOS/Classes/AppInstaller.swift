@@ -380,6 +380,8 @@
     }
     
     func wipeAppData(_ info: AppInfo) throws {
+        print("Wiping local application data for app \(info.app_id) with start url \(info.start_url)")
+        
         let packageId = info.app_id;
         try dbAdapter.removeSettings(packageId);
         if (info.remote) {

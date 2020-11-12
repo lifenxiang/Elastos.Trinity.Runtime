@@ -16,6 +16,7 @@ public class CLIService: NSObject, NetServiceBrowserDelegate, NetServiceDelegate
     var operationCompleted = false
     let appManager: AppManager!
     var isStarted = false;
+    var wipeAppData = false; // Whether to wipe application data after installation or not. Sent by the CLI
 
     override init() {
         self.appManager = AppManager.getShareInstance();
@@ -128,12 +129,25 @@ public class CLIService: NSObject, NetServiceBrowserDelegate, NetServiceDelegate
             return
         }
 
+        // Reset previous download information
+        self.wipeAppData = false
+        
         // Got a resolved service info - we can call the service to get and install our EPK
-        downloadEPK(usingService: service) { epkPath in
-            self.log("Requesting app manager to install the EPK")
-            self.installEPK(epkPath: epkPath)
-            // Resume the bonjour search task for future EPKs.
-            self.searchForServices()
+        fetchDownloadInfo(usingService: service) {
+            self.downloadEPK(usingService: service) { epkPath in
+                self.log("Requesting app manager to install the EPK")
+                self.installEPK(epkPath: epkPath) { installedAppInfo in
+                    if let installedAppInfo = installedAppInfo {
+                        // CLI asked to wipe app data, let's do it
+                        if self.wipeAppData {
+                            try? self.appManager.wipeAppData(installedAppInfo.app_id)
+                        }
+                    }
+                    
+                    // Resume the bonjour search task for future EPKs.
+                    self.searchForServices()
+                }
+            }
         }
     }
 
@@ -166,6 +180,40 @@ public class CLIService: NSObject, NetServiceBrowserDelegate, NetServiceDelegate
         }
 
         return nil
+    }
+    
+    private func fetchDownloadInfo(usingService service: NetService, completion: @escaping ()->Void) {
+        // Compute the service's download EPK URL
+        guard let ipAddress = getServiceIPAddress(service) else {
+            log("No IP address found for the service. Aborting EPK download.")
+            return
+        }
+
+        let serviceEndpoint = "http://\(ipAddress):\(service.port)/downloadinfo"
+        
+        // Call the service to fetch download information.
+        // Backward compatibility note: this endpoint may not exist on some older CLI versions.
+        let sessionConfig = URLSessionConfiguration.default
+        let session = URLSession(configuration: sessionConfig)
+        let url = URL(string: serviceEndpoint)!
+        let request = try! URLRequest(url: url, method: .get)
+        
+        log("Fetching download information at \(serviceEndpoint)")
+        let task = session.dataTask(with: request) { data, response, error in
+            // All "else" cases complete silentely without error
+            if let data = data {
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    if let json = jsonString.toDict() {
+                        if json.keys.contains("wipeAppData") {
+                            self.wipeAppData = (json["wipeAppData"] as? Bool ?? false)
+                        }
+                    }
+                }
+            }
+            
+            completion()
+        }
+        task.resume()
     }
 
     private func downloadEPK(usingService service: NetService, completion: @escaping (String)->Void) {
@@ -222,16 +270,19 @@ public class CLIService: NSObject, NetServiceBrowserDelegate, NetServiceDelegate
         task.resume()
     }
 
-    private func installEPK(epkPath: String) {
+    private func installEPK(epkPath: String, completion: @escaping (AppInfo?)->Void) {
         DispatchQueue.main.async {
+            var appInfo: AppInfo? = nil
             do {
-                _ = try AppManager.getShareInstance().install(epkPath, true)
+                appInfo = try AppManager.getShareInstance().install(epkPath, true)
             }
             catch AppError.error(let err) {
                 alertDialog("Install Error", err);
             } catch let error {
                 alertDialog("Install Error", error.localizedDescription);
             }
+            
+            completion(appInfo)
         }
     }
 }
