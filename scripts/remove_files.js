@@ -62,7 +62,7 @@ function DeleteDirectory(dir) {
 }
 
 module.exports = function(ctx) {
-  // console.log(JSON.stringify(ctx, null, 2));
+  //console.log(JSON.stringify(ctx, null, 2));
 
   files_to_remove.forEach((obj) => {
     if (obj.hook !== ctx.hook) {
@@ -86,6 +86,11 @@ module.exports = function(ctx) {
       if (fs.existsSync(filePath) && fs.lstatSync(filePath).isFile()) {
         console.log("Removing file", file);
         fs.unlinkSync(filePath);
+
+        // Make sure the file was correctly deleted
+        if (fs.existsSync(filePath)) {
+          throw new Error("File at "+filePath+" still exists, it couldn't be correctly deleted.");
+        }
       }
     });
   });
@@ -111,6 +116,11 @@ module.exports = function(ctx) {
       let filePath = path.join(ctx.opts.projectRoot, folder);
       console.log("Removing folder", folder);
       DeleteDirectory(folder);
+
+      // Make sure the folder was fully deleted
+      if (fs.existsSync(folder)) {
+        throw new Error("Folder at "+folder+" still exists, it couldn't be correctly deleted.");
+      }
     });
   });
 }

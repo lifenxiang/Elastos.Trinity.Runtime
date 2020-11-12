@@ -68,7 +68,7 @@ function DeleteDirectory(dir) {
 }
 
 module.exports = function(ctx) {
-  // console.log("download_3rdparty ", JSON.stringify(ctx, null, 2));
+  //console.log("download_3rdparty ", JSON.stringify(ctx, null, 2));
 
   // make sure ios platform is part of platform add
   if (!ctx.opts.platforms.some((val) => val.startsWith("ios"))) {
@@ -98,13 +98,13 @@ module.exports = function(ctx) {
                           && fs.lstatSync(zipFilePath).isFile()
                           && await md5File(zipFilePath) == obj.md5
 
-        const max_attempt = 3;
+        const max_attempt = 1;
         let attempt = 0;
         let files_need_to_update = false;
         while (!fileMatched && attempt < max_attempt) {
           attempt++;
 
-          console.log("Start to download file " + obj.filename);
+          console.log("Starting to download file " + obj.filename);
           let unit = "bytes"
           await wget(obj.url, {
             onProgress: (status) => {
@@ -153,7 +153,7 @@ module.exports = function(ctx) {
             let downloadFilemd5 = await md5File(zipFilePath)
             fileMatched = downloadFilemd5 == obj.md5;
             if (!fileMatched) {
-              console.log("the md5 is " + downloadFilemd5 + " , the expected md5 is " + obj.md5);
+              console.error("The md5 is " + downloadFilemd5 + " but the expected md5 is " + obj.md5);
             }
           }
           else {
@@ -164,7 +164,8 @@ module.exports = function(ctx) {
         }
 
         if (!fileMatched) {
-          reject('Failed to download ' + obj.filename);
+          reject(new Error('Failed to download ' + obj.filename));
+          return;
         }
 
         // Zip file matched md5
@@ -183,7 +184,7 @@ module.exports = function(ctx) {
           if (fs.existsSync(targetPath) && fs.lstatSync(targetPath).isDirectory()) {
             console.log("Unziping file %s", obj.filename);
             yauzl.open(zipFilePath, {lazyEntries: true}, function(err, zipfile) {
-              if (err) reject(err);
+              if (err) reject(new Error(err));
               zip_file_count++;
               zipfile.readEntry();
               zipfile.on("entry", async (entry) => {
@@ -206,7 +207,7 @@ module.exports = function(ctx) {
                       mkdirp.sync(outputDir);
                       openedReadStream = true;
                       await zipfile.openReadStream(entry, function(err, readStream) {
-                        if (err) reject(err);
+                        if (err) reject(new Error(err));
                         readStream.on("end", function() {
                           zipfile.readEntry();
                         });
@@ -224,20 +225,23 @@ module.exports = function(ctx) {
               zipfile.on("end", () => {
                 zip_file_count--;
                 if (zip_file_count == 0 && downloaded_all_files) {
-                  console.log("Finish download and unzip 3rdparties.");
+                  console.log("Finished downloading and unzipping 3rdparties.");
                   resolve();
+                  return;
                 }
               });
             });
           }
           else {
-            reject("targetDir not exist");
+            reject(new Error("targetDir not exist"));
+            return;
           }
         }
       }
       downloaded_all_files = true;
       if (zip_file_count == 0) {
         resolve();
+        return;
       }
     })();
   });
