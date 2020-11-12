@@ -555,6 +555,8 @@ public class AppInstaller {
     }
 
     public void wipeAppData(AppInfo info) throws Exception {
+        Log.d(LOG_TAG, "Wiping local application data for app "+info.app_id+" with start url "+info.start_url);
+
         String packageId = info.app_id;
         dbAdapter.removeSettings(packageId);
         if (info.remote == 1) {

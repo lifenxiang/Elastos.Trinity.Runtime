@@ -1145,13 +1145,17 @@ public class AppManager {
         }
     }
 
-    private void installUri(String uri, boolean dev) {
+    private void installUri(String uri, boolean dev, boolean wipeAppData) {
         try {
             // Trinity native apps can update their EPKs directly if trinity is built in debug
             boolean forceTrinityNativeInstall = ConfigManager.getShareInstance().isNativeBuild() && BuildConfig.DEBUG;
 
             if (forceTrinityNativeInstall || (dev && PreferenceManager.getShareInstance().getDeveloperMode())) {
-                install(uri, true, dev);
+                AppInfo installedAppInfo = install(uri, true, dev);
+
+                if (installedAppInfo != null && wipeAppData) {
+                    wipeAppData(installedAppInfo.app_id);
+                }
             }
             else {
                 checkInProtectList(uri);
@@ -1163,11 +1167,11 @@ public class AppManager {
         }
     }
 
-    public void setInstallUri(String uri, boolean dev) {
+    public void setInstallUri(String uri, boolean dev, boolean wipeAppData) {
         if (uri == null) return;
 
         if (launcherReady || dev) {
-            installUri(uri, dev);
+            installUri(uri, dev, wipeAppData); // wipeAppData is usable only by the CLI, in dev mode.
         }
         else {
             installUriList.add(new InstallInfo(uri, dev));

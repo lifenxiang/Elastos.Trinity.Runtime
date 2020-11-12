@@ -218,6 +218,6 @@ public class CLIService implements NsdManager.DiscoveryListener, NsdManager.Reso
     }
 
     private void installEPK(String epkPath) {
-        appManager.setInstallUri(epkPath, true);
+        appManager.setInstallUri(epkPath, true, false);
     }
 }

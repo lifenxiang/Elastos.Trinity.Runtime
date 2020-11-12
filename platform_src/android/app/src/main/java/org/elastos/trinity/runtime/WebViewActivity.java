@@ -74,7 +74,9 @@ public class WebViewActivity extends FragmentActivity {
                             return;
                         }
                      }
-                    appManager.setInstallUri(uri.toString(), dev);
+
+                     boolean wipeAppData = intent.hasExtra("wipestorage");
+                     appManager.setInstallUri(uri.toString(), dev, wipeAppData);
                 }
             }
         }
@@ -175,7 +177,7 @@ public class WebViewActivity extends FragmentActivity {
 
         if (requestCode == REQUESTCODE_STORAGE && permissions[0].equals(Manifest.permission.READ_EXTERNAL_STORAGE)) {
             if (grantResults[0] != -1) {
-                appManager.setInstallUri(this.adbUri, true);
+                appManager.setInstallUri(this.adbUri, true, false);
             }
         }
         else {
