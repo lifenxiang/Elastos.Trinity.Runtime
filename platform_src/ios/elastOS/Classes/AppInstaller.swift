@@ -73,7 +73,7 @@
     var dataPath: String = "";
     var tempPath: String = "";
     var dbAdapter: MergeDBAdapter;
-    var webView: WKWebView?
+    var webViews = [WKWebView]();
 
     init(_ appPath: String, _ tempPath: String, _ dbAdapter: MergeDBAdapter) {
         self.appPath = appPath;
@@ -367,15 +367,14 @@
                 })
         }
 
-        if (webView == nil) {
-            let configuration = WKWebViewConfiguration()
-            configuration.preferences.javaScriptEnabled = true;
-            configuration.processPool = (CDVWKProcessPoolFactory.shared()?.sharedProcessPool()!)!;
+        let configuration = WKWebViewConfiguration()
+        configuration.preferences.javaScriptEnabled = true;
+        configuration.processPool = (CDVWKProcessPoolFactory.shared()?.sharedProcessPool()!)!;
 
-            let schemeHandler = LocalStorageClearHandler()
-            configuration.setURLSchemeHandler(schemeHandler, forURLScheme: "ionic")
-            webView = WKWebView(frame: CGRect.zero, configuration: configuration)
-        }
+        let schemeHandler = LocalStorageClearHandler()
+        configuration.setURLSchemeHandler(schemeHandler, forURLScheme: "ionic")
+        let webView = WKWebView(frame: CGRect.zero, configuration: configuration)
+        
         let str = "<script>" +
             "localStorage.clear();" +
             "if (window.indexedDB.databases) {" +
@@ -385,7 +384,8 @@
             "   });" +
              "}" +
             "</script>";
-        webView!.loadHTMLString(str, baseURL: url)
+        webViews.append(webView)
+        webView.loadHTMLString(str, baseURL: url)
     }
     
     func wipeAppData(_ info: AppInfo) throws {
@@ -397,6 +397,7 @@
             clearLocalStorage(info.start_url);
         }
         
+        webViews.removeAll();
         let entries = try DIDSessionManager.getSharedInstance().getIdentityEntries();
         for entry in entries {
             let did = entry.didString;

@@ -77,7 +77,7 @@ public class AppInstaller {
     private MergeDBAdapter dbAdapter = null;
     private Context context = null;
     private AppManager appManager = null;
-    private WebView webView = null;
+    private ArrayList<WebView> webViews = new ArrayList<WebView>();
 
     private Random random =new Random();
 
@@ -530,31 +530,30 @@ public class AppInstaller {
         appManager.activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if (webView == null) {
-                    webView = new WebView(appManager.activity);
-                    WebSettings settings = webView.getSettings();
-                    settings.setJavaScriptEnabled(true);
-                    settings.setDatabaseEnabled(true);
-                    settings.setDomStorageEnabled(true);
-                    webView.setWebViewClient(new WebViewClient() {
-                        @Override
-                        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                            String str = "<script>" +
-                                    "localStorage.clear();" +
-                                    "if (window.indexedDB.databases) {" +
-                                    "   window.indexedDB.databases().then((r) => {" +
-                                    "       for (var i = 0; i < r.length; i++) " +
-                                    "           window.indexedDB.deleteDatabase(r[i].name);" +
-                                    "   });" +
-                                     "}" +
-                                    "</script>";
-                            InputStream data = new ByteArrayInputStream(str.getBytes());
-                            WebResourceResponse response = new WebResourceResponse("text/html", "UTF-8", data);
-                            return response;
-                        }
+                WebView webView = new WebView(appManager.activity);
+                WebSettings settings = webView.getSettings();
+                settings.setJavaScriptEnabled(true);
+                settings.setDatabaseEnabled(true);
+                settings.setDomStorageEnabled(true);
+                webView.setWebViewClient(new WebViewClient() {
+                    @Override
+                    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                        String str = "<script>" +
+                                "localStorage.clear();" +
+                                "if (window.indexedDB.databases) {" +
+                                "   window.indexedDB.databases().then((r) => {" +
+                                "       for (var i = 0; i < r.length; i++) " +
+                                "           window.indexedDB.deleteDatabase(r[i].name);" +
+                                "   });" +
+                                "}" +
+                                "</script>";
+                        InputStream data = new ByteArrayInputStream(str.getBytes());
+                        WebResourceResponse response = new WebResourceResponse("text/html", "UTF-8", data);
+                        return response;
+                    }
+                });
 
-                    });
-                }
+                webViews.add(webView);
                 webView.loadUrl(url);
                 webView.clearHistory();
             }
@@ -571,6 +570,7 @@ public class AppInstaller {
             clearLocalStorage(info.start_url);
         }
 
+        webViews.clear();
         ArrayList<IdentityEntry> entries = DIDSessionManager.getSharedInstance().getIdentityEntries();
         for (IdentityEntry entry: entries) {
             String did = entry.didString;
