@@ -283,7 +283,7 @@ class AppManager: NSObject {
 
         refreashInfos()
         startStartupServices()
-        sendRefreshList("initiated", nil)
+        sendRefreshList("initiated", nil, "", "")
 
         // No contact notifier in native mode.
         if !ConfigManager.getShareInstance().isNativeBuild() {
@@ -765,10 +765,10 @@ class AppManager: NSObject {
             refreashInfos()
 
             if (info!.launcher) {
-                sendRefreshList("launcher_upgraded", info!)
+                sendRefreshList("launcher_upgraded", info!, "", "")
             }
             else {
-                sendRefreshList("installed", info)
+                sendRefreshList("installed", info, "", "")
 
                 // Trinity CLI: We have to inform user that he must restart to see his changes live.
                 if ConfigManager.getShareInstance().isNativeBuild() {
@@ -790,7 +790,7 @@ class AppManager: NSObject {
                 try installBuiltInApp("www/built-in/", info!.app_id, false);
                refreashInfos();
             }
-           sendRefreshList("unInstalled", info);
+           sendRefreshList("unInstalled", info, "", "");
         }
     }
 
@@ -919,7 +919,7 @@ class AppManager: NSObject {
                 else {
                     viewController = AppViewController(appInfo!, mode, serviceName);
                 }
-                sendRefreshList("started", appInfo!);
+                sendRefreshList("started", appInfo!, id, mode);
             }
 
             try sendPackageIdMessage(packageId, AppManager.MSG_TYPE_INTERNAL,
@@ -1046,7 +1046,7 @@ class AppManager: NSObject {
             removeRunninglistItem(id);
         }
 
-        sendRefreshList("closed", info);
+        sendRefreshList("closed", info, id, mode);
     }
 
     func loadLauncher() throws {
@@ -1157,11 +1157,15 @@ class AppManager: NSObject {
         }
     }
 
-    private func sendRefreshList(_ action: String, _ info: AppInfo?) {
+    private func sendRefreshList(_ action: String, _ info: AppInfo?, _ id: String, _ mode: String) {
         var msg = "";
 
         if (info != nil) {
-            msg = "{\"action\":\"" + action + "\", \"id\":\"" + info!.app_id + "\", \"name\":\"" + info!.name + "\"}";
+            if (id.isEmpty) {
+                msg = "{\"action\":\"" + action + "\", \"id\":\"" + info!.app_id + "\", \"name\":\"" + info!.name + "\"}";
+            } else {
+                msg = "{\"action\":\"" + action + "\", \"id\":\"" + id + "\" , \"name\":\"" + info!.name + "\", \"mode\":\"" + mode + "\"}";
+            }
         }
         else {
             msg = "{\"action\":\"" + action + "\"}";
@@ -1245,7 +1249,7 @@ class AppManager: NSObject {
             if (pluginAuth.plugin == plugin) {
                 try dbAdapter.updatePluginAuth(pluginAuth, authority);
                 pluginAuth.authority = authority;
-                sendRefreshList("authorityChanged", info!);
+                sendRefreshList("authorityChanged", info!, "", "");
                 return;
             }
         }
@@ -1262,7 +1266,7 @@ class AppManager: NSObject {
             if (urlAuth.url == url) {
                 try dbAdapter.updateUrlAuth(info!.tid, url, authority);
                 urlAuth.authority = authority;
-                sendRefreshList("authorityChanged", info!);
+                sendRefreshList("authorityChanged", info!, "", "");
                 return;
             }
         }

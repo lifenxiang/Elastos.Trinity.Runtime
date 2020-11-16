@@ -307,7 +307,7 @@ public class AppManager {
         }
         refreashInfos();
         startStartupServices();
-        sendRefreshList("initiated", null, false);
+        sendRefreshList("initiated", null, "", "", false);
 
         // No contact notifier in native mode.
         if (!ConfigManager.getShareInstance().isNativeBuild()) {
@@ -823,10 +823,10 @@ public class AppManager {
             refreashInfos();
 
             if (info.launcher == 1) {
-                sendRefreshList("launcher_upgraded", info, fromCLI);
+                sendRefreshList("launcher_upgraded", info, "", "", fromCLI);
             }
             else {
-                sendRefreshList("installed", info, fromCLI);
+                sendRefreshList("installed", info, "", "", fromCLI);
 
                 // Trinity CLI: We have to inform user that he must restart to see his changes live.
                 if (ConfigManager.getShareInstance().isNativeBuild())
@@ -847,7 +847,7 @@ public class AppManager {
                installBuiltInApp("www/built-in/", info.app_id, 0);
                refreashInfos();
            }
-           sendRefreshList("unInstalled", info, false);
+           sendRefreshList("unInstalled", info, "", "", false);
         }
     }
 
@@ -973,7 +973,7 @@ public class AppManager {
         if (fragment == null) {
             fragment = WebViewFragment.newInstance(packageId, mode, serviceName);
             if (!isLauncher(packageId)) {
-                sendRefreshList("started", info, false);
+                sendRefreshList("started", info, id, mode, false);
                 sendPackageIdMessage(packageId, AppManager.MSG_TYPE_INTERNAL,
                         "{\"action\":\"started\"}", id);
             }
@@ -1125,7 +1125,7 @@ public class AppManager {
             runningList.remove(id);
         }
 
-        sendRefreshList("closed", info, false);
+        sendRefreshList("closed", info, id, mode, false);
     }
 
     public void loadLauncher() throws Exception {
@@ -1244,11 +1244,17 @@ public class AppManager {
         }
     }
 
-    public void sendRefreshList(String action, AppInfo info, boolean fromCLI) {
+    // If startup mode is service, the id is "xxx#service:xxx"
+    public void sendRefreshList(String action, AppInfo info, String id, String mode, boolean fromCLI) {
         try {
             if (info != null) {
-                sendLauncherMessage(MSG_TYPE_IN_REFRESH,
-                        "{\"action\":\"" + action + "\", \"id\":\"" + info.app_id + "\" , \"name\":\"" + info.name + "\", \"debug\":" + fromCLI + "}", "system");
+                if (id.isEmpty()) {
+                    sendLauncherMessage(MSG_TYPE_IN_REFRESH,
+                            "{\"action\":\"" + action + "\", \"id\":\"" + info.app_id + "\" , \"name\":\"" + info.name + "\", \"debug\":" + fromCLI + "}", "system");
+                } else {
+                    sendLauncherMessage(MSG_TYPE_IN_REFRESH,
+                            "{\"action\":\"" + action + "\", \"id\":\"" + id + "\" , \"name\":\"" + info.name + "\", \"mode\":\"" + mode + "\", \"debug\":" + fromCLI + "}", "system");
+                }
             }
             else {
                 sendLauncherMessage( MSG_TYPE_IN_REFRESH,
@@ -1337,7 +1343,7 @@ public class AppManager {
                 long count = dbAdapter.updatePluginAuth(info.tid, plugin, authority);
                 if (count > 0) {
                     pluginAuth.authority = authority;
-                    sendRefreshList("authorityChanged", info, false);
+                    sendRefreshList("authorityChanged", info, "", "", false);
                 }
                 return;
             }
@@ -1356,7 +1362,7 @@ public class AppManager {
                 long count = dbAdapter.updateURLAuth(info.tid, url, authority);
                 if (count > 0) {
                     urlAuth.authority = authority;
-                    sendRefreshList("authorityChanged", info, false);
+                    sendRefreshList("authorityChanged", info, "", "", false);
                 }
                 return ;
             }
