@@ -46,23 +46,46 @@ public class CLIService: NSObject, NetServiceBrowserDelegate, NetServiceDelegate
     private func log(_ str: String) {
         print("CLIService - \(str)")
     }
-    
+
     private func searchForServices() {
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(5), execute: {
-            self.log("Searching for local CLI service...")
+            let cliAddress = PreferenceManager.getShareInstance().getStringValue("trinitycli.runaddress", "")
+            if cliAddress != "" {
+                self.log("Custom IP address \(cliAddress) is configured in preferences, using it to call the CLI.")
 
-            if (self.serviceBrowser == nil) {
-                self.serviceBrowser = NetServiceBrowser()
-                self.serviceBrowser!.delegate = self
+                let endpointRoot: String
+                if cliAddress.starts(with: "http://") {
+                    endpointRoot = "\(cliAddress)"
+                }
+                else {
+                    endpointRoot = "http://\(cliAddress)"
+                }
+                
+                self.fetchAndInstall(endpointRoot: endpointRoot) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(20), execute: {
+                        if self.isStarted {
+                            // Restart searching
+                            self.searchForServices()
+                        }
+                    })
+                }
             }
+            else {
+                self.log("Searching for local CLI service...")
 
-            self.shouldRestartSearching = true
-            self.operationCompleted = false
-            self.serviceBrowser!.searchForServices(ofType: "_trinitycli._tcp.", inDomain: "")
+                if (self.serviceBrowser == nil) {
+                    self.serviceBrowser = NetServiceBrowser()
+                    self.serviceBrowser!.delegate = self
+                }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(20), execute: {
-                self.stopSearching(shouldRestart: true)
-            })
+                self.shouldRestartSearching = true
+                self.operationCompleted = false
+                self.serviceBrowser!.searchForServices(ofType: "_trinitycli._tcp.", inDomain: "")
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(20), execute: {
+                    self.stopSearching(shouldRestart: true)
+                })
+            }
         })
     }
 
@@ -131,22 +154,37 @@ public class CLIService: NSObject, NetServiceBrowserDelegate, NetServiceDelegate
 
         // Reset previous download information
         self.wipeAppData = false
-        
+
         // Got a resolved service info - we can call the service to get and install our EPK
-        fetchDownloadInfo(usingService: service) {
-            self.downloadEPK(usingService: service) { epkPath in
-                self.log("Requesting app manager to install the EPK")
-                self.installEPK(epkPath: epkPath) { installedAppInfo in
-                    if let installedAppInfo = installedAppInfo {
-                        // CLI asked to wipe app data, let's do it
-                        if self.wipeAppData {
-                            try? self.appManager.wipeAppData(installedAppInfo.app_id)
+
+        // Compute the service's download EPK URL
+        guard let ipAddress = getServiceIPAddress(service) else {
+            log("No IP address found for the service. Aborting EPK download.")
+            return
+        }
+
+        let endpointRoot = "http://\(ipAddress):\(service.port)"
+        fetchAndInstall(endpointRoot: endpointRoot) {
+            self.searchForServices()
+        }
+    }
+
+    private func fetchAndInstall(endpointRoot: String, completion: @escaping ()->Void) {
+        fetchDownloadInfo(endpointRoot: endpointRoot) {
+            self.downloadEPK(endpointRoot: endpointRoot) { epkPath in
+                if let epkPath = epkPath {
+                    self.log("Requesting app manager to install the EPK")
+                    self.installEPK(epkPath: epkPath) { installedAppInfo in
+                        if let installedAppInfo = installedAppInfo {
+                            // CLI asked to wipe app data, let's do it
+                            if self.wipeAppData {
+                                try? self.appManager.wipeAppData(installedAppInfo.app_id)
+                            }
                         }
                     }
-                    
-                    // Resume the bonjour search task for future EPKs.
-                    self.searchForServices()
                 }
+                
+                completion()
             }
         }
     }
@@ -181,23 +219,17 @@ public class CLIService: NSObject, NetServiceBrowserDelegate, NetServiceDelegate
 
         return nil
     }
-    
-    private func fetchDownloadInfo(usingService service: NetService, completion: @escaping ()->Void) {
-        // Compute the service's download EPK URL
-        guard let ipAddress = getServiceIPAddress(service) else {
-            log("No IP address found for the service. Aborting EPK download.")
-            return
-        }
 
-        let serviceEndpoint = "http://\(ipAddress):\(service.port)/downloadinfo"
-        
+    private func fetchDownloadInfo(endpointRoot: String, completion: @escaping ()->Void) {
+        let serviceEndpoint = endpointRoot+"/downloadinfo"
+
         // Call the service to fetch download information.
         // Backward compatibility note: this endpoint may not exist on some older CLI versions.
         let sessionConfig = URLSessionConfiguration.default
         let session = URLSession(configuration: sessionConfig)
         let url = URL(string: serviceEndpoint)!
         let request = try! URLRequest(url: url, method: .get)
-        
+
         log("Fetching download information at \(serviceEndpoint)")
         let task = session.dataTask(with: request) { data, response, error in
             // All "else" cases complete silentely without error
@@ -210,23 +242,17 @@ public class CLIService: NSObject, NetServiceBrowserDelegate, NetServiceDelegate
                     }
                 }
             }
-            
+
             completion()
         }
         task.resume()
     }
 
-    private func downloadEPK(usingService service: NetService, completion: @escaping (String)->Void) {
-        // Compute the service's download EPK URL
-        guard let ipAddress = getServiceIPAddress(service) else {
-            log("No IP address found for the service. Aborting EPK download.")
-            return
-        }
-
+    private func downloadEPK(endpointRoot: String, completion: @escaping (String?)->Void) {
         // Watchguard to prevent downloading multiple times when IP address is resolved multiple times.
         self.operationCompleted = true
 
-        let serviceEndpoint = "http://\(ipAddress):\(service.port)/downloadepk"
+        let serviceEndpoint = endpointRoot+"/downloadepk"
 
         // Call the service to download the EPK file
         let sessionConfig = URLSessionConfiguration.default
@@ -254,17 +280,21 @@ public class CLIService: NSObject, NetServiceBrowserDelegate, NetServiceDelegate
                         }
                         catch {
                             self.log("Failed copy the EPK file. \(error)")
+                            completion(nil)
                         }
                     }
                     else {
                         self.log("Failed to download EPK with HTTP error \(statusCode)")
+                        completion(nil)
                     }
                 }
                 else {
                     self.log("Failed to download EPK with unknown HTTP error")
+                    completion(nil)
                 }
             } else {
-                self.log("Failure: \(error?.localizedDescription ?? "?")");
+                self.log("Failure: \(error?.localizedDescription ?? "?")")
+                completion(nil)
             }
         }
         task.resume()
@@ -281,7 +311,7 @@ public class CLIService: NSObject, NetServiceBrowserDelegate, NetServiceDelegate
             } catch let error {
                 alertDialog("Install Error", error.localizedDescription);
             }
-            
+
             completion(appInfo)
         }
     }
