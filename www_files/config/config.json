@@ -36,5 +36,24 @@
     "native.scheme": {
         "scheme": "https",
         "path": "elastos.trinity-tech.io"
+    },
+    "intent.action.map": {
+        "credaccess": "https://did.elastos.net/credaccess",
+        "appidcredissue": "https://did.elastos.net/appidcredissue",
+        "credimport": "https://did.elastos.net/credimport",
+        "credissue": "https://did.elastos.net/credissue",
+        "didsign": "https://did.elastos.net/didsign",
+        "promptpublishdid": "https://did.elastos.net/promptpublishdid",
+        "registerapplicationprofile": "https://did.elastos.net/registerapplicationprofile",
+        "sethiveprovider": "https://did.elastos.net/sethiveprovider",
+
+        "pay": "https://wallet.elastos.net/",
+        "walletaccess": "https://wallet.elastos.net/walletaccess",
+        "crmembervote": "https://wallet.elastos.net/crmembervote",
+        "dposvotetransaction": "https://wallet.elastos.net/dposvotetransaction",
+        "didtransaction": "https://wallet.elastos.net/didtransaction",
+        "esctransaction": "https://wallet.elastos.net/esctransaction",
+
+        "setupvaultprompt": "https://hive.elastos.net/setupvaultprompt"
     }
 }

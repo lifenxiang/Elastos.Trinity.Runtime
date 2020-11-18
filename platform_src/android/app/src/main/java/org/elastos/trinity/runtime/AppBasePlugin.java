@@ -486,7 +486,6 @@ public class AppBasePlugin extends TrinityPlugin {
     protected void sendIntent(JSONArray args, CallbackContext callbackContext) throws Exception {
         String action = args.getString(0);
         String params = args.getString(1);
-        long currentTime = System.currentTimeMillis();
         String toId = null;
         Boolean silent = false;
 
@@ -500,7 +499,7 @@ public class AppBasePlugin extends TrinityPlugin {
             }
         }
 
-        IntentInfo info = new IntentInfo(action, params, getModeId(), toId, currentTime, silent, (success, data)->{
+        IntentInfo info = new IntentInfo(action, params, getModeId(), toId, silent, (success, data)->{
             PluginResult result = new PluginResult(PluginResult.Status.OK, data);
             result.setKeepCallback(false);
 
@@ -539,7 +538,7 @@ public class AppBasePlugin extends TrinityPlugin {
         String result = args.getString(1);
         long intentId = args.getLong(2);
 
-        IntentManager.getShareInstance().sendIntentResponse(this, result, intentId, getModeId());
+        IntentManager.getShareInstance().sendIntentResponse(result, intentId);
         callbackContext.success("ok");
     }
 
@@ -566,7 +565,12 @@ public class AppBasePlugin extends TrinityPlugin {
 
         JSONObject ret = new JSONObject();
         try {
-            ret.put("action", info.action);
+            if (info.regsterAction != null) {
+                ret.put("action", info.regsterAction);
+            }
+            else {
+                ret.put("action", info.action);
+            }
             ret.put("params", info.params);
             ret.put("from", info.fromId);
             ret.put("intentId", info.intentId);

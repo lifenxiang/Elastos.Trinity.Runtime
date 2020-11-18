@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Handler;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
@@ -104,18 +103,23 @@ public class IntentManager {
 
         // For trinity native, also use native.scheme from config.json as a "trinity scheme" to handle incoming intents
         if (ConfigManager.getShareInstance().isNativeBuild()) {
-            try {
-                JSONObject nativeSchemeConfig = ConfigManager.getShareInstance().getJSONObjectValue("native.scheme");
-                String nativeScheme = nativeSchemeConfig.getString("scheme") + "://" + nativeSchemeConfig.getString("path");
-                if (url.startsWith(nativeScheme)) {
-                    return true;
-                }
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-            }
+            return isNativeScheme(url);
         }
 
+        return false;
+    }
+
+    public static boolean isNativeScheme(String url) {
+        try {
+            JSONObject nativeSchemeConfig = ConfigManager.getShareInstance().getJSONObjectValue("native.scheme");
+            String nativeScheme = nativeSchemeConfig.getString("scheme") + "://" + nativeSchemeConfig.getString("path");
+            if (url.startsWith(nativeScheme)) {
+                return true;
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
         return false;
     }
 
@@ -158,9 +162,8 @@ public class IntentManager {
 
     private synchronized void putIntentContext(IntentInfo info) {
         IntentInfo intentInfo = intentContextList.get(info.intentId);
-        while (intentInfo != null) {
-            info.intentId++;
-            intentInfo = intentContextList.get(info.intentId);
+        if (intentInfo != null) {
+            return;
         }
 
         intentContextList.put(info.intentId, info);
@@ -228,6 +231,23 @@ public class IntentManager {
         return list.toArray(filters);
     }
 
+    public IntentFilter[] getInternalIntentFilter(IntentInfo info) throws Exception {
+        IntentFilter[] filters = getIntentFilter(info.action);
+        if (filters.length == 0) {
+            if (info.actionUrl != null) {
+                filters = getIntentFilter(info.actionUrl);
+                if (filters.length > 0) {
+                    info.regsterAction = info.actionUrl;
+                }
+            }
+        }
+        else {
+            info.regsterAction = info.action;
+        }
+
+        return filters;
+    }
+
     private void popupIntentChooser(IntentInfo info, IntentFilter[] filters) {
         // More than one possible handler, show a chooser and pass it the selectable apps info.
         ArrayList<AppInfo> appInfos = new ArrayList();
@@ -277,19 +297,19 @@ public class IntentManager {
             info.toId = null;
 
         if (info.toId == null) {
-            IntentFilter[] filters = getIntentFilter(info.action);
+            IntentFilter[] filters = getInternalIntentFilter(info);
 
             // Throw an error in case no one can handle the action.
             // Special case for some specific actions that is always handled by the native OS too.
             if (!info.action.equals("share") && !info.action.equals("openurl")) {
                 if (filters.length == 0) {
-                    if (!ConfigManager.getShareInstance().isNativeBuild()) {
+                    if (info.actionUrl == null) {
                         // Not a native build - so 0 filter means no one can handle the action
                         throw new Exception("Intent action " + info.action + " isn't supported!");
                     }
                     else {
                         // We are a trinity native build - launch that action as native intent
-                        sendIntentToNativeOS(info);
+                        sendIntentToExternal(info);
                         return;
                     }
                 }
@@ -328,7 +348,7 @@ public class IntentManager {
             }
         }
         else if (info.filter == null) {
-            IntentFilter[] filters = getIntentFilter(info.action);
+            IntentFilter[] filters = getInternalIntentFilter(info);
             for (IntentFilter filter : filters) {
                 if (info.toId.startsWith(filter.packageId)) {
                     info.filter = filter;
@@ -462,9 +482,8 @@ public class IntentManager {
             list.toArray(paths);
             String action = paths[0];
             Set<String> set = uri.getQueryParameterNames();
-            long currentTime = System.currentTimeMillis();
 
-            info = new IntentInfo(action, null, fromId, null, currentTime, false, null);
+            info = new IntentInfo(action, null, fromId, null, false, null);
 
             // TMP BPI TEST
             // Quick and dirty way to remove the intent action scheme domain name from received urls
@@ -495,27 +514,47 @@ public class IntentManager {
         return schemeConfig.getString("scheme") + "://" + schemeConfig.getString("path");
     }
 
-    // Opposite of parseIntentUri().
-    // From intent info params to url params.
-    // Ex: info.params = "{a:1, b:{x:1}}" returns url?a=1&b={x:1}
-    private String createUriParamsFromIntentInfoParams(String url, JSONObject params) throws Exception {
+    private String addParamLinkChar(String url) {
         if (url.contains("?")) {
             url += "&";
         }
         else {
             url += "?";
         }
+        return url;
+    }
+
+    // Opposite of parseIntentUri().
+    // From intent info params to url params.
+    // Ex: info.params = "{a:1, b:{x:1}}" returns url?a=1&b={x:1}
+    private String createUriParamsFromIntentInfoParams(IntentInfo info) throws Exception {
+
+        // Convert intent info params into a serialized json string for the target url
+        JSONObject params = new JSONObject(info.params);
+
+        // Append the current application DID to the intent to let the receiver guess who is requesting
+        // (but that will be checked on ID chain with the redirect url).
+        // For example, in order to send a "app id credential" that gives rights to the calling app to access a hive vault,
+        // We must make sure that the calling trinity native app is who it pretends to be, to not let it access the hive storage space
+        // of another app. For this, we don't blindly trust the sent appDid here, but the receiving trinity runtime will
+        // fetch this app did from chain, and will make sure that the redirect url registered in the app did public document
+        // matches with the redirect url used in this intent.
+        params.put("appDid", appManager.getAppInfo(info.fromId).did);
+
+        String url = info.actionUrl;
 
         Iterator<String> firstLevelKeys = params.keys();
         while (firstLevelKeys.hasNext()) {
+            url = addParamLinkChar(url);
             String key = firstLevelKeys.next();
-            url += key + "=" + Uri.encode(params.get(key).toString()) + "&";
+            url += key + "=" + Uri.encode(params.get(key).toString());
         }
 
         // If there is no redirect url, we add one to be able to receive responses
         if (!params.has("redirecturl")) {
             // "intentresponse" is added For trinity native. NOTE: we should maybe move this out of this method
-            url += "&redirecturl="+getNativeAppScheme()+"/intentresponse"; // Ex: https://diddemo.elastos.org/intentresponse
+            url = addParamLinkChar(url);
+            url += "redirecturl="+getNativeAppScheme()+"/intentresponse%3FintentId=" + info.intentId; // Ex: https://diddemo.elastos.org/intentresponse?intentId=xxx
         }
 
         System.out.println("INTENT DEBUG: " + url);
@@ -738,7 +777,7 @@ public class IntentManager {
         }
     }
 
-    public void sendIntentResponse(AppBasePlugin basePlugin, String result, long intentId, String fromId) throws Exception {
+    public void sendIntentResponse(String result, long intentId) throws Exception {
         // Retrieve intent context information for the given intent id
         IntentInfo info = intentContextList.get(intentId);
         if (info == null) {
@@ -960,14 +999,12 @@ public class IntentManager {
         }
     }
 
-    private IntentInfo tmpOnGoingNativeIntentInfo = null;
-
-    // TODO - QUICK AND DIRTY ATTEMPT - FULL IMPROVEMENT NEEDED
-    public void onExternalIntentResponseReceived(Uri uri) {
-        System.out.println("RECEIVED: "+uri.toString());
+    public void receiveExternalIntentResponse(Uri uri) {
+        String url = uri.toString();
+        System.out.println("RECEIVED: " + url);
 
         String resultStr = null;
-        if (uri.toString().contains("result=")) {
+        if (url.contains("result=")) {
             // Result received as a raw string / raw json string
             resultStr = uri.getQueryParameter("result");
         }
@@ -976,11 +1013,15 @@ public class IntentManager {
             resultStr = "{jwt:\""+uri.getLastPathSegment()+"\"}";
         }
         System.out.println(resultStr);
-        WebViewFragment fragment = appManager.getFragmentById(tmpOnGoingNativeIntentInfo.fromId);
+
+        long intentId = -1;
+        if (url.contains("intentId=")) {
+            String id = uri.getQueryParameter("intentId");
+            intentId = Long.parseLong(id);
+        }
 
         try {
-            sendIntentResponse(fragment.basePlugin, resultStr, tmpOnGoingNativeIntentInfo.intentId, tmpOnGoingNativeIntentInfo.fromId);
-            tmpOnGoingNativeIntentInfo = null;
+            sendIntentResponse(resultStr, intentId);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -988,62 +1029,19 @@ public class IntentManager {
 
     // Serializes a sendIntent(info) command info into a url such as https://domain/action/?stringifiedJsonResponseParams
     // And sends that url to the native OS.
-    void sendIntentToNativeOS(IntentInfo info) throws Exception {
+    void sendIntentToExternal(IntentInfo info) throws Exception {
         android.content.Intent sendIntent = new android.content.Intent();
         sendIntent.setAction(Intent.ACTION_VIEW);
-
-        // TMP - move to config.json mapping maybe (dongxiao).
-        // Backward compatibility: converts old style "credaccess"-like intent calls to full domain
-        // calls such as https://did.elastos.net/credaccess.
-        switch (info.action) {
-            case "credaccess":
-            case "appidcredissue":
-            case "credimport":
-            case "credissue":
-            case "didsign":
-            case "promptpublishdid":
-            case "registerapplicationprofile":
-            case "sethiveprovider":
-                info.action = "https://did.elastos.net/"+info.action;
-                break;
-            case "pay":
-            case "walletaccess":
-            case "crmembervote":
-            case "dposvotetransaction":
-            case "didtransaction":
-            case "esctransaction":
-                info.action = "https://wallet.elastos.net/"+info.action;
-                break;
-            case "setupvaultprompt":
-                info.action = "https://hive.elastos.net/"+info.action;
-                break;
-        }
-        // END TMP
 
         if (!Utility.isJSONType(info.params)) {
             throw new Exception("Intent parameters must be a JSON object");
         }
 
-        // Convert intent info params into a serialized json string for the target url
-        JSONObject params = new JSONObject(info.params);
-
-        // Append the current application DID to the intent to let the receiver guess who is requesting
-        // (but that will be checked on ID chain with the redirect url).
-        // For example, in order to send a "app id credential" that gives rights to the calling app to access a hive vault,
-        // We must make sure that the calling trinity native app is who it pretends to be, to not let it access the hive storage space
-        // of another app. For this, we don't blindly trust the sent appDid here, but the receiving trinity runtime will
-        // fetch this app did from chain, and will make sure that the redirect url registered in the app did public document
-        // matches with the redirect url used in this intent.
-        params.put("appDid", appManager.getAppInfo(info.fromId).did);
-
-        String url = createUriParamsFromIntentInfoParams(info.action, params); // info.action must be a full action url such as https://did.elastos.net/credaccess
-
+        putIntentContext(info);
+        String url = createUriParamsFromIntentInfoParams(info);
         sendIntent.setData(Uri.parse(url));
 
         try {
-            tmpOnGoingNativeIntentInfo = info; // TODO - TMP DIRTY
-            putIntentContext(info); // TODO - TMP DIRTY
-
             appManager.activity.startActivity(sendIntent);
         }
         catch (Exception e) {

@@ -2,6 +2,7 @@ package org.elastos.trinity.runtime;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 public class IntentInfo {
@@ -38,13 +39,34 @@ public class IntentInfo {
     String req = null;
     int type = API;
 
+    String actionUrl = null;
+    String regsterAction = null;
+
+    private String getActionUrl(String action) {
+        if (action.indexOf("://") == -1) {
+            JSONObject maps = ConfigManager.getShareInstance().getJSONObjectValue("intent.action.map");
+            if ((maps != null) && maps.has(action)) {
+                try {
+                    return maps.getString(action);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+            return null;
+        }
+        else {
+            return action;
+        }
+    }
+
     public IntentInfo(String action, String params, String fromId, String toId,
-               long intentId, Boolean silent, OnIntentResponse onIntentResponseCallback) {
+               Boolean silent, OnIntentResponse onIntentResponseCallback) {
         this.action = action;
+        this.actionUrl = getActionUrl(action);
         this.params = params;
         this.fromId = fromId;
         this.toId = toId;
-        this.intentId = intentId;
+        this.intentId = System.currentTimeMillis(); //Need check the same time action?
         this.silent = silent;
         this.onIntentResponseCallback = onIntentResponseCallback;
         //this.callbackContext = callbackContext;

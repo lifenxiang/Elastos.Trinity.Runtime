@@ -114,8 +114,7 @@ public class DIDSessionManager {
             // Trinity native has no active DID session context, so we must send an intent to elastOS to realize this.
             String params = "{claims={}, &nonce=\""+nonce+"\", realm=\""+realm+"\"}";
             String fromId = appManager.curFragment.appInfo.app_id;
-            long intentId = System.currentTimeMillis();
-            IntentInfo info = new IntentInfo("https://did.elastos.net/credaccess", params, fromId, null, intentId, false, (success, data)->{
+            IntentInfo info = new IntentInfo("https://did.elastos.net/credaccess", params, fromId, null, false, (success, data)->{
                 try {
                     String responseJWT = data.getString("responseJWT");
                     listener.onJWTCreated(responseJWT);

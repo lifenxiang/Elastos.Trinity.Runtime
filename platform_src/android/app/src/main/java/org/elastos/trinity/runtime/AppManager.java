@@ -1184,7 +1184,7 @@ public class AppManager {
         if (launcherReady || ConfigManager.getShareInstance().isNativeBuild()) {
             // Did we receive an intent response? (contains "intentresponse" in the path, but no redirecturl, otherwise this could be the request intent, not the response)
             if (!uri.toString().contains("redirecturl") && uri.toString().contains("/intentresponse"))
-                IntentManager.getShareInstance().onExternalIntentResponseReceived(uri);
+                IntentManager.getShareInstance().receiveExternalIntentResponse(uri);
             else
                 IntentManager.getShareInstance().doIntentByUri(uri);
         }
