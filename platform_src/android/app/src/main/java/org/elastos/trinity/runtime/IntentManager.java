@@ -539,7 +539,7 @@ public class IntentManager {
         // of another app. For this, we don't blindly trust the sent appDid here, but the receiving trinity runtime will
         // fetch this app did from chain, and will make sure that the redirect url registered in the app did public document
         // matches with the redirect url used in this intent.
-        params.put("appDid", appManager.getAppInfo(info.fromId).did);
+        params.put("appdid", appManager.getAppInfo(info.fromId).did);
 
         String url = info.actionUrl;
 
@@ -567,6 +567,7 @@ public class IntentManager {
             // We are receiving an intent from an external application. Do some sanity check.
             checkExternalIntentValidity(info, (isValid, errorMessage)->{
                 if (isValid) {
+                    Log.d(LOG_TAG, "The external intent is valid.");
                     try {
                         doIntent(info);
                     } catch (Exception e) {
@@ -574,8 +575,11 @@ public class IntentManager {
                     }
                 }
                 else {
-                    // TODO: clear popup error message to user.
                     System.err.println(errorMessage);
+
+                    AppManager.getShareInstance().activity.runOnUiThread(() -> {
+                            Utility.alertPrompt("Invalid intent received", "The received intent could not be handled and returned the following error: "+errorMessage, AppManager.getShareInstance().activity);
+                    });
                 }
             });
         }
@@ -601,6 +605,8 @@ public class IntentManager {
     }
 
     private void checkExternalIntentValidity(IntentInfo info, OnExternalIntentValidityListener callback) throws Exception {
+        Log.d(LOG_TAG, "Checking external intent validity");
+
         // If the intent contains an appDid param and a redirectUrl, then we must check that they match.
         // This means that the app did document from the ID chain must contain a reference to the expected redirectUrl.
         // This way, we make sure that an application is not trying to act on behalf of another one by replacing his DID.
@@ -1039,6 +1045,7 @@ public class IntentManager {
 
         putIntentContext(info);
         String url = createUriParamsFromIntentInfoParams(info);
+
         sendIntent.setData(Uri.parse(url));
 
         try {

@@ -659,6 +659,7 @@
                 }
             } catch (let e) {
                 print(e.localizedDescription)
+                alertDialog("Invalid intent received", "The received intent could not be handled and returned the following error: \(e.localizedDescription)")
                 onExternalIntentValid(false, "Intent parameters must be a JSON object")
             }
         }
@@ -1083,7 +1084,7 @@
         // of another app. For this, we don't blindly trust the sent appDid here, but the receiving trinity runtime will
         // fetch this app did from chain, and will make sure that the redirect url registered in the app did public document
         // matches with the redirect url used in this intent.
-        params!["appDid"] = appManager.getAppInfo(info.fromId)!.did
+        params!["appdid"] = appManager.getAppInfo(info.fromId)!.did
 
         let url = try createUriParamsFromIntentInfoParams(url: info.action, params: params!) // info.action must be a full action url such as https://did.elastos.net/credaccess
 
