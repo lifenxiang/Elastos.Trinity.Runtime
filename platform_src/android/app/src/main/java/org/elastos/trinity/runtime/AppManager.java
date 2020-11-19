@@ -320,6 +320,12 @@ public class AppManager {
     }
 
     private void startStartupServices() {
+        boolean canStartupServices = PreferenceManager.getShareInstance().getBooleanValue("developer.backgroundservices.startonboot", true);
+        if (!canStartupServices) {
+            Log.d(TAG, "Do not startup services");
+            return;
+        }
+
         final int FIRST_SERVICE_START_DELAY = 5000;
         final int DELAY_BETWEEN_EACH_SERVICE = 5000;
 

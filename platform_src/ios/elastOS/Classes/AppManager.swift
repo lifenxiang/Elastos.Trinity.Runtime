@@ -298,6 +298,12 @@ class AppManager: NSObject {
     }
 
     private func startStartupServices() {
+        let canStartupServices = PreferenceManager.getShareInstance().getBoolValue("developer.backgroundservices.startonboot", true)
+        if (!canStartupServices) {
+            print("Do not startup services")
+            return;
+        }
+
         let FIRST_SERVICE_START_DELAY = 5000
         let DELAY_BETWEEN_EACH_SERVICE = 5000
 
