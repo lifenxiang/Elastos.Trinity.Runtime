@@ -3,7 +3,7 @@ diff -ruNb origin_plugins/cordova-plugin-geolocation/www/Position.js plugins/cor
 +++ plugins/cordova-plugin-geolocation/www/Position.js	null
 @@ -19,6 +19,10 @@
   *
- */
+  */
 
 +/**
 +* @exports Position
@@ -17,7 +17,7 @@ diff -ruNb origin_plugins/cordova-plugin-geolocation/www/geolocation.js plugins/
 +++ plugins/cordova-plugin-geolocation/www/geolocation.js	null
 @@ -19,6 +19,10 @@
   *
- */
+  */
 
 +/**
 +* @exports Geolocation
@@ -30,12 +30,12 @@ diff -ruNb origin_plugins/cordova-plugin-geolocation/www/geolocation.js plugins/
  var geolocation = {
      lastPosition: null, // reference to last known (cached) position returned
      /**
-+   * @function  getCurrentPosition
-+   * @description
-    * Asynchronously acquires the current position.
-    *
-    * @param {Function} successCallback    The function to call when the position data is available
-@@ -144,6 +150,8 @@
++     * @function  getCurrentPosition
++     * @description
+      * Asynchronously acquires the current position.
+      *
+      * @param {Function} successCallback    The function to call when the position data is available
+@@ -149,6 +155,8 @@
          return timeoutTimer;
      },
      /**
@@ -44,7 +44,7 @@ diff -ruNb origin_plugins/cordova-plugin-geolocation/www/geolocation.js plugins/
       * Asynchronously watches the geolocation for changes to geolocation.  When a change occurs,
       * the successCallback is called with the new location.
       *
-@@ -195,6 +203,8 @@
+@@ -200,6 +208,8 @@
          return id;
      },
      /**
