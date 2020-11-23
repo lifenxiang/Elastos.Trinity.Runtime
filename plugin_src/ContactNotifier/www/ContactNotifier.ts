@@ -100,7 +100,7 @@ class ContactImpl implements ContactNotifierPlugin.Contact {
     static fromJson(jsonObj: any): ContactImpl {
         if (!jsonObj)
             return null;
-            
+
         let contact = new ContactImpl();
         Object.assign(contact, jsonObj);
         return contact;
@@ -148,7 +148,7 @@ class ContactNotifierImpl implements ContactNotifierPlugin.ContactNotifier {
                         if (contact)
                             contacts.push(contact);
                     });
-                    
+
                     resolve(contacts);
                 }
                 else {
@@ -206,7 +206,7 @@ class ContactNotifierImpl implements ContactNotifierPlugin.ContactNotifier {
         });
     }
 
-    rejectInvitation(invitationID: string) {
+    rejectInvitation(invitationID: string): Promise<void> {
         return new Promise((resolve, reject) => {
             exec(() =>{
                 resolve();
