@@ -3,25 +3,6 @@
 // CONFIGURE HERE
 const files_to_download  = [
   {
-    "url": "https://github.com/elastos/Elastos.NET.Carrier.Swift.SDK/releases/download/release-v5.6.6/ElastosCarrier-framework.zip",
-    "filename": "ElastosCarrier-framework.zip",
-    "sourceDirs": [
-      "ElastosCarrier-framework/ElastosCarrierSDK.framework"
-    ],
-    "targetDir": "../Plugins/Carrier/src/ios/libs",
-    "md5": "b1ee8667c7169e59482c38849cd826ee"
-  },{
-    "url": "https://github.com/elastos/Elastos.NET.Hive.Swift.SDK/releases/download/release-v1.0.2/ElastosHiveSDK-framework-for-trinity.zip",
-    "filename": "ElastosHiveSDK-framework-for-trinity.zip",
-    "sourceDirs": [
-      "ElastosHiveSDK-framework-for-trinity/Alamofire.framework",
-      "ElastosHiveSDK-framework-for-trinity/ElastosHiveSDK.framework",
-      "ElastosHiveSDK-framework-for-trinity/PromiseKit.framework",
-      "ElastosHiveSDK-framework-for-trinity/Swifter.framework"
-    ],
-    "targetDir": "../Plugins/Hive/src/ios/libs",
-    "md5": "09089931b9e27ad3cd5fbbb7fa23cca5"
-  },{
     "url": "https://github.com/elastos/Elastos.Trinity.Plugins.Wallet/releases/download/spvsdk-V0.5.7.2/libspvsdk.zip",
     "filename": "libspvsdk.zip",
     "sourceDirs": [
@@ -30,20 +11,28 @@ const files_to_download  = [
     "targetDir": "../Plugins/Wallet/src/ios",
     "md5": "16864d8b8832ec4bbf43d327a825a665"
   },{
-    "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/release-v1.3/ElastosDIDSDK-framework-for-trinity.zip",
-    "filename": "ElastosDIDSDK-framework-for-trinity.zip",
+//     "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/release-v1.3/ElastosDIDSDK-framework-for-trinity.zip",
+//     "filename": "ElastosDIDSDK-framework-for-trinity.zip",
+//     "sourceDirs": [
+//       "ElastosDIDSDK-framework-for-trinity/ElastosDIDSDK.framework",
+//       "ElastosDIDSDK-framework-for-trinity/Antlr4.framework",
+//       "ElastosDIDSDK-framework-for-trinity/PromiseKit.framework",
+//       "ElastosDIDSDK-framework-for-trinity/Cryptor.framework",
+//       "ElastosDIDSDK-framework-for-trinity/CryptorRSA.framework",
+//       "ElastosDIDSDK-framework-for-trinity/KituraContracts.framework",
+//       "ElastosDIDSDK-framework-for-trinity/LoggerAPI.framework",
+//       "ElastosDIDSDK-framework-for-trinity/Logging.framework"
+//     ],
+//     "targetDir": "../Plugins/DID/src/ios/libs",
+//     "md5": "af148bea83413b1935e5c7f63dd7da4e"
+//   },{
+    "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/release-v1.3/Antlr4.framework.zip",
+    "filename": "Antlr4.framework.zip",
     "sourceDirs": [
-      "ElastosDIDSDK-framework-for-trinity/ElastosDIDSDK.framework",
-      "ElastosDIDSDK-framework-for-trinity/Antlr4.framework",
-      "ElastosDIDSDK-framework-for-trinity/PromiseKit.framework",
-      "ElastosDIDSDK-framework-for-trinity/Cryptor.framework",
-      "ElastosDIDSDK-framework-for-trinity/CryptorRSA.framework",
-      "ElastosDIDSDK-framework-for-trinity/KituraContracts.framework",
-      "ElastosDIDSDK-framework-for-trinity/LoggerAPI.framework",
-      "ElastosDIDSDK-framework-for-trinity/Logging.framework"
+      "Antlr4.framework",
     ],
     "targetDir": "../Plugins/DID/src/ios/libs",
-    "md5": "af148bea83413b1935e5c7f63dd7da4e"
+    "md5": "6b8558fcab72f58e4a6668da40b8b683"
   }
 ]
 // no need to configure below
