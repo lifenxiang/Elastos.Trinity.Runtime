@@ -40,7 +40,7 @@ class PasswordManagerImpl implements PasswordManagerPlugin.PasswordManager {
             }, (err)=>{
                 console.error("Error while calling PasswordManagerPlugin.setPasswordInfo()", err);
                 reject(this.nativeToTSException(err));
-            }, 'PasswordManagerPlugin', 'setPasswordInfo', [info]);    
+            }, 'PasswordManagerPlugin', 'setPasswordInfo', [info]);
         });
     }
 
@@ -51,7 +51,7 @@ class PasswordManagerImpl implements PasswordManagerPlugin.PasswordManager {
             }, (err)=>{
                 console.error("Error while calling PasswordManagerPlugin.getPasswordInfo()", err);
                 reject(this.nativeToTSException(err));
-            }, 'PasswordManagerPlugin', 'getPasswordInfo', [key, options]);    
+            }, 'PasswordManagerPlugin', 'getPasswordInfo', [key, options]);
         });
     }
 
@@ -62,7 +62,7 @@ class PasswordManagerImpl implements PasswordManagerPlugin.PasswordManager {
             }, (err)=>{
                 console.error("Error while calling PasswordManagerPlugin.getAllPasswordInfo()", err);
                 reject(this.nativeToTSException(err));
-            }, 'PasswordManagerPlugin', 'getAllPasswordInfo', []);    
+            }, 'PasswordManagerPlugin', 'getAllPasswordInfo', []);
         });
     }
 
@@ -76,7 +76,7 @@ class PasswordManagerImpl implements PasswordManagerPlugin.PasswordManager {
             }, (err)=>{
                 console.error("Error while calling PasswordManagerPlugin.deletePasswordInfo()", err);
                 reject(this.nativeToTSException(err));
-            }, 'PasswordManagerPlugin', 'deletePasswordInfo', [key]);    
+            }, 'PasswordManagerPlugin', 'deletePasswordInfo', [key]);
         });
     }
 
@@ -87,10 +87,10 @@ class PasswordManagerImpl implements PasswordManagerPlugin.PasswordManager {
             }, (err)=>{
                 console.error("Error while calling PasswordManagerPlugin.generateRandomPassword()", err);
                 reject(this.nativeToTSException(err));
-            }, 'PasswordManagerPlugin', 'generateRandomPassword', [options]);    
+            }, 'PasswordManagerPlugin', 'generateRandomPassword', [options]);
         });
     }
-    
+
     changeMasterPassword(): Promise<PasswordManagerPlugin.BooleanWithReason> {
         return new Promise((resolve, reject)=>{
             exec((result: { couldChange: boolean, reason?: string })=>{
@@ -101,18 +101,18 @@ class PasswordManagerImpl implements PasswordManagerPlugin.PasswordManager {
             }, (err)=>{
                 console.error("Error while calling PasswordManagerPlugin.changeMasterPassword()", err);
                 reject(this.nativeToTSException(err));
-            }, 'PasswordManagerPlugin', 'changeMasterPassword', []);    
+            }, 'PasswordManagerPlugin', 'changeMasterPassword', []);
         });
     }
 
-    lockMasterPassword() {
+    lockMasterPassword(): Promise<void> {
         return new Promise((resolve, reject)=>{
             exec(()=>{
                 resolve();
             }, (err)=>{
                 console.error("Error while calling PasswordManagerPlugin.lockMasterPassword()", err);
                 reject(this.nativeToTSException(err));
-            }, 'PasswordManagerPlugin', 'lockMasterPassword', []);    
+            }, 'PasswordManagerPlugin', 'lockMasterPassword', []);
         });
     }
 
@@ -123,18 +123,18 @@ class PasswordManagerImpl implements PasswordManagerPlugin.PasswordManager {
             }, (err)=>{
                 console.error("Error while calling PasswordManagerPlugin.deleteAll()", err);
                 reject(this.nativeToTSException(err));
-            }, 'PasswordManagerPlugin', 'deleteAll', []);    
+            }, 'PasswordManagerPlugin', 'deleteAll', []);
         });
     }
 
-    setUnlockMode(mode: PasswordManagerPlugin.PasswordUnlockMode) {
+    setUnlockMode(mode: PasswordManagerPlugin.PasswordUnlockMode): Promise<void> {
         return new Promise((resolve, reject)=>{
             exec(()=>{
                 resolve();
             }, (err)=>{
                 console.error("Error while calling PasswordManagerPlugin.setUnlockMode()", err);
                 reject(this.nativeToTSException(err));
-            }, 'PasswordManagerPlugin', 'setUnlockMode', [mode]);    
+            }, 'PasswordManagerPlugin', 'setUnlockMode', [mode]);
         });
     }
 
@@ -148,7 +148,7 @@ class PasswordManagerImpl implements PasswordManagerPlugin.PasswordManager {
             }, (err)=>{
                 console.error("Error while calling PasswordManagerPlugin.deleteAppPasswordInfo()", err);
                 reject(this.nativeToTSException(err));
-            }, 'PasswordManagerPlugin', 'deleteAppPasswordInfo', [targetAppId, key]);    
+            }, 'PasswordManagerPlugin', 'deleteAppPasswordInfo', [targetAppId, key]);
         });
     }
 
@@ -159,7 +159,7 @@ class PasswordManagerImpl implements PasswordManagerPlugin.PasswordManager {
             }, (err)=>{
                 console.error("Error while calling PasswordManagerPlugin.setVirtualDIDContext()", err);
                 reject(this.nativeToTSException(err));
-            }, 'PasswordManagerPlugin', 'setVirtualDIDContext', [didString]);    
+            }, 'PasswordManagerPlugin', 'setVirtualDIDContext', [didString]);
         });
     }
 
@@ -173,11 +173,11 @@ class PasswordManagerImpl implements PasswordManagerPlugin.PasswordManager {
         }
 
         switch (nativeErr.code) {
-            case NativeErrorCode.NATIVE_ERROR_CODE_INVALID_PASSWORD: 
+            case NativeErrorCode.NATIVE_ERROR_CODE_INVALID_PASSWORD:
                 return new InvalidPasswordExceptionImpl(nativeErr.reason);
-            case NativeErrorCode.NATIVE_ERROR_CODE_INVALID_PARAMETER: 
+            case NativeErrorCode.NATIVE_ERROR_CODE_INVALID_PARAMETER:
                 return new InvalidParameterExceptionImpl(nativeErr.reason);
-            case NativeErrorCode.NATIVE_ERROR_CODE_CANCELLED: 
+            case NativeErrorCode.NATIVE_ERROR_CODE_CANCELLED:
                 return new CancellationExceptionImpl(nativeErr.reason);
             case NativeErrorCode.NATIVE_ERROR_CODE_UNSPECIFIED:
                 return new UnspecifiedExceptionImpl(nativeErr.reason);
