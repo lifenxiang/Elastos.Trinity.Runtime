@@ -565,8 +565,8 @@ public class AppBasePlugin extends TrinityPlugin {
 
         JSONObject ret = new JSONObject();
         try {
-            if (info.regsterAction != null) {
-                ret.put("action", info.regsterAction);
+            if (info.registeredAction != null) {
+                ret.put("action", info.registeredAction);
             }
             else {
                 ret.put("action", info.action);

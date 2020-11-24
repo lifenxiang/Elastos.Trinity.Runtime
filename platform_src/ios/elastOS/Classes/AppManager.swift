@@ -1109,7 +1109,7 @@ class AppManager: NSObject {
         if launcherReady || ConfigManager.getShareInstance().isNativeBuild() {
             // Did we receive an intent response? (contains "intentresponse" in the path, but no redirecturl, otherwise this could be the request intent, not the response)
             if !uri.absoluteString.contains("redirecturl") && uri.absoluteString.contains("/intentresponse") {
-                IntentManager.getShareInstance().onExternalIntentResponseReceived(uri: uri)
+                IntentManager.getShareInstance().receiveExternalIntentResponse(uri: uri)
             }
             else {
                 IntentManager.getShareInstance().doIntentByUri(uri)

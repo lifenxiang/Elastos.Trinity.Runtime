@@ -40,7 +40,7 @@ public class IntentInfo {
     int type = API;
 
     String actionUrl = null;
-    String regsterAction = null;
+    String registeredAction = null;
 
     private String getActionUrl(String action) {
         if (action.indexOf("://") == -1) {

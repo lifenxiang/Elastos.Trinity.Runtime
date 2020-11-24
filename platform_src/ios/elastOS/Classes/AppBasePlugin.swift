@@ -69,7 +69,6 @@
     }
 
     func sendIntent(_ action: String, _ params: String, _ options: [String: Any]?, _ callback: ((String, String?, String)->(Void))?) throws {
-        let currentTime = Int64(Date().timeIntervalSince1970);
         var toId: String? = nil;
         var silent: Bool? = false;
 
@@ -82,7 +81,7 @@
             }
         }
 
-        let info = IntentInfo(action, params, getModeId(), toId, currentTime, silent!, callback);
+        let info = IntentInfo(action, params, getModeId(), toId, silent!, callback);
         try? IntentManager.getShareInstance().doIntent(info);
     }
 
@@ -93,7 +92,7 @@
             try IntentManager.getShareInstance().sendIntentByUri(url!, getModeId());
         }
         else if (shouldOpenExternalIntentUrl(urlString)) {
-            IntentManager.openUrl(url!);
+            IntentManager.openUrl(urlString);
         }
         else {
             throw AppError.error("Can't access this url: " + urlString);
@@ -102,7 +101,7 @@
 
     func sendIntentResponse(_ result: String, _ intentId: Int64) throws {
         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(100), execute: {
-            try? IntentManager.getShareInstance().sendIntentResponse(result, intentId, self.appId!);
+            try? IntentManager.getShareInstance().sendIntentResponse(result, intentId);
         })
     }
 
@@ -521,7 +520,6 @@
     @objc func sendIntent(_ command: CDVInvokedUrlCommand) {
         let action = command.arguments[0] as? String ?? "";
         let params = command.arguments[1] as? String ?? "";
-        let currentTime = Int64(Date().timeIntervalSince1970);
         let options = command.arguments[2] as? [String: Any] ?? nil
         var toId: String? = nil;
         var silent: Bool? = false;
@@ -535,7 +533,7 @@
             }
         }
 
-        let info = IntentInfo(action, params, getModeId(), toId, currentTime, silent!, command.callbackId);
+        let info = IntentInfo(action, params, getModeId(), toId, silent!, command.callbackId);
 
         do {
             try IntentManager.getShareInstance().doIntent(info);
@@ -551,10 +549,10 @@
 
     @objc func sendUrlIntent(_ command: CDVInvokedUrlCommand) {
         let urlString = command.arguments[0] as? String ?? "";
-        let url = URL(string: urlString)
 
         if (IntentManager.checkTrinityScheme(urlString)) {
             do {
+                let url = URL(string: urlString)
                 try IntentManager.getShareInstance().sendIntentByUri(url!, getModeId());
                 self.success(command, "ok");
             } catch AppError.error(let err) {
@@ -564,7 +562,7 @@
             }
         }
         else if (shouldOpenExternalIntentUrl(urlString)) {
-            IntentManager.openUrl(url!);
+            IntentManager.openUrl(urlString);
             self.success(command, "ok");
         }
         else {
@@ -590,7 +588,7 @@
 
         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(100), execute: {
             do {
-                try IntentManager.getShareInstance().sendIntentResponse(result, intentId, modeId);
+                try IntentManager.getShareInstance().sendIntentResponse(result, intentId);
                 self.sendCallback(command, CDVCommandStatus_OK, false, "ok");
             } catch AppError.error(let err) {
                 self.sendCallback(command, CDVCommandStatus_ERROR, false, err);
@@ -620,8 +618,13 @@
 
     func onReceiveIntent(_ info: IntentInfo) {
         if (self.intentCallbackId != nil) {
+            var action = info.action;
+            if (info.registeredAction != nil) {
+                action = info.registeredAction!;
+            }
+
             let ret = [
-                "action": info.action,
+                "action": action,
                 "params": info.params,
                 "from": info.fromId,
                 "intentId": info.intentId,
@@ -693,7 +696,7 @@
             self.error(command, error.localizedDescription);
         }
     }
-    
+
     @objc func wipeAppData(_ command: CDVInvokedUrlCommand) {
         let id = command.arguments[0] as? String ?? ""
 

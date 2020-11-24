@@ -160,7 +160,7 @@ public class IntentManager {
         return infos.size();
     }
 
-    private synchronized void putIntentContext(IntentInfo info) {
+    private synchronized void addToIntentContextList(IntentInfo info) {
         IntentInfo intentInfo = intentContextList.get(info.intentId);
         if (intentInfo != null) {
             return;
@@ -237,12 +237,12 @@ public class IntentManager {
             if (info.actionUrl != null) {
                 filters = getIntentFilter(info.actionUrl);
                 if (filters.length > 0) {
-                    info.regsterAction = info.actionUrl;
+                    info.registeredAction = info.actionUrl;
                 }
             }
         }
         else {
-            info.regsterAction = info.action;
+            info.registeredAction = info.action;
         }
 
         return filters;
@@ -367,7 +367,7 @@ public class IntentManager {
         String id =  getIdbyFilter(info.filter);
         WebViewFragment fragment = appManager.getFragmentById(id);
         if ((fragment != null) && (fragment.basePlugin.isIntentReady())) {
-            putIntentContext(info);
+            addToIntentContextList(info);
             if (!appManager.isCurrentFragment(fragment)) {
                 appManager.start(info.filter.packageId, info.filter.startupMode, info.filter.serviceName);
                 appManager.sendLauncherMessageMinimize(info.fromId);
@@ -1043,7 +1043,7 @@ public class IntentManager {
             throw new Exception("Intent parameters must be a JSON object");
         }
 
-        putIntentContext(info);
+        addToIntentContextList(info);
         String url = createUriParamsFromIntentInfoParams(info);
 
         sendIntent.setData(Uri.parse(url));

@@ -69,25 +69,41 @@
 
     var isDoingResponse = false;
 
+    var actionUrl: String? = nil;
+    var registeredAction: String? = nil;
+
+    private func getActionUrl(_ action: String) -> String? {
+        if (action.indexOf("://") == -1) {
+            let maps = ConfigManager.getShareInstance().getDictionaryValue("intent.action.map");
+            if ((maps != nil) && maps![action] != nil) {
+                return maps![action]! as String;
+            }
+            return nil;
+        }
+        else {
+            return action;
+        }
+    }
+
     init(_ action: String, _ params: String?, _ fromId: String, _ toId: String?,
-         _ intentId: Int64, _ silent: Bool) {
+        _ silent: Bool) {
         self.action = action;
         self.params = params;
         self.fromId = fromId;
         self.toId = toId;
-        self.intentId = intentId;
+        self.intentId = Int64(Date().timeIntervalSince1970); //Need check the same time action?
         self.silent = silent;
+
+        self.actionUrl = getActionUrl(action);
     }
 
-    convenience init(_ action: String, _ params: String?, _ fromId: String, _ toId: String?,
-                     _ intentId: Int64, _ silent: Bool, _ callbackId: String?) {
-        self.init(action, params, fromId, toId, intentId, silent);
+    convenience init(_ action: String, _ params: String?, _ fromId: String, _ toId: String?, _ silent: Bool, _ callbackId: String?) {
+        self.init(action, params, fromId, toId, silent);
         self.callbackId = callbackId;
     }
 
-    convenience init(_ action: String, _ params: String?, _ fromId: String, _ toId: String?,
-                     _ intentId: Int64, _ silent: Bool, _ callback: ((String, String?, String)->(Void))?) {
-        self.init(action, params, fromId, toId, intentId, silent);
+    convenience init(_ action: String, _ params: String?, _ fromId: String, _ toId: String?, _ silent: Bool, _ callback: ((String, String?, String)->(Void))?) {
+        self.init(action, params, fromId, toId, silent);
         self.callback = callback;
     }
 
@@ -184,26 +200,33 @@
 
         // For trinity native, also use native.scheme from config.json as a "trinity scheme" to handle incoming intents
         if ConfigManager.getShareInstance().isNativeBuild() {
-            do {
-                let nativeSchemeConfig = ConfigManager.getShareInstance().getDictionaryValue("native.scheme")
-                let nativeScheme = nativeSchemeConfig!["scheme"]! + "://" + nativeSchemeConfig!["path"]!
-                if url.hasPrefix(nativeScheme) {
-                    return true
-                }
-            }
-            catch (let e) {
-                print(e.localizedDescription)
-            }
+            return isNativeScheme(url);
         }
 
 
         return false;
     }
 
-    static func openUrl(_ url: URL) {
+    static func isNativeScheme(_ url: String) -> Bool {
+        do {
+            let nativeSchemeConfig = ConfigManager.getShareInstance().getDictionaryValue("native.scheme")
+            let nativeScheme = nativeSchemeConfig!["scheme"]! + "://" + nativeSchemeConfig!["path"]!
+            if url.hasPrefix(nativeScheme) {
+                return true
+            }
+        }
+        catch (let e) {
+            print(e.localizedDescription)
+        }
+
+        return false;
+    }
+
+    static func openUrl(_ urlString: String) {
+        let url = URL(string: urlString)!
         if #available(iOS 10, *) {
             UIApplication.shared.open(url, options: [:],
-                                      completionHandler: {
+                                        completionHandler: {
                                         (success) in
             })
         }
@@ -248,11 +271,10 @@
     }
 
     //TODO:: synchronized?
-    private func saveIntentContext(_ info: IntentInfo) {
+    private func addToIntentContextList(_ info: IntentInfo) {
         var intentInfo = intentContextList[info.intentId];
-        while (intentInfo != nil) {
-            info.intentId += 1;
-            intentInfo = intentContextList[info.intentId];
+        if (intentInfo != nil) {
+            return
         }
 
         intentContextList[info.intentId] = info;
@@ -319,6 +341,23 @@
         return list;
     }
 
+    func getInternalIntentFilter(_ info: IntentInfo) throws -> [IntentFilter] {
+        var filters = try getIntentFilter(info.action);
+        if (filters.isEmpty) {
+            if (info.actionUrl != nil) {
+                filters = try getIntentFilter(info.actionUrl!);
+                if (!filters.isEmpty) {
+                    info.registeredAction = info.actionUrl;
+                }
+            }
+        }
+        else {
+            info.registeredAction = info.action;
+        }
+
+        return filters;
+    }
+
     private func popupIntentChooser(_ info: IntentInfo, _ filters: [IntentFilter]) {
         // More than one possible handler, show a chooser and pass it the selectable apps info.
         var appInfos: [AppInfo] = []
@@ -376,19 +415,19 @@
         }
 
         if (info.toId == nil) {
-            let filters = try getIntentFilter(info.action);
+            let filters = try getInternalIntentFilter(info);
 
             // Throw an error in case no one can handle the action.
             // Special case for the "share" action that is always handled by the native OS too.
             if info.action != "share" && info.action != "openurl" {
                 if filters.isEmpty {
-                    if !ConfigManager.getShareInstance().isNativeBuild() {
+                    if (info.actionUrl == nil) {
                         // Not a native build - so 0 filter means no one can handle the action
                         throw AppError.error("Intent action '\(info.action)' isn't supported!")
                     }
                     else {
                         // We are a trinity native build - launch that action as native intent
-                        try sendIntentToNativeOS(info: info)
+                        try sendIntentToExternal(info: info)
                         return
                     }
                 }
@@ -428,7 +467,7 @@
             }
         }
         else if info.filter == nil {
-            let filters = try getIntentFilter(info.action)
+            let filters = try getInternalIntentFilter(info)
             for filter in filters {
                 if (info.toId!.starts(with: filter.packageId)) {
                     info.filter = filter
@@ -447,7 +486,7 @@
         let id =  getIdbyFilter(info.filter!);
         let viewController = appManager.getViewControllerById(id)
         if (viewController != nil && viewController!.basePlugin!.isIntentReady()) {
-            saveIntentContext(info);
+            addToIntentContextList(info);
             if (!appManager.isCurrentViewController(viewController!)) {
                 try appManager.start(info.filter!.packageId, info.filter!.startupMode, info.filter!.serviceName);
                 try appManager.sendLauncherMessageMinimize(info.fromId);
@@ -533,7 +572,7 @@
         info.params = json.toString() ?? ""
     }
 
-    func  parseIntentUri(_ _uri: URL, _ fromId: String) throws -> IntentInfo? {
+    func parseIntentUri(_ _uri: URL, _ fromId: String) throws -> IntentInfo? {
         var info: IntentInfo? = nil;
         var uri = _uri;
         var url = uri.absoluteString;
@@ -548,9 +587,7 @@
             let action = pathComponents[0];
             let params = uri.parametersFromQueryString;
 
-            let currentTime = Int64(Date().timeIntervalSince1970);
-
-            info = IntentInfo(action, nil, fromId, nil, currentTime, false)
+            info = IntentInfo(action, nil, fromId, nil, false)
             if (params != nil && params!.count > 0) {
                 getParamsByUri(params!, info!);
             }
@@ -575,20 +612,38 @@
         return schemeConfig!["scheme"]! + "://" + schemeConfig!["path"]!
     }
 
-    // Opposite of parseIntentUri().
-    // From intent info params to url params.
-    // Ex: info.params = "{a:1, b:{x:1}}" returns url?a=1&b={x:1}
-    private func createUriParamsFromIntentInfoParams(url: String, params: Dictionary<String, Any>) throws -> String {
-        var url = url
+    private func addParamLinkChar(_ url: String) -> String {
+        var url = url;
         if (url.contains("?")) {
             url = url + "&"
         }
         else {
             url = url + "?"
         }
+        return url;
+    }
+
+    // Opposite of parseIntentUri().
+    // From intent info params to url params.
+    // Ex: info.params = "{a:1, b:{x:1}}" returns url?a=1&b={x:1}
+    private func createUriParamsFromIntentInfoParams(_ info: IntentInfo) throws -> String {
+        // Convert intent info params into a serialized json string for the target url
+        var params = info.params!.toDict()!
+
+        // Append the current application DID to the intent to let the receiver guess who is requesting
+        // (but that will be checked on ID chain with the redirect url).
+        // For example, in order to send a "app id credential" that gives rights to the calling app to access a hive vault,
+        // We must make sure that the calling trinity native app is who it pretends to be, to not let it access the hive storage space
+        // of another app. For this, we don't blindly trust the sent appDid here, but the receiving trinity runtime will
+        // fetch this app did from chain, and will make sure that the redirect url registered in the app did public document
+        // matches with the redirect url used in this intent.
+        params["appDid"] = appManager.getAppInfo(info.fromId)!.did
+
+        var url = info.actionUrl!;
 
         var firstLevelKeys = params.keys.makeIterator()
         while let key = firstLevelKeys.next() {
+            url = addParamLinkChar(url);
             let value = params[key]
             let serializedValue: String
             if let v = (value as? Dictionary<String, Any>) {
@@ -597,13 +652,14 @@
             else {
                 serializedValue = "\(value ?? "")"
             }
-            url += key + "=" + serializedValue.encodingQuery() + "&"
+            url += key + "=" + serializedValue.encodingQuery()
         }
 
         // If there is no redirect url, we add one to be able to receive responses
         if !params.keys.contains("redirecturl") {
             // "intentresponse" is added For trinity native. NOTE: we should maybe move this out of this method
-            url = url + "&redirecturl="+(try getNativeAppScheme())+"/intentresponse" // Ex: https://diddemo.elastos.org/intentresponse
+            url = addParamLinkChar(url);
+            url = url + "redirecturl=" + (try getNativeAppScheme()) + "/intentresponse%3FintentId=\(info.intentId)"; // Ex: https://diddemo.elastos.org/intentresponse?intentId=xxx
         }
 
         print("INTENT DEBUG: " + url)
@@ -825,7 +881,7 @@
         }
     }
 
-    func sendIntentResponse(_ result: String, _ intentId: Int64, _ fromId: String) throws {
+    func sendIntentResponse(_ result: String, _ intentId: Int64) throws {
         let info = intentContextList[intentId]
         if (info == nil) {
             throw AppError.error("Intent with ID " + intentId.value + " doesn't exist!")
@@ -891,7 +947,7 @@
                         else {
                             urlString = getResultUrl(urlString!, intentResult.payloadAsString()) // Pass the raw data as a result= field
                         }
-                        IntentManager.openUrl(URL(string: urlString!)!)
+                        IntentManager.openUrl(urlString!)
                     } else if (info!.callbackurl != nil) {
                         if (intentResult.isAlreadyJWT()) {
                             try postCallback("jwt", jwt!, info!.callbackurl!)
@@ -1022,27 +1078,29 @@
         }
     }
 
-    private var tmpOnGoingNativeIntentInfo: IntentInfo? = nil
-
     // TODO - QUICK AND DIRTY ATTEMPT - FULL IMPROVEMENT NEEDED
-    public func onExternalIntentResponseReceived(uri: URL) {
-        print("RECEIVED: "+uri.absoluteString)
+    public func receiveExternalIntentResponse(uri: URL) {
+        let url = uri.absoluteString;
+        print("RECEIVED: " + url)
 
         var resultStr: String? = nil
-        if (uri.absoluteString.contains("result=")) {
+        if (url.contains("result=")) {
             // Result received as a raw string / raw json string
             resultStr = uri.parametersFromQueryString!["result"]
         }
         else {
             // Consider the received result as a JWT token
-            resultStr = "{jwt:\""+uri.lastPathComponent+"\"}";
+            resultStr = "{jwt:\"" + uri.lastPathComponent+"\"}";
         }
         print(resultStr ?? "error")
-        //let controller = appManager.getViewControllerById(tmpOnGoingNativeIntentInfo!.fromId)
 
         do {
-            try sendIntentResponse(resultStr!, tmpOnGoingNativeIntentInfo!.intentId, tmpOnGoingNativeIntentInfo!.fromId)
-            tmpOnGoingNativeIntentInfo = nil
+            var intentId: Int64 = -1;
+            if (url.contains("intentId=")) {
+                let id = uri.parametersFromQueryString!["intentId"]! as String
+                intentId = try Int64(value: id)
+            }
+            try sendIntentResponse(resultStr!, intentId);
         } catch (let e) {
             print(e.localizedDescription)
         }
@@ -1050,53 +1108,15 @@
 
     // Serializes a sendIntent(info) command info into a url such as https://domain/action/?stringifiedJsonResponseParams
     // And sends that url to the native OS.
-    func sendIntentToNativeOS(info: IntentInfo) throws {
-        // TMP - move to config.json mapping maybe (dongxiao).
-        // Backward compatibility: converts old style "credaccess"-like intent calls to full domain
-        // calls such as https://did.elastos.net/credaccess.
-        switch (info.action) {
-            case "credaccess", "appidcredissue", "credimport", "credissue", "didsign", "promptpublishdid",
-                 "registerapplicationprofile", "sethiveprovider":
-                info.action = "https://did.elastos.net/"+info.action
-                break
-            case "pay", "walletaccess", "crmembervote", "dposvotetransaction", "didtransaction", "esctransaction":
-                info.action = "https://wallet.elastos.net/"+info.action
-                break
-            case "setupvaultprompt":
-                info.action = "https://hive.elastos.net/"+info.action
-                break
-        default:
-            break
-        }
-        // END TMP
-
+    func sendIntentToExternal(info: IntentInfo) throws {
         if !isJSONType(info.params!) {
             throw "Intent parameters must be a JSON object"
         }
 
-        // Convert intent info params into a serialized json string for the target url
-        var params = info.params!.toDict()
+        addToIntentContextList(info)
+        let url = try createUriParamsFromIntentInfoParams(info) // info.action must be a full action url such as https://did.elastos.net/credaccess
 
-        // Append the current application DID to the intent to let the receiver guess who is requesting
-        // (but that will be checked on ID chain with the redirect url).
-        // For example, in order to send a "app id credential" that gives rights to the calling app to access a hive vault,
-        // We must make sure that the calling trinity native app is who it pretends to be, to not let it access the hive storage space
-        // of another app. For this, we don't blindly trust the sent appDid here, but the receiving trinity runtime will
-        // fetch this app did from chain, and will make sure that the redirect url registered in the app did public document
-        // matches with the redirect url used in this intent.
-        params!["appdid"] = appManager.getAppInfo(info.fromId)!.did
-
-        let url = try createUriParamsFromIntentInfoParams(url: info.action, params: params!) // info.action must be a full action url such as https://did.elastos.net/credaccess
-
-        do {
-            tmpOnGoingNativeIntentInfo = info // TODO - TMP DIRTY
-            saveIntentContext(info) // TODO - TMP DIRTY
-
-            UIApplication.shared.open(URL(string: url)!, options: [:], completionHandler: nil)
-        }
-        catch let error {
-            print("No native application able to open this intent")
-        }
+        IntentManager.openUrl(url);
     }
  }
 

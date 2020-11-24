@@ -91,8 +91,7 @@ public class DIDSessionManager {
             // Trinity native has no active DID session context, so we must send an intent to elastOS to realize this.
             let params = "{claims={}, &nonce=\""+nonce+"\", realm=\""+realm+"\"}"
             let fromId = appManager!.curController!.appInfo!.app_id
-            let intentId = Int64(Date().timeIntervalSince1970)
-            let info = IntentInfo("https://did.elastos.net/credaccess", params, fromId, nil, intentId, false) { todo1, todo2, todo3 in
+            let info = IntentInfo("https://did.elastos.net/credaccess", params, fromId, nil, false) { todo1, todo2, todo3 in
                 do {
                     // TODO let responseJWT = data.getString("responseJWT")
                     // TODO listener.onJWTCreated(responseJWT)
