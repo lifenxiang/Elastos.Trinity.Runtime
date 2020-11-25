@@ -745,11 +745,11 @@
                             }
                         }
                         else {
-                            onExternalIntentValid(false, "No redirectUrl found in the app DID document. Was the app registered on the DID chain?")
+                            onExternalIntentValid(false, "No redirectUrl found in the app DID document. Was the 'intent scheme url' configured and published on chain, using the developer tool dApp?")
                         }
                     }
                     else {
-                        onExternalIntentValid(false, "No #native credential found in the app DID document. Was the app registered on the DID chain?")
+                        onExternalIntentValid(false, "No #native credential found in the app DID document. Was the 'intent scheme url' configured and published on chain, using the developer tool dApp?")
                     }
                 }
                 else { // Not found

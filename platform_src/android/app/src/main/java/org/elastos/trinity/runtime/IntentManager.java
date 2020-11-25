@@ -648,12 +648,12 @@ public class IntentManager {
                         // DID document found. Look for the #native -> redirectUrl credential
                         VerifiableCredential nativeCredential = didDocument.getCredential("#native");
                         if (nativeCredential == null) {
-                            callback.onExternalIntentValid(false, "No #native credential found in the app DID document. Was the app registered on the DID chain?");
+                            callback.onExternalIntentValid(false, "No #native credential found in the app DID document. Was the 'intent scheme url' configured and published on chain, using the developer tool dApp?");
                         }
                         else {
                             String onChainRedirectUrl = nativeCredential.getSubject().getPropertyAsString("redirectUrl");
                             if (onChainRedirectUrl == null) {
-                                callback.onExternalIntentValid(false, "No redirectUrl found in the app DID document. Was the app registered on the DID chain?");
+                                callback.onExternalIntentValid(false, "No redirectUrl found in the app DID document. Was the 'intent scheme url' configured and published on chain, using the developer tool dApp?");
                             }
                             else {
                                 // We found a redirect url in the app DID document. Check that it matches the one in the intent
