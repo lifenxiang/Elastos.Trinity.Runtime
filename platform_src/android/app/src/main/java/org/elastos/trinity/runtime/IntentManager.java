@@ -750,6 +750,18 @@ public class IntentManager {
         return url + param + Uri.encode(result);
     }
 
+    private String getJWTRedirecturl(String url, String jwt) {
+        int index = url.indexOf("?");
+        if (index != -1) {
+            String params = url.substring(index);
+            url = url.substring(0, index);
+            return url + "/" + jwt + params;
+        }
+        else {
+            return url + "/" + jwt;
+        }
+    }
+
     /**
      * Helper class to deal with app intent result types that can be either JSON objects with raw data,
      * or JSON objects with "jwt" special field.
@@ -844,7 +856,7 @@ public class IntentManager {
                     // Response url can't be handled by trinity. So we either call an intent to open it, or HTTP POST data
                     if (info.redirecturl != null) {
                         if (intentResult.isAlreadyJWT())
-                            url = info.redirecturl + "/" + jwt;
+                            url = getJWTRedirecturl(info.redirecturl, jwt);
                         else
                             url = getResultUrl(url, intentResult.payloadAsString()); // Pass the raw data as a result= field
                         Utility.showWebPage(appManager.activity, url);
