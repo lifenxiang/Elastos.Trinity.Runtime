@@ -595,6 +595,8 @@ public class IntentManager {
 
     public void doIntentByUri(Uri uri) {
         try {
+            appManager.sendLauncherMessage(AppManager.MSG_TYPE_INTERNAL,
+                    "{\"action\":\"receivedExternalIntent\"}", "system");
             sendIntentByUri(uri, "system");
         } catch (Exception e) {
 //            try {

@@ -682,6 +682,8 @@
 
     func doIntentByUri(_ uri: URL) {
         do {
+            try appManager.sendLauncherMessage(AppManager.MSG_TYPE_INTERNAL,
+                                "{\"action\":\"receivedExternalIntent\"}", "system");
             try sendIntentByUri(uri, "system");
         }
         catch let error {
