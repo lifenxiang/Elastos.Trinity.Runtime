@@ -534,7 +534,7 @@ public class AppBasePlugin extends TrinityPlugin {
     }
 
     protected void sendIntentResponse(JSONArray args, CallbackContext callbackContext) throws Exception {
-        String action = args.getString(0);
+//        String action = args.getString(0);
         String result = args.getString(1);
         long intentId = args.getLong(2);
 

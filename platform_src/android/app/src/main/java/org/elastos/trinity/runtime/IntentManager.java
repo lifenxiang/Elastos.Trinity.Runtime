@@ -1054,9 +1054,6 @@ public class IntentManager {
     // Serializes a sendIntent(info) command info into a url such as https://domain/action/?stringifiedJsonResponseParams
     // And sends that url to the native OS.
     void sendIntentToExternal(IntentInfo info) throws Exception {
-        android.content.Intent sendIntent = new android.content.Intent();
-        sendIntent.setAction(Intent.ACTION_VIEW);
-
         if (!Utility.isJSONType(info.params)) {
             throw new Exception("Intent parameters must be a JSON object");
         }
@@ -1064,10 +1061,8 @@ public class IntentManager {
         addToIntentContextList(info);
         String url = createUriParamsFromIntentInfoParams(info);
 
-        sendIntent.setData(Uri.parse(url));
-
         try {
-            appManager.activity.startActivity(sendIntent);
+            Utility.showWebPage(appManager.activity, url);
         }
         catch (Exception e) {
             Log.d(LOG_TAG, "No native application able to open this intent");
