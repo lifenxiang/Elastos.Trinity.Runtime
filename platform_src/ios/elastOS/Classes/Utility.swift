@@ -203,8 +203,8 @@
      return false
  }
  
- private func showToastMessage(controller: UIViewController, msg: String) {
-     let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+ public func showToastMessage(controller: UIViewController, msg: String) {
+     let alert = UIAlertController(title: nil, message: msg, preferredStyle: .alert)
      alert.view.backgroundColor = UIColor.black
      // alert.view.alpha = 0.8
      alert.view.layer.cornerRadius = 15
@@ -214,7 +214,7 @@
         controller.present(alert, animated: true)
      }
 
-     DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + seconds) {
+    DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + .seconds(2)) {
         alert.dismiss(animated: true)
      }
  }
