@@ -193,7 +193,7 @@
     }
     return UIImage(data: data!)
  }
- 
+
  public func isJSONType(_ str: String) -> Bool {
     let _str = str.trimmingCharacters(in: .whitespacesAndNewlines)
      if (_str.hasPrefix("{") && _str.hasSuffix("}"))
@@ -201,6 +201,19 @@
          return true
      }
      return false
+ }
+
+ public func openUrl(_ urlString: String) {
+     let url = URL(string: urlString)!
+     if #available(iOS 10, *) {
+         UIApplication.shared.open(url, options: [:],
+                                     completionHandler: {
+                                     (success) in
+         })
+     }
+     else {
+         UIApplication.shared.openURL(url);
+     }
  }
 
  //----------------------------------------------------------------------
@@ -248,7 +261,7 @@
     func encodingQuery() -> String {
         return self.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
     }
-    
+
     /*
      * Considering that the current string is a string representation of a (invalid but common) JSON object such as:
      * {key:"value"}

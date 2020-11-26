@@ -222,19 +222,6 @@
         return false;
     }
 
-    static func openUrl(_ urlString: String) {
-        let url = URL(string: urlString)!
-        if #available(iOS 10, *) {
-            UIApplication.shared.open(url, options: [:],
-                                        completionHandler: {
-                                        (success) in
-            })
-        }
-        else {
-            UIApplication.shared.openURL(url);
-        }
-    }
-
     private func getIdbyFilter(_ filter:IntentFilter) -> String {
         return appManager.getIdbyStartupMode(filter.packageId, startupMode:filter.startupMode, serviceName:filter.serviceName);
     }
@@ -838,6 +825,18 @@
         return URL(string: url + param + result.encodingQuery())!.absoluteString;
     }
 
+    private func getJWTRedirecturl(_ url: String, _ jwt: String) -> String {
+        let index = url.indexOf("?");
+        if (index != -1) {
+            let params = url.subString(from: index);
+            let url = url.subString(to: index);
+            return url + "/" + jwt + params;
+        }
+        else {
+            return url + "/" + jwt;
+        }
+    }
+
     /**
      * Helper class to deal with app intent result types that can be either JSON objects with raw data,
      * or JSON objects with "jwt" special field.
@@ -942,12 +941,12 @@
                     // Response url can't be handled by trinity. So we either call an intent to open it, or HTTP POST data
                     if (info!.redirecturl != nil) {
                         if intentResult.isAlreadyJWT() {
-                            urlString = info!.redirecturl! + "/" + jwt!
+                            urlString = getJWTRedirecturl(info!.redirecturl!, jwt!)
                         }
                         else {
                             urlString = getResultUrl(urlString!, intentResult.payloadAsString()) // Pass the raw data as a result= field
                         }
-                        IntentManager.openUrl(urlString!)
+                        openUrl(urlString!)
                     } else if (info!.callbackurl != nil) {
                         if (intentResult.isAlreadyJWT()) {
                             try postCallback("jwt", jwt!, info!.callbackurl!)
@@ -1078,7 +1077,6 @@
         }
     }
 
-    // TODO - QUICK AND DIRTY ATTEMPT - FULL IMPROVEMENT NEEDED
     public func receiveExternalIntentResponse(uri: URL) {
         let url = uri.absoluteString;
         print("RECEIVED: " + url)
@@ -1116,8 +1114,6 @@
         addToIntentContextList(info)
         let url = try createUriParamsFromIntentInfoParams(info) // info.action must be a full action url such as https://did.elastos.net/credaccess
 
-        IntentManager.openUrl(url);
+        openUrl(url);
     }
  }
-
-

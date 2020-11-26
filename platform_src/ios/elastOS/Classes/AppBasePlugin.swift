@@ -92,7 +92,7 @@
             try IntentManager.getShareInstance().sendIntentByUri(url!, getModeId());
         }
         else if (shouldOpenExternalIntentUrl(urlString)) {
-            IntentManager.openUrl(urlString);
+            openUrl(urlString);
         }
         else {
             throw AppError.error("Can't access this url: " + urlString);
@@ -562,7 +562,7 @@
             }
         }
         else if (shouldOpenExternalIntentUrl(urlString)) {
-            IntentManager.openUrl(urlString);
+            openUrl(urlString);
             self.success(command, "ok");
         }
         else {
