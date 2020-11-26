@@ -396,6 +396,11 @@
     }
 
     func doIntent(_ info: IntentInfo) throws {
+        // Warn developers about the short intent format deprecation
+        if PreferenceManager.getShareInstance().getDeveloperMode() && !info.action.hasPrefix("http") {
+            showToastMessage(controller: self.appManager.mainViewController, msg: "\(info.action): Development warning - short intent actions are now deprecated. Please full domain actions such as https://did.elastos.net/credaccess from now on. More info on the documentation website.")
+        }
+
         // Trinity native: dismiss any target app. We use only the full intent domain. dapp package id makes not sense here
         if ConfigManager.getShareInstance().isNativeBuild() {
             info.toId = nil

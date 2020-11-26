@@ -202,6 +202,22 @@
      }
      return false
  }
+ 
+ private func showToastMessage(controller: UIViewController, msg: String) {
+     let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+     alert.view.backgroundColor = UIColor.black
+     // alert.view.alpha = 0.8
+     alert.view.layer.cornerRadius = 15
+
+     // Make sure we run on the UI thread
+     DispatchQueue.main.async {
+        controller.present(alert, animated: true)
+     }
+
+     DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + seconds) {
+        alert.dismiss(animated: true)
+     }
+ }
 
  public func openUrl(_ urlString: String) {
      let url = URL(string: urlString)!

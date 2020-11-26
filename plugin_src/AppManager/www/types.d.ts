@@ -532,7 +532,7 @@ declare namespace AppManagerPlugin {
         /**
          * Send a intent response by id.
          *
-         * @param action     The intent action.
+         * @deprecated @param action The intent action. Not used any more. Pass null.
          * @param result     The intent response result.
          * @param intentId   The intent id.
          * @param onSuccess  The function to call when success.

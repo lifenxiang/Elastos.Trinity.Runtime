@@ -9,6 +9,7 @@ import android.os.AsyncTask;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -292,6 +293,11 @@ public class IntentManager {
     }
 
     public void doIntent(IntentInfo info) throws Exception {
+        // Warn developers about the short intent format deprecation
+        if (PreferenceManager.getShareInstance().getDeveloperMode() && !info.action.startsWith("http")) {
+            Toast.makeText(context, info.action+": Development warning - short intent actions are now deprecated. Please full domain actions such as https://did.elastos.net/credaccess from now on. More info on the documentation website.", Toast.LENGTH_LONG).show();
+        }
+
         // Trinity native: dismiss any target app. We use only the full intent domain. dapp package id makes not sense here
         if (ConfigManager.getShareInstance().isNativeBuild())
             info.toId = null;
