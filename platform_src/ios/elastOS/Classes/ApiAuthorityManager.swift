@@ -220,6 +220,8 @@ class ApiAuthorityManager {
 //            setApiAuth(appId, plugin, api, nil); //for test
             let authority = getApiAuth(appId, plugin, api);
             if (authority == AppInfo.AUTHORITY_NOINIT || authority == AppInfo.AUTHORITY_ASK) {
+                NSLog("API \(api) is for now lacking authorization (authority: \(authority)")
+                
                 let result = CDVPluginResult(status: CDVCommandStatus_NO_RESULT);
                 result?.setKeepCallbackAs(true);
                 pluginObj.commandDelegate.send(result, callbackId: command.callbackId);
