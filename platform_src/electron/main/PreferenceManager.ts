@@ -84,7 +84,7 @@ export class PreferenceManager {
                 values[key] = "en";
             }
         });
-        
+
         return values;
     }
 
@@ -171,7 +171,7 @@ export class PreferenceManager {
 
     public async getNativeSystemVersion(): Promise<string> {
         //TODO: get app version from electron context
-        let versionName = "0.0.1"; 
+        let versionName = "0.0.1";
 
         let json = await this.dbAdapter.getPreference("version");
         let version = null;
@@ -195,11 +195,11 @@ export class PreferenceManager {
         return version;
     }
 
-    public getWalletNetworkType(): Promise<string> {
+    public getNetworkType(): Promise<string> {
         return this.getStringValue("chain.network.type", "MainNet");
     }
 
-    public getWalletNetworkConfig(): Promise<string> {
+    public getNetworkConfig(): Promise<string> {
         return this.getStringValue("chain.network.config", "");
     }
 

@@ -231,11 +231,11 @@ import Foundation
         return version;
     }
 
-    @objc func getWalletNetworkType() -> String {
+    @objc func getNetworkType() -> String {
         return getStringValue("chain.network.type", "MainNet");
      }
 
-    @objc func getWalletNetworkConfig() -> String {
+    @objc func getNetworkConfig() -> String {
         return getStringValue("chain.network.config", "");
      }
 

@@ -33,12 +33,12 @@
     return [[PreferenceManager getShareInstance] getStringValue:key :defaultValue];
 }
 
-+ (NSString *)getWalletNetworkType {
-    return [[PreferenceManager getShareInstance] getWalletNetworkType];
++ (NSString *)getNetworkType {
+    return [[PreferenceManager getShareInstance] getNetworkType];
 }
 
-+ (NSString *)getWalletNetworkConfig {
-    return [[PreferenceManager getShareInstance] getWalletNetworkConfig];
++ (NSString *)getNetworkConfig {
+    return [[PreferenceManager getShareInstance] getNetworkConfig];
 }
 
 @end

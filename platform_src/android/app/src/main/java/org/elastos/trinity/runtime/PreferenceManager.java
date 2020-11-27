@@ -228,11 +228,11 @@ public class PreferenceManager {
         return version;
     }
 
-    public String getWalletNetworkType()  {
+    public String getNetworkType()  {
         return getStringValue("chain.network.type", "MainNet");
     }
 
-    public String getWalletNetworkConfig()  {
+    public String getNetworkConfig()  {
         return getStringValue("chain.network.config", "");
     }
 
