@@ -397,7 +397,8 @@
 
     func doIntent(_ info: IntentInfo) throws {
         // Warn developers about the short intent format deprecation
-        if PreferenceManager.getShareInstance().getDeveloperMode() && !info.action.hasPrefix("http") {
+        if PreferenceManager.getShareInstance().getDeveloperMode() && !info.action.hasPrefix("http")
+            && info.action != "share" && info.action != "openurl" {
             showToastMessage(controller: self.appManager.mainViewController, msg: "\(info.action): Development warning - short intent actions are now deprecated. Please full domain actions such as https://did.elastos.net/credaccess from now on. More info on the documentation website.")
         }
 
