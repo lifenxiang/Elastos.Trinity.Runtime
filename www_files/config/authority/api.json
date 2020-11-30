@@ -210,45 +210,6 @@
         }
     },
     "DIDPlugin": {
-        "initDidStore": {
-            "danger_level": "low",
-            "title": {
-                "en": "Create a DID store",
-                "zh": "创建 DID 存储",
-                "fr": "Créer des identités"
-            },
-            "description": {
-                "en": "This capsule will be able to create a storage locally on your device, to save and manage identities that this capsule (and only this one) owns.",
-                "zh": "此胶囊将能够在设备上创建 DID 存储，以保存和管理此胶囊所拥有的身份信息（仅此胶囊拥有）。",
-                "fr": "Cette capsule pourra stocker et gérer de nouvelles identités sur votre appareil. Ces identités seront liées à cette capsule uniquement. La capsule ne pourra pas modifier vos autres identités."
-            }
-        },
-        "deleteDidStore": {
-            "danger_level": "medium",
-            "title": {
-                "en": "Delete a DID store",
-                "zh": "删除 DID 存储",
-                "fr": "Supprimer des identités"
-            },
-            "description": {
-                "en": "This capsule will be able to delete an identity store (including all identities inside) that this capsule has created it self. It will not be able to delete stores created by other capsules.",
-                "zh": "此胶囊将能够删除自身创建的身份存储（包括内部的所有身份信息）。但无法删除其它胶囊创建的 DID 存储。",
-                "fr": "Cette capsule pourra supprimer les identités qu'elle a créées (et uniquement les siennes)."
-            }
-        },
-        "synchronize": {
-            "danger_level": "medium",
-            "title": {
-                "en": "Synchronize identities",
-                "zh": "同步身份信息",
-                "fr": "Synchronize les identités"
-            },
-            "description": {
-                "en": "This capsule will be able to synchronize local versions of your identities with what is published on the identity chain, which could result in loss of local identity data.",
-                "zh": "此胶囊将能够使您本地的身份信息与链上发布的内容同步，可能会导致本地的身份数据丢失。",
-                "fr": "Cette capsule pourra synchronize les identités locales qu'elle a créées (et uniquement les siennes), avec la chaine de bloc publique."
-            }
-        },
         "exportMnemonic": {
             "danger_level": "high",
             "title": {
