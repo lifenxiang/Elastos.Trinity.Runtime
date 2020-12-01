@@ -24,7 +24,7 @@ import Foundation
 import ElastosDIDSDK
 
 class RuntimeDIDAdapter: DIDAdapter {
-    func createIdTransaction(_ payload: String, _ memo: String?) {
+    func createIdTransaction(_ payload: String, _ memo: String?) throws {
         print("RuntimeDIDAdapter createIdTransaction");
     }
 }

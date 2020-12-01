@@ -126,7 +126,7 @@ public class DIDSessionManager {
 
                     do {
                         class AuthDIDAdapter : DIDAdapter {
-                            func createIdTransaction(_ payload: String, _ memo: String?) {
+                            func createIdTransaction(_ payload: String, _ memo: String?) throws {
                             }
                         }
 
