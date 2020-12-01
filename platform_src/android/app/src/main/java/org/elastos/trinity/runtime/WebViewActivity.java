@@ -83,9 +83,14 @@ public class WebViewActivity extends FragmentActivity {
         }
     }
 
+    // Temporarily set to true to avoid recursively starting the MainActivity many times.
+    private static Boolean bringingExistingActivityToTop = false;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        System.out.println("savedInstanceState"+savedInstanceState);
 
         /*
          * When trinity is launched from an external url or native intent, android creates the MainActivity a
@@ -97,9 +102,12 @@ public class WebViewActivity extends FragmentActivity {
          *
          * We also need to set our primary MainActivity visible.
          */
-        if (AppManager.getShareInstance() != null) {
-            Log.d(TAG, "A MainActivity already exist. Closing this one and moving the existing activity on top of the visibility stack.");
+        if (AppManager.getShareInstance() != null && !bringingExistingActivityToTop) {
+            Log.d(TAG, "A MainActivity already exists. Closing this one and moving the existing activity on top of the visibility stack.");
+
             finish();
+
+            bringingExistingActivityToTop = true;
 
             Intent i = new Intent(this, MainActivity.class);
             i.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
@@ -112,26 +120,13 @@ public class WebViewActivity extends FragmentActivity {
         appManager = new AppManager(this);
 
         getIntentUri();
+    }
 
-//        gestureDetector = new GestureDetector(this, onGestureListener);
+    @Override
+    protected void onResume() {
+        super.onResume();
 
-//        Bundle b = getIntent().getExtras();
-//        String url = b.getString("url");
-//        Boolean shouldShowLoading = false;
-//        try{
-//            shouldShowLoading = b.getBoolean("shouldShowLoading");
-//        }
-//        catch(Exception e){
-//
-//        }
-//        if(shouldShowLoading){
-//            showLoading();
-//        }
-
-        // If keepRunning
-//        this.keepRunning = preferences.getBoolean("KeepRunning", true);
-
-//        loadUrl((url.matches("^(.*://|javascript:)[\\s\\S]*$") ? "" : "file:///android_asset/www/" + (isPluginCryptFileActive() ? "+++/" : "")) + url);
+        bringingExistingActivityToTop = false;
     }
 
     @Override
