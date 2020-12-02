@@ -577,7 +577,7 @@
         pathComponents.remove(at: 0);
 
         if (pathComponents.count > 0) {
-            let action = pathComponents[0];
+            let action = uri.scheme! + "://" + uri.host! + "/" +  pathComponents[0];
             let params = uri.parametersFromQueryString;
 
             info = IntentInfo(action, nil, fromId, nil, false)

@@ -489,7 +489,7 @@ public class IntentManager {
         if (list.size() > 0) {
             String[] paths = new String[list.size()];
             list.toArray(paths);
-            String action = paths[0];
+            String action = uri.getScheme() + "://" + uri.getHost() + "/" + paths[0];
             Set<String> set = uri.getQueryParameterNames();
 
             info = new IntentInfo(action, null, fromId, null, false, null);
