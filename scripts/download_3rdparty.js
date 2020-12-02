@@ -3,13 +3,13 @@
 // CONFIGURE HERE
 const files_to_download  = [
   {
-    "url": "https://github.com/elastos/Elastos.Trinity.Plugins.Wallet/releases/download/spvsdk-V0.5.7.2/libspvsdk.zip",
+    "url": "https://github.com/elastos/Elastos.Trinity.Plugins.Wallet/releases/download/spvsdk-V0.5.7.3/libspvsdk.zip",
     "filename": "libspvsdk.zip",
     "sourceDirs": [
       "libspvsdk"
     ],
     "targetDir": "../Plugins/Wallet/src/ios",
-    "md5": "16864d8b8832ec4bbf43d327a825a665"
+    "md5": "ab2b63af61475c6a25f33d70e2a1d8e6"
   },{
 //     "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/release-v1.3/ElastosDIDSDK-framework-for-trinity.zip",
 //     "filename": "ElastosDIDSDK-framework-for-trinity.zip",
