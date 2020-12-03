@@ -202,7 +202,7 @@ public func isJSONType(_ str: String) -> Bool {
     }
     return false
  }
- 
+
  public func showToastMessage(controller: UIViewController, msg: String) {
      let alert = UIAlertController(title: nil, message: msg, preferredStyle: .alert)
      alert.view.backgroundColor = UIColor.black
@@ -231,7 +231,7 @@ public func isJSONType(_ str: String) -> Bool {
          UIApplication.shared.openURL(url);
      }
  }
- 
+
  public func anyToString(_ value: Any) -> String {
     if (value is String) {
         return (value as! String);
@@ -257,6 +257,18 @@ public func isJSONType(_ str: String) -> Bool {
     else {
         return "\(value)"
     }
+}
+
+public func anyToJsonFieldString(_ value: Any) -> String {
+    if (JSONSerialization.isValidJSONObject(value)) {
+        do {
+            let data = try JSONSerialization.data(withJSONObject: value, options: [])
+            return String(data:data, encoding: .utf8)!
+        } catch (let e) {
+            print(e.localizedDescription)
+        }
+    }
+    return anyToString(value)
 }
 
  //----------------------------------------------------------------------

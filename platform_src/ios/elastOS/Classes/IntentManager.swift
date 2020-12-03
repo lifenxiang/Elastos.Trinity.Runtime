@@ -555,7 +555,11 @@
 
                 if isJSONType(value) {
                     let jsonData:Data = value.data(using: .utf8)!
-                    json[key] = try? JSONSerialization.jsonObject(with: jsonData, options: .mutableContainers)
+                    do {
+                        json[key] = try JSONSerialization.jsonObject(with: jsonData, options: .mutableContainers)
+                    } catch (let e) {
+                        print(e.localizedDescription)
+                    }
                 }
                 else {
                     json[key] = value
@@ -635,7 +639,7 @@
 
         var url = info.actionUrl!;
         for (key , value) in params {
-            let serializedValue = anyToString(value)
+            let serializedValue = anyToJsonFieldString(value)
             url = addParamLinkChar(url);
             url += key + "=" + serializedValue.encodingQuery()
         }
