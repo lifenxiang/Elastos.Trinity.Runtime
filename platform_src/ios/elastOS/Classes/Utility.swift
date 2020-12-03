@@ -232,15 +232,15 @@ public func isJSONType(_ str: String) -> Bool {
      }
  }
  
- public func anyToString(_ value: Any) -> String? {
+ public func anyToString(_ value: Any) -> String {
     if (value is String) {
         return (value as! String);
     }
     else if (value is Bool) {
         return (value as! Bool).toString();
     }
-    else if (value is [String]) {
-        return (value as! [String]).description
+    else if (value is [Any]) {
+        return (value as! [Any]).description
     }
     else if (value is [String: Any]) {
         return (value as! [String: Any]).toString()!;
@@ -254,8 +254,9 @@ public func isJSONType(_ str: String) -> Bool {
     else if (value is NSNull) {
         return "null"
     }
-
-    return nil;
+    else {
+        return "\(value)"
+    }
 }
 
  //----------------------------------------------------------------------

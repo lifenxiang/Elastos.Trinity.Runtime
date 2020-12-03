@@ -636,10 +636,8 @@
         var url = info.actionUrl!;
         for (key , value) in params {
             let serializedValue = anyToString(value)
-            if (serializedValue != nil) {
-                url = addParamLinkChar(url);
-                url += key + "=" + serializedValue!.encodingQuery()
-            }
+            url = addParamLinkChar(url);
+            url += key + "=" + serializedValue.encodingQuery()
         }
 
         // If there is no redirect url, we add one to be able to receive responses

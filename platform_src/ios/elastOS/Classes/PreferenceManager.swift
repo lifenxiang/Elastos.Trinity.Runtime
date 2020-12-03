@@ -200,7 +200,7 @@ import Foundation
     func getVersion() -> String {
         var version = "";
         if (defaultPreferences["version"] != nil) {
-            version = anyToString(defaultPreferences["version"] as Any)!;
+            version = anyToString(defaultPreferences["version"] as Any);
         }
         return version;
     }
