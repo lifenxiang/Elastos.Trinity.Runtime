@@ -68,32 +68,6 @@ import Foundation
         }
     }
 
-    private func anyToString(_ value: Any) -> String? {
-        if (value is String) {
-            return (value as! String);
-        }
-        else if (value is Bool) {
-            return (value as! Bool).toString();
-        }
-        else if (value is [String]) {
-            return (value as! [String]).description
-        }
-        else if (value is [String: Any]) {
-            return (value as! [String: Any]).toString()!;
-        }
-        else if (value is Int) {
-            return String(value as! Int)
-        }
-        else if (value is Double) {
-            return String(value as! Double)
-        }
-        else if (value is NSNull) {
-            return "null"
-        }
-
-        return nil;
-    }
-
     private func getDefaultValue(_ key: String) -> Any? {
         let value = defaultPreferences[key];
         return value;

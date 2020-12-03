@@ -554,7 +554,8 @@
                 }
 
                 if isJSONType(value) {
-                    json[key] = value.toDict()
+                    let jsonData:Data = value.data(using: .utf8)!
+                    json[key] = try? JSONSerialization.jsonObject(with: jsonData, options: .mutableContainers)
                 }
                 else {
                     json[key] = value
@@ -633,19 +634,12 @@
         params["appDid"] = appManager.getAppInfo(info.fromId)!.did
 
         var url = info.actionUrl!;
-
-        var firstLevelKeys = params.keys.makeIterator()
-        while let key = firstLevelKeys.next() {
-            url = addParamLinkChar(url);
-            let value = params[key]
-            let serializedValue: String
-            if let v = (value as? Dictionary<String, Any>) {
-                serializedValue = v.toString()!
+        for (key , value) in params {
+            let serializedValue = anyToString(value)
+            if (serializedValue != nil) {
+                url = addParamLinkChar(url);
+                url += key + "=" + serializedValue!.encodingQuery()
             }
-            else {
-                serializedValue = "\(value ?? "")"
-            }
-            url += key + "=" + serializedValue.encodingQuery()
         }
 
         // If there is no redirect url, we add one to be able to receive responses

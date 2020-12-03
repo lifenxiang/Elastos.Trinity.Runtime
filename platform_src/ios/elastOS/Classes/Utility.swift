@@ -194,13 +194,13 @@
     return UIImage(data: data!)
  }
 
- public func isJSONType(_ str: String) -> Bool {
+public func isJSONType(_ str: String) -> Bool {
     let _str = str.trimmingCharacters(in: .whitespacesAndNewlines)
-     if (_str.hasPrefix("{") && _str.hasSuffix("}"))
-             || (_str.hasPrefix("[") && _str.hasSuffix("]")) {
-         return true
-     }
-     return false
+    if (_str.hasPrefix("{") && _str.hasSuffix("}"))
+            || (_str.hasPrefix("[") && _str.hasSuffix("]")) {
+        return true
+    }
+    return false
  }
  
  public func showToastMessage(controller: UIViewController, msg: String) {
@@ -231,6 +231,32 @@
          UIApplication.shared.openURL(url);
      }
  }
+ 
+ public func anyToString(_ value: Any) -> String? {
+    if (value is String) {
+        return (value as! String);
+    }
+    else if (value is Bool) {
+        return (value as! Bool).toString();
+    }
+    else if (value is [String]) {
+        return (value as! [String]).description
+    }
+    else if (value is [String: Any]) {
+        return (value as! [String: Any]).toString()!;
+    }
+    else if (value is Int) {
+        return String(value as! Int)
+    }
+    else if (value is Double) {
+        return String(value as! Double)
+    }
+    else if (value is NSNull) {
+        return "null"
+    }
+
+    return nil;
+}
 
  //----------------------------------------------------------------------
  // Extend String to be able to throw simple String Errors
