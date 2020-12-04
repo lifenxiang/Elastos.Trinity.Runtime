@@ -103,5 +103,20 @@ class MainViewController: UIViewController {
         }
         return true
     }
+    
+    override func present(_ viewControllerToPresent: UIViewController, animated flag: Bool, completion: (() -> Void)? = nil) {
+        if self.presentedViewController != nil {
+            print("NOTE: Presenting child controller with delay because another controller is already being presented")
+            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
+                // Wait a bit then present - DIRTY BUT GOOD ENOUGH FOR NOW
+                // Retry to SELF, not to parent, to be able to re-delay if needed
+                self.present(viewControllerToPresent, animated: flag, completion: completion)
+            }
+        }
+        else {
+            // Present right now
+            super.present(viewControllerToPresent, animated: flag, completion: completion)
+        }
+    }
 }
 
