@@ -60,11 +60,13 @@ public class IntentManager {
     private static IntentManager intentManager;
 
     final static String[] trinitySchemes = {
-            "elastos://",
-            "https://scheme.elastos.org/",
-            "https://did.elastos.net/",
-            "https://wallet.elastos.net/",
-            "https://hive.elastos.net/",
+        "elastos://",
+        "https://scheme.elastos.org/",
+        "https://launcher.elastos.net/",
+        "https://did.elastos.net/",
+        "https://wallet.elastos.net/",
+        "https://hive.elastos.net/",
+        "https://contact.elastos.net"
     };
 
     public class ShareIntentParams {

@@ -327,7 +327,7 @@ public class ContactNotifier {
                         if succeeded {
                             // Try to find more info about this contact
                             self.notifier.resolveOnChainDIDInfo(did: did) { name, avatarHash in
-                                let targetUrl = "https://scheme.elastos.org/viewfriend?did=\(did)"
+                                let targetUrl = "https://contact.elastos.net/viewfriend?did=\(did)"
 
                                 var notificationSent = false
                                 Log.d(ContactNotifier.LOG_TAG, "Adding contact locally")
@@ -363,7 +363,7 @@ public class ContactNotifier {
 
                         // Try to find more info about this contact
                         self.notifier.resolveOnChainDIDInfo(did: did) { name, avatarHash in
-                            let targetUrl = "https://scheme.elastos.org/viewfriendinvitation?did=(did)&invitationid=\(String(describing: invitationID))"
+                            let targetUrl = "https://contact.elastos.net/viewfriendinvitation?did=(did)&invitationid=\(String(describing: invitationID))"
 
                             if name != nil {
                                 self.notifier.sendLocalNotification(relatedRemoteDID: did,key: "contactreq-\(did)", title: "notification_contact_request".localized, message: "\(name!)" + "notification_name_want_add".localized, url: targetUrl, appId: ContactNotifier.FRIENDS_APP_PACKAGE_ID)
@@ -467,7 +467,7 @@ public class ContactNotifier {
             dbAdapter!.removeSentInvitationByAddress(didSessionDID: didSessionDID, carrierAddress: invitation.carrierAddress)
 
             resolveOnChainDIDInfo(did: invitation.did) { name, avatarHash in
-                let targetUrl = "https://scheme.elastos.org/viewfrien?did=\(invitation.did)"
+                let targetUrl = "https://contact.elastos.net/viewfrien?did=\(invitation.did)"
 
                 if name != nil {
                     // Save name to database for later use

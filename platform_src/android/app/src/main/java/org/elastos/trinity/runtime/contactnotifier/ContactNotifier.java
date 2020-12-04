@@ -332,7 +332,7 @@ public class ContactNotifier {
                             if (succeeded) {
                                 // Try to find more info about this contact
                                 resolveOnChainDIDInfo(did, (name, avatarHash)->{
-                                    String targetUrl = "https://scheme.elastos.org/viewfriend?did="+did;
+                                    String targetUrl = "https://contact.elastos.net/viewfriend?did="+did;
 
                                     boolean notificationSent = false;
                                     Log.d(LOG_TAG, "Adding contact locally");
@@ -366,7 +366,7 @@ public class ContactNotifier {
 
                     // Try to find more info about this contact
                     resolveOnChainDIDInfo(did, (name, avatarHash)-> {
-                        String targetUrl = "https://scheme.elastos.org/viewfriendinvitation?did="+did+"&invitationid="+invitationID;
+                        String targetUrl = "https://contact.elastos.net/viewfriendinvitation?did="+did+"&invitationid="+invitationID;
 
                         if (name != null)
                             sendLocalNotification(did,"contactreq-"+did, context.getString(R.string.notification_contact_request), name + context.getString(R.string.notification_name_want_add), targetUrl, FRIENDS_APP_PACKAGE_ID);
@@ -477,7 +477,7 @@ public class ContactNotifier {
         dbAdapter.removeSentInvitationByAddress(didSessionDID, invitation.carrierAddress);
 
         resolveOnChainDIDInfo(invitation.did, (name, avatarHash)-> {
-            String targetUrl = "https://scheme.elastos.org/viewfriend?did="+invitation.did;
+            String targetUrl = "https://contact.elastos.net/viewfriend?did="+invitation.did;
 
             if (name != null) {
                 // Save name to database for later use

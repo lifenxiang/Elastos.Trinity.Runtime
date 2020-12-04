@@ -98,17 +98,21 @@
         <config-file parent="com.apple.developer.associated-domains" target="*-Debug.plist">
             <array>
                 <string>applinks:scheme.elastos.org</string>
+                <string>applinks:launcher.elastos.net</string>
                 <string>applinks:did.elastos.net</string>
 		        <string>applinks:wallet.elastos.net</string>
                 <string>applinks:hive.elastos.net</string>
+                <string>applinks:contact.elastos.net</string>
             </array>
         </config-file>
         <config-file parent="com.apple.developer.associated-domains" target="*-Release.plist">
             <array>
                 <string>applinks:scheme.elastos.org</string>
+                <string>applinks:launcher.elastos.net</string>
                 <string>applinks:did.elastos.net</string>
 		        <string>applinks:wallet.elastos.net</string>
                 <string>applinks:hive.elastos.net</string>
+                <string>applinks:contact.elastos.net</string>
             </array>
         </config-file>
 

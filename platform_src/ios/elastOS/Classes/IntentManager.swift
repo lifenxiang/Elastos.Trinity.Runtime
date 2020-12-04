@@ -168,9 +168,11 @@
     static let trinitySchemes: [String] = [
         "elastos://",
         "https://scheme.elastos.org/",
+        "https://launcher.elastos.net/",
         "https://did.elastos.net/",
         "https://wallet.elastos.net/",
-        "https://hive.elastos.net/"
+        "https://hive.elastos.net/",
+        "https://contact.elastos.net"
     ];
 
     init() {

@@ -27,7 +27,12 @@ export class IntentManager {
 
     private static trinitySchemes: string[] = [
         "elastos://",
-        "https://scheme.elastos.org/"
+        "https://scheme.elastos.org/",
+        "https://launcher.elastos.net/",
+        "https://did.elastos.net/",
+        "https://wallet.elastos.net/",
+        "https://hive.elastos.net/",
+        "https://contact.elastos.net"
     ];
 
     constructor() {
