@@ -12,6 +12,9 @@
             "getAppList",
             "getAppInfo"
         ],
+        "DIDSessionManagerPlugin": [
+            "getSignedInIdentity"
+        ],
         "ContactNotifierPlugin": [
             "notifierRemoveContact",
             "notifierSendInvitation",
