@@ -127,17 +127,28 @@ public class IntentManager {
     }
 
     private String getIdbyFilter(IntentFilter filter) {
-        return appManager.getIdbyStartupMode(filter.packageId, filter.startupMode, filter.serviceName);
+        if (filter == null) {
+            return null;
+        }
+        else {
+            return appManager.getIdbyStartupMode(filter.packageId, filter.startupMode, filter.serviceName);
+        }
     }
 
     private void addIntentToList(IntentInfo info) {
-        String id = getIdbyFilter(info.filter);
-        ArrayList<IntentInfo> infos = intentList.get(id);
-        if (infos == null) {
-            infos = new ArrayList<IntentInfo>();
-            intentList.put(id, infos);
+        if (info.filter == null) {
+            return;
         }
-        infos.add(info);
+
+        String id = getIdbyFilter(info.filter);
+        if (id != null) {
+            ArrayList<IntentInfo> infos = intentList.get(id);
+            if (infos == null) {
+                infos = new ArrayList<IntentInfo>();
+                intentList.put(id, infos);
+            }
+            infos.add(info);
+        }
     }
 
     public void setIntentReady(String id)  throws Exception {
@@ -209,8 +220,8 @@ public class IntentManager {
             else if (info.fromId.equals((id))) {
                 iterator.remove();
 //                intentContextList.remove(entry.getKey());
-                if (info.filter.startupMode.equals(AppManager.STARTUP_INTENT)
-                        || info.filter.startupMode.equals(AppManager.STARTUP_SILENCE)) {
+                if ((info.filter != null) && (info.filter.startupMode.equals(AppManager.STARTUP_INTENT)
+                        || info.filter.startupMode.equals(AppManager.STARTUP_SILENCE))) {
                     appManager.close(info.filter.packageId, info.filter.startupMode, info.filter.serviceName);
                 }
             }
@@ -376,6 +387,10 @@ public class IntentManager {
 
     public void sendIntent(IntentInfo info) throws Exception {
         String id =  getIdbyFilter(info.filter);
+        if (id == null) {
+            throw new Exception("sendIntent error: can't get id by intent filter");
+        }
+
         WebViewFragment fragment = appManager.getFragmentById(id);
         if ((fragment != null) && (fragment.basePlugin.isIntentReady())) {
             addToIntentContextList(info);

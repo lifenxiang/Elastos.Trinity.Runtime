@@ -224,16 +224,27 @@
         return false;
     }
 
-    private func getIdbyFilter(_ filter:IntentFilter) -> String {
-        return appManager.getIdbyStartupMode(filter.packageId, startupMode:filter.startupMode, serviceName:filter.serviceName);
+    private func getIdbyFilter(_ filter: IntentFilter?) -> String? {
+        if (filter == nil) {
+            return nil
+        }
+        else {
+            return appManager.getIdbyStartupMode(filter!.packageId, startupMode:filter!.startupMode, serviceName:filter!.serviceName);
+        }
     }
 
     private func addIntentToList(_ info: IntentInfo) {
-        let id = getIdbyFilter(info.filter!)
-        if (intentList[id] == nil) {
-            intentList[id] = [IntentInfo]();
+        if (info.filter == nil) {
+            return
         }
-        intentList[id]!.append(info);
+
+        let id = getIdbyFilter(info.filter!)
+        if (id != nil) {
+            if (intentList[id!] == nil) {
+                intentList[id!] = [IntentInfo]();
+            }
+            intentList[id!]!.append(info);
+        }
     }
 
     func setIntentReady(_ id: String) throws {
@@ -284,7 +295,7 @@
 
     public func removeAppFromIntentList(_ id: String) throws {
         for (intentId, info) in intentContextList {
-            let modeId = getIdbyFilter(info.filter!);
+            let modeId = getIdbyFilter(info.filter);
             if (modeId != nil && modeId == id && !info.isDoingResponse) {
                 if (info.type == IntentInfo.API) {
                     let viewController: TrinityViewController? = appManager.getViewControllerById(info.fromId);
@@ -300,8 +311,8 @@
             }
             else if (info.fromId == id) {
                 intentContextList[intentId] = nil;
-                if (info.filter!.startupMode == AppManager.STARTUP_INTENT
-                    || info.filter!.startupMode == AppManager.STARTUP_SILENCE) {
+                if ((info.filter != nil) && (info.filter!.startupMode == AppManager.STARTUP_INTENT
+                    || info.filter!.startupMode == AppManager.STARTUP_SILENCE)) {
                     try appManager.close(info.filter!.packageId, info.filter!.startupMode, info.filter!.serviceName);
                 }
             }
@@ -478,8 +489,12 @@
     }
 
     private func sendIntent(_ info: IntentInfo) throws {
-        let id =  getIdbyFilter(info.filter!);
-        let viewController = appManager.getViewControllerById(id)
+        let id =  getIdbyFilter(info.filter);
+        if (id == nil) {
+            throw AppError.error("sendIntent error: can't get id by intent filter")
+        }
+
+        let viewController = appManager.getViewControllerById(id!)
         if (viewController != nil && viewController!.basePlugin!.isIntentReady()) {
             addToIntentContextList(info);
             if (!appManager.isCurrentViewController(viewController!)) {
