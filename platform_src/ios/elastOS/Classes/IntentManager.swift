@@ -172,7 +172,8 @@
         "https://did.elastos.net/",
         "https://wallet.elastos.net/",
         "https://hive.elastos.net/",
-        "https://contact.elastos.net"
+        "https://contact.elastos.net",
+        "https://scanner.elastos.net"
     ];
 
     init() {

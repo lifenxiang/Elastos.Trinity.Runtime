@@ -60,6 +60,12 @@
 +                <category android:name="android.intent.category.BROWSABLE" />
 +                <data android:host="contact.elastos.net" android:scheme="https" android:pathPattern="/.*"/>
 +            </intent-filter>
++            <intent-filter>
++                <action android:name="android.intent.action.VIEW" />
++                <category android:name="android.intent.category.DEFAULT" />
++                <category android:name="android.intent.category.BROWSABLE" />
++                <data android:host="scanner.elastos.net" android:scheme="https" android:pathPattern="/.*"/>
++            </intent-filter>
          </activity>
 +    <uses-library android:name="org.apache.http.legacy" android:required="false"/>
      </application>
