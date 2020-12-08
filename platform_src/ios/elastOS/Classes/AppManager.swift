@@ -1023,7 +1023,7 @@ class AppManager: NSObject {
     func closeViewController(_ info: AppInfo, _ viewController: TrinityViewController) throws {
         let id = viewController.modeId;
         let mode = viewController.startupMode;
-
+        
         try IntentManager.getShareInstance().removeAppFromIntentList(info.app_id);
 
         if (viewController == curController) {
@@ -1041,8 +1041,11 @@ class AppManager: NSObject {
                 "{\"action\":\"closed\"}", viewController.modeId);
 
         viewControllers[id] = nil;
-        viewController.remove();
-
+    
+        viewController.willMove(toParent: nil)
+        viewController.view.removeFromSuperview()
+        viewController.removeFromParent()
+        
         if (mode == AppManager.STARTUP_SERVICE) {
             removeServiceRunningList(id);
         }
@@ -1192,7 +1195,7 @@ class AppManager: NSObject {
 
         let viewController = getViewControllerById(toId);
         if (viewController != nil) {
-            viewController!.basePlugin!.onReceive(msg, type, fromId);
+            viewController!.basePlugin?.onReceive(msg, type, fromId);
         }
         else {
             throw AppError.error(toId + " isn't running!");

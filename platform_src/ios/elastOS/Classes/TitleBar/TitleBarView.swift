@@ -151,7 +151,7 @@ typealias OnIconClickedListener = ((TitleBarIcon)->Void)
 
 class TitleBarView: UIView {
     // Model
-    var viewController: TrinityViewController?
+    weak var viewController: TrinityViewController?
     var appId: String?
     var isLauncher = false
     var activityCounters = Dictionary<TitleBarActivityType, Int>()
