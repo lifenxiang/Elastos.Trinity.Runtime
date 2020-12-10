@@ -44,13 +44,10 @@ public class IntentInfo {
 
     private String getActionUrl(String action) {
         if (action.indexOf("://") == -1) {
-            JSONObject maps = ConfigManager.getShareInstance().getJSONObjectValue("intent.action.map");
-            if ((maps != null) && maps.has(action)) {
-                try {
-                    return maps.getString(action);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+            try {
+                return IntentManager.getActionMap(action);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
             return null;
         }

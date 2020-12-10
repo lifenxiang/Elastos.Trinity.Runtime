@@ -74,11 +74,7 @@
 
     private func getActionUrl(_ action: String) -> String? {
         if (action.indexOf("://") == -1) {
-            let maps = ConfigManager.getShareInstance().getDictionaryValue("intent.action.map");
-            if ((maps != nil) && maps![action] != nil) {
-                return maps![action]! as String;
-            }
-            return nil;
+            return IntentManager.getActionMap(action);
         }
         else {
             return action;
@@ -192,6 +188,14 @@
             IntentManager.intentManager = IntentManager();
         }
         return IntentManager.intentManager!;
+    }
+    
+    static func getActionMap(_ action: String) -> String? {
+        let maps = ConfigManager.getShareInstance().getDictionaryValue("intent.action.map");
+        if ((maps != nil) && maps![action] != nil) {
+            return maps![action]! as String;
+        }
+        return nil;
     }
 
     static func checkTrinityScheme(_ url: String) -> Bool {
@@ -592,6 +596,11 @@
         var info: IntentInfo? = nil;
         var uri = _uri;
         var url = uri.absoluteString;
+        
+        if (!url.contains("://")) {
+            throw AppError.error("The url: '\(url)' is error!");
+        }
+        
         if (url.hasPrefix("elastos://") && !url.hasPrefix("elastos:///")) {
             url = "elastos:///" + (url as NSString).substring(from: 10);
             uri = URL(string: url)!;
@@ -600,10 +609,20 @@
         pathComponents.remove(at: 0);
 
         if (pathComponents.count > 0) {
-            let action = uri.scheme! + "://" + uri.host! + "/" +  pathComponents[0];
+            let host = uri.host
+            var action: String? = nil;
+            if (host == nil || host!.isEmpty) {
+                action = IntentManager.getActionMap(pathComponents[0]);
+                if (action == nil) {
+                    throw AppError.error("The action: '\(pathComponents[0])' is invalid!");
+                }
+            }
+            else {
+                action = uri.scheme! + "://" + uri.host! + "/" +  pathComponents[0];
+            }
             let params = uri.parametersFromQueryString;
 
-            info = IntentInfo(action, nil, fromId, nil, false)
+            info = IntentInfo(action!, nil, fromId, nil, false)
             if (params != nil && params!.count > 0) {
                 getParamsByUri(params!, info!);
             }

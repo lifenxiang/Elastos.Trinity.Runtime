@@ -98,6 +98,14 @@ public class IntentManager {
         return IntentManager.intentManager;
     }
 
+    public static String getActionMap(String action) throws Exception {
+        JSONObject maps = ConfigManager.getShareInstance().getJSONObjectValue("intent.action.map");
+        if ((maps != null) && maps.has(action)) {
+            return maps.getString(action);
+        }
+        return null;
+    }
+
     public static boolean checkTrinityScheme(String url) {
         for (int i = 0; i < trinitySchemes.length; i++) {
             if (url.startsWith(trinitySchemes[i])) {
@@ -499,6 +507,11 @@ public class IntentManager {
     public IntentInfo parseIntentUri(Uri uri, String fromId) throws Exception {
         IntentInfo info = null;
         String url = uri.toString();
+
+        if (!url.contains("://")) {
+            throw new Exception("The url: '" + url + "' is error!");
+        }
+
         if (url.startsWith("elastos://") && !url.startsWith("elastos:///")) {
             url = "elastos:///" + url.substring(10);
             uri = Uri.parse(url);
@@ -507,7 +520,17 @@ public class IntentManager {
         if (list.size() > 0) {
             String[] paths = new String[list.size()];
             list.toArray(paths);
-            String action = uri.getScheme() + "://" + uri.getHost() + "/" + paths[0];
+            String host = uri.getHost();
+            String action = null;
+            if (host == null || host.isEmpty()) {
+                action = IntentManager.getActionMap(paths[0]);
+                if (action == null) {
+                    throw new Exception("The action: '" + paths[0] + "' is invalid!");
+                }
+            }
+            else {
+                action = uri.getScheme() + "://" + uri.getHost() + "/" + paths[0];
+            }
             Set<String> set = uri.getQueryParameterNames();
 
             info = new IntentInfo(action, null, fromId, null, false, null);
