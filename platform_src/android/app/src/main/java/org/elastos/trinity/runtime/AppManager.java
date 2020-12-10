@@ -1210,11 +1210,13 @@ public class AppManager {
             InstallInfo info = installUriList.get(i);
             sendInstallMsg(info.uri);
         }
+        installUriList.clear();
 
         for (int i = 0; i < intentUriList.size(); i++) {
             Uri uri = intentUriList.get(i);
             IntentManager.getShareInstance().doIntentByUri(uri);
         }
+        intentUriList.clear();
     }
 
     public void sendPackageIdMessage(String packageId, int type, String msg, String fromId) throws Exception {

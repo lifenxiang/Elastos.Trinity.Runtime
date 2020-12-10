@@ -1133,10 +1133,12 @@ class AppManager: NSObject {
         for uri in installUriList {
             self.sendInstallMsg(uri);
         }
+        installUriList.removeAll();
 
         for uri in intentUriList {
             IntentManager.getShareInstance().doIntentByUri(uri);
         }
+        intentUriList.removeAll();
     }
 
     func sendPackageIdMessage(_ packageId: String, _ type: Int, _ msg: String, _ fromId: String) throws {
