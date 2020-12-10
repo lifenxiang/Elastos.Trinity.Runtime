@@ -186,7 +186,7 @@ class ApiAuthorityManager {
         let popup = PopupDialog(viewController: apiAuthorityController, buttonAlignment: .horizontal, transitionStyle: .fadeIn, preferredWidth: 340, tapGestureDismissal: false, panGestureDismissal: false, hideStatusBar: false, completion: nil)
 
         popup.view.backgroundColor = UIColor.clear // For rounded corners
-        self.appManager.mainViewController.present(popup, animated: false, completion: nil)
+        self.appManager.mainViewController.presentSafely(popup, animated: false, presented: nil, completion: nil)
 
         // Permission was granted by the user
         apiAuthorityController.setOnClickedListener {auth in

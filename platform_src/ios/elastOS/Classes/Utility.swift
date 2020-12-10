@@ -157,7 +157,7 @@
     let sureAlertAction = UIAlertAction(title: "ok".localized, style: UIAlertAction.Style.default, handler: doOKHandler)
     alertController.addAction(sureAlertAction)
 
-    DispatchQueue.main.async { AppManager.getShareInstance().mainViewController.present(alertController, animated: true, completion: nil)
+    DispatchQueue.main.async { AppManager.getShareInstance().mainViewController.presentSafely(alertController, animated: true, presented: {}, completion: nil)
     }
  }
 
@@ -203,7 +203,7 @@ public func isJSONType(_ str: String) -> Bool {
     return false
  }
 
- public func showToastMessage(controller: UIViewController, msg: String) {
+ public func showToastMessage(controller: MainViewController, msg: String) {
      let alert = UIAlertController(title: nil, message: msg, preferredStyle: .alert)
      alert.view.backgroundColor = UIColor.black
      // alert.view.alpha = 0.8
@@ -211,11 +211,11 @@ public func isJSONType(_ str: String) -> Bool {
 
      // Make sure we run on the UI thread
      DispatchQueue.main.async {
-        controller.present(alert, animated: true)
-     }
-
-    DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + .seconds(2)) {
-        alert.dismiss(animated: true)
+        controller.presentSafely(alert, animated: true, presented: {
+            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + .seconds(2)) {
+               alert.dismiss(animated: true)
+            }
+        })
      }
  }
 

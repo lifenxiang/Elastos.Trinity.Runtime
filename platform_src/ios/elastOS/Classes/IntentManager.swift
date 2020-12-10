@@ -410,7 +410,7 @@
         }
 
         // Present the dialog
-        self.appManager.mainViewController.present(popup, animated: true, completion: nil)
+        self.appManager.mainViewController.presentSafely(popup, animated: true, presented: {}, completion: nil)
     }
 
     func doIntent(_ info: IntentInfo) throws {
@@ -1082,7 +1082,7 @@
             }
 
             let vc = UIActivityViewController(activityItems: activityItems, applicationActivities: [])
-            self.appManager.curController!.present(vc, animated: true, completion: nil)
+            self.appManager.mainViewController.presentSafely(vc, animated: true, presented:nil, completion: nil)
         }
     }
 

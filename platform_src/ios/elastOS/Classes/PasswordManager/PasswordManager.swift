@@ -307,7 +307,7 @@ public class PasswordManager {
             let popup = PopupDialog(viewController: creatorController, buttonAlignment: .horizontal, transitionStyle: .fadeIn, preferredWidth: 340, tapGestureDismissal: false, panGestureDismissal: false, hideStatusBar: false, completion: nil)
 
             popup.view.backgroundColor = UIColor.clear // For rounded corners
-            self.appManager!.mainViewController.present(popup, animated: false, completion: nil)
+            self.appManager!.mainViewController.presentSafely(popup, animated: false, presented: {}, completion: nil)
 
             creatorController.setOnPasswordCreatedListener { password in
                 popup.dismiss()
@@ -483,7 +483,7 @@ public class PasswordManager {
             activeMasterPasswordPrompt = PopupDialog(viewController: prompterController, buttonAlignment: .horizontal, transitionStyle: .fadeIn, preferredWidth: 340, tapGestureDismissal: false, panGestureDismissal: false, hideStatusBar: false, completion: nil)
 
             activeMasterPasswordPrompt!.view.backgroundColor = UIColor.clear // For rounded corners
-            self.appManager!.mainViewController.present(activeMasterPasswordPrompt!, animated: false, completion: nil)
+            self.appManager!.mainViewController.presentSafely(activeMasterPasswordPrompt!, animated: false, presented: {}, completion: nil)
 
             prompterController.setOnPasswordTypedListener { password, shouldSavePasswordToBiometric in
                 self.activeMasterPasswordPrompt!.dismiss()
@@ -765,7 +765,7 @@ public class PasswordManager {
             let popup = PopupDialog(viewController: creatorController, buttonAlignment: .horizontal, transitionStyle: .fadeIn, preferredWidth: 340, tapGestureDismissal: false, panGestureDismissal: false, hideStatusBar: false, completion: nil)
 
             popup.view.backgroundColor = UIColor.clear // For rounded corners
-            self.appManager!.mainViewController.present(popup, animated: false, completion: nil)
+            self.appManager!.mainViewController.presentSafely(popup, animated: false, presented: {}, completion: nil)
 
             creatorController.setOnPasswordCreatedListener { password in
                 popup.dismiss()

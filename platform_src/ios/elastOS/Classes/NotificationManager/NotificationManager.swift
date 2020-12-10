@@ -101,11 +101,11 @@ public class NotificationManager {
 
         // Make sure we run on the UI thread
         DispatchQueue.main.async {
-            self.mainViewController.present(alert, animated: true)
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + seconds) {
-            alert.dismiss(animated: true)
+            self.mainViewController.presentSafely(alert, animated: true, presented: {
+                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + seconds) {
+                    alert.dismiss(animated: true)
+                }
+            })
         }
     }
 }

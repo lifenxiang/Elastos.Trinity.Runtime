@@ -45,13 +45,13 @@ import Foundation
  }
 
 @objc(MainViewController)
-class MainViewController: UIViewController {
+public class MainViewController: UIViewController {
     var appManager: AppManager? = nil
     var passwordManager: PasswordManager? = nil
     var didSessionManager: DIDSessionManager? = nil
     var notificationManager: NotificationManager? = nil
 
-    override var preferredStatusBarStyle: UIStatusBarStyle {
+    public override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
     }
 
@@ -68,7 +68,7 @@ class MainViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override func viewDidLoad() {
+    public override func viewDidLoad() {
         super.viewDidLoad()
     }
 
@@ -104,19 +104,27 @@ class MainViewController: UIViewController {
         return true
     }
     
-    override func present(_ viewControllerToPresent: UIViewController, animated flag: Bool, completion: (() -> Void)? = nil) {
+    /**
+     * Ensures that 2 controllers are not presented at the same time. All presentations should be done by this method, not directly by present()
+     */
+    func presentSafely(_ viewControllerToPresent: UIViewController, animated flag: Bool, presented: (() -> Void)? = nil, completion: (() -> Void)? = nil) {
         if self.presentedViewController != nil {
             print("NOTE: Presenting child controller with delay because another controller is already being presented")
             DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
                 // Wait a bit then present - DIRTY BUT GOOD ENOUGH FOR NOW
                 // Retry to SELF, not to parent, to be able to re-delay if needed
-                self.present(viewControllerToPresent, animated: flag, completion: completion)
+                self.presentSafely(viewControllerToPresent, animated: flag, presented: presented, completion: completion)
             }
         }
         else {
             // Present right now
             super.present(viewControllerToPresent, animated: flag, completion: completion)
+            presented?()
         }
+    }
+        
+    public override func present(_ viewControllerToPresent: UIViewController, animated flag: Bool, completion: (() -> Void)? = nil) {
+        print("ERROR: Please do not call present() directly. Call presentSafely()")
     }
 }
 

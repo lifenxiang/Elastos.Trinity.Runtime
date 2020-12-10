@@ -823,7 +823,7 @@
         alertController.addAction(sureAlertAction)
 
         DispatchQueue.main.async {
-            AppManager.getShareInstance().mainViewController.present(alertController, animated: true, completion: nil)
+            AppManager.getShareInstance().mainViewController.presentSafely(alertController, animated: true, presented: nil, completion: nil)
         }
     }
 
