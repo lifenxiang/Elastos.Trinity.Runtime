@@ -47,7 +47,7 @@
         "registerapplicationprofile": "https://did.elastos.net/registerapplicationprofile",
         "sethiveprovider": "https://did.elastos.net/sethiveprovider",
 
-        "pay": "https://wallet.elastos.net/",
+        "pay": "https://wallet.elastos.net/pay",
         "walletaccess": "https://wallet.elastos.net/walletaccess",
         "crmembervote": "https://wallet.elastos.net/crmembervote",
         "dposvotetransaction": "https://wallet.elastos.net/dposvotetransaction",
