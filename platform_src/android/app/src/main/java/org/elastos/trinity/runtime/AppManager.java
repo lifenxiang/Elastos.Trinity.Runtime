@@ -545,7 +545,7 @@ public class AppManager {
                 getLauncherInfo();
             }
 
-            installBuiltInApp("www/", "launcher", 1);
+            installBuiltInApp("www/", AppManager.LAUNCHER, 1);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -761,7 +761,7 @@ public class AppManager {
         }
 
         if (isLauncher(id)) {
-            id = getLauncherInfo().app_id;
+            id = getLauncherPacketId();
         }
 
         return checkPath(pathInfo.dataPath + id + "/");
@@ -782,7 +782,7 @@ public class AppManager {
         }
 
         if (isLauncher(id)) {
-            id = getLauncherInfo().app_id;
+            id = getLauncherPacketId();
         }
         return checkPath(pathInfo.tempPath + id + "/");
     }
@@ -858,7 +858,7 @@ public class AppManager {
     }
 
     public void wipeAppData(String packageId) throws Exception {
-        AppInfo info = appInfos.get(packageId);
+        AppInfo info = getAppInfo(packageId);
         if (info != null) {
             shareInstaller.wipeAppData(info);
         }
@@ -1134,8 +1134,12 @@ public class AppManager {
         sendRefreshList("closed", info, id, mode, false);
     }
 
+    public String getLauncherPacketId() {
+        return getLauncherInfo().app_id;
+    }
+
     public void loadLauncher() throws Exception {
-        start(LAUNCHER, STARTUP_APP, null);
+        start(getLauncherPacketId(), STARTUP_APP, null);
     }
 
     public void checkInProtectList(String uri) throws Exception {

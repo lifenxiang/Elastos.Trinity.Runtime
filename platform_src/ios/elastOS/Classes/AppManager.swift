@@ -590,7 +590,7 @@ class AppManager: NSObject {
     func getDataPath(_ id: String, _ pathInfo: AppPathInfo) -> String {
         var appId = id;
         if (isLauncher(appId)) {
-            appId = getLauncherInfo()!.app_id;
+            appId = getLauncherPacketId();
         }
 
         return checkPath(pathInfo.dataPath + appId + "/");
@@ -607,7 +607,7 @@ class AppManager: NSObject {
     func getTempPath(_ id: String, _ pathInfo: AppPathInfo) -> String {
         var appId = id;
         if (isLauncher(appId)) {
-            appId = getLauncherInfo()!.app_id;
+            appId = getLauncherPacketId();
         }
 
         return checkPath(pathInfo.tempPath + appId + "/");
@@ -703,7 +703,7 @@ class AppManager: NSObject {
                 getLauncherInfo();
             }
 
-            try installBuiltInApp("www/", "launcher", true);
+            try installBuiltInApp("www/", AppManager.LAUNCHER, true);
         } catch let error {
             print("saveLauncher error: \(error)");
         }
@@ -801,7 +801,7 @@ class AppManager: NSObject {
     }
 
     func wipeAppData(_ packageId: String) throws {
-        let info = appInfos[packageId];
+        let info = getAppInfo(packageId);
         if (info != nil) {
             try shareInstaller.wipeAppData(info!);
         }
@@ -1023,7 +1023,7 @@ class AppManager: NSObject {
     func closeViewController(_ info: AppInfo, _ viewController: TrinityViewController) throws {
         let id = viewController.modeId;
         let mode = viewController.startupMode;
-        
+
         try IntentManager.getShareInstance().removeAppFromIntentList(info.app_id);
 
         if (viewController == curController) {
@@ -1041,11 +1041,11 @@ class AppManager: NSObject {
                 "{\"action\":\"closed\"}", viewController.modeId);
 
         viewControllers[id] = nil;
-    
+
         viewController.willMove(toParent: nil)
         viewController.view.removeFromSuperview()
         viewController.removeFromParent()
-        
+
         if (mode == AppManager.STARTUP_SERVICE) {
             removeServiceRunningList(id);
         }
@@ -1058,11 +1058,15 @@ class AppManager: NSObject {
         sendRefreshList("closed", info, id, mode);
     }
 
-    func loadLauncher() throws {
-        try start(AppManager.LAUNCHER, AppManager.STARTUP_APP, nil);
+    func getLauncherPacketId() -> String {
+        return getLauncherInfo()!.app_id;
     }
 
-   func checkInProtectList(_ uri: String) throws {
+    func loadLauncher() throws {
+        try start(getLauncherPacketId(), AppManager.STARTUP_APP, nil);
+    }
+
+    func checkInProtectList(_ uri: String) throws {
         let protectList = ConfigManager.getShareInstance().getStringArrayValue("dapp.protectList", [String]());
         let info = try shareInstaller.getInfoFromUrl(uri);
         if (info != nil && info!.app_id != "" ) {
@@ -1183,7 +1187,7 @@ class AppManager: NSObject {
         }
 
         do {
-            try sendMessage("launcher", AppManager.MSG_TYPE_IN_REFRESH, msg, "system");
+            try sendMessage(AppManager.LAUNCHER, AppManager.MSG_TYPE_IN_REFRESH, msg, "system");
         }
         catch {
             print("Send message: " + msg + " error!");

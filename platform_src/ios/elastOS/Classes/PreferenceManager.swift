@@ -173,7 +173,7 @@ import Foundation
     func setCurrentLocale(_ code: String) throws {
         let dict = ["action": "currentLocaleChanged", "data": code] as [String : Any];
         try setPreference("locale.language", code);
-        AppManager.getShareInstance().broadcastMessage(AppManager.MSG_TYPE_IN_REFRESH, dict.toString()!, "launcher");
+        AppManager.getShareInstance().broadcastMessage(AppManager.MSG_TYPE_IN_REFRESH, dict.toString()!, AppManager.LAUNCHER);
     }
 
     func getNativeSystemVersion() throws -> String {
