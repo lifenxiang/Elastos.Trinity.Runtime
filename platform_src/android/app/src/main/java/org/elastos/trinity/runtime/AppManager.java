@@ -866,7 +866,7 @@ public class AppManager {
 
     public WebViewFragment getFragmentById(String modeId) {
         if (isLauncher(modeId)) {
-            modeId = LAUNCHER;
+            modeId = getLauncherPacketId();
         }
 
         FragmentManager manager = activity.getSupportFragmentManager();

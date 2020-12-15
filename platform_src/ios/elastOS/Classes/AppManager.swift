@@ -838,7 +838,7 @@ class AppManager: NSObject {
         var id = appId;
 
         if (isLauncher(id)) {
-            id = AppManager.LAUNCHER;
+            id = getLauncherPacketId();
         }
         return viewControllers[id];
     }
