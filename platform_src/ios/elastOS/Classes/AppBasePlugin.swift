@@ -47,7 +47,7 @@
     }
 
     func sendMessage(_ toId: String, _ type: Int, _ msg: String) throws {
-            try AppManager.getShareInstance().sendMessage(toId, type, msg, self.appId!);
+        try AppManager.getShareInstance().sendMessage(toId, type, msg, self.appId!);
     }
 
     func setMessageListener(_ listener: @escaping ((Int, String, String)->(Void))) {
@@ -139,35 +139,35 @@
     func success(_ command: CDVInvokedUrlCommand) {
         let result = CDVPluginResult(status: CDVCommandStatus_OK)
 
-        self.commandDelegate.send(result, callbackId: command.callbackId)
+        self.commandDelegate?.send(result, callbackId: command.callbackId)
     }
 
     func success(_ command: CDVInvokedUrlCommand, _ retAsString: String) {
         let result = CDVPluginResult(status: CDVCommandStatus_OK,
                                      messageAs: retAsString);
 
-        self.commandDelegate.send(result, callbackId: command.callbackId)
+        self.commandDelegate?.send(result, callbackId: command.callbackId)
     }
 
     func success(_ command: CDVInvokedUrlCommand, retAsDict: [String : Any]) {
         let result = CDVPluginResult(status: CDVCommandStatus_OK,
                                      messageAs: retAsDict);
 
-        self.commandDelegate.send(result, callbackId: command.callbackId)
+        self.commandDelegate?.send(result, callbackId: command.callbackId)
     }
 
     func success(_ command: CDVInvokedUrlCommand, retAsArray: [String]) {
         let result = CDVPluginResult(status: CDVCommandStatus_OK,
                                      messageAs: retAsArray);
 
-        self.commandDelegate.send(result, callbackId: command.callbackId)
+        self.commandDelegate?.send(result, callbackId: command.callbackId)
     }
 
     func error(_ command: CDVInvokedUrlCommand, _ retAsString: String) {
         let result = CDVPluginResult(status: CDVCommandStatus_ERROR,
                                      messageAs: retAsString);
 
-        self.commandDelegate.send(result, callbackId: command.callbackId)
+        self.commandDelegate?.send(result, callbackId: command.callbackId)
     }
 
     func sendCallback(_ command: CDVInvokedUrlCommand, _ status: CDVCommandStatus, _ keepCallback:Bool, _ retAsString: String?) {
@@ -180,7 +180,7 @@
         }
         result?.setKeepCallbackAs(keepCallback);
 
-        self.commandDelegate.send(result, callbackId: command.callbackId)
+        self.commandDelegate?.send(result, callbackId: command.callbackId)
     }
 
     @objc func getVersion(_ command: CDVInvokedUrlCommand) {
@@ -489,7 +489,7 @@
         // Don't return any result now
         let result = CDVPluginResult(status: CDVCommandStatus_NO_RESULT);
         result?.setKeepCallbackAs(true);
-        self.commandDelegate.send(result, callbackId: command.callbackId)
+        self.commandDelegate?.send(result, callbackId: command.callbackId)
 
         if (AppManager.getShareInstance().isLauncher(self.appId)) {
             AppManager.getShareInstance().setLauncherReady();
@@ -539,7 +539,7 @@
             try IntentManager.getShareInstance().doIntent(info);
             let result = CDVPluginResult(status: CDVCommandStatus_NO_RESULT);
             result?.setKeepCallbackAs(true);
-            self.commandDelegate.send(result, callbackId: command.callbackId)
+            self.commandDelegate?.send(result, callbackId: command.callbackId)
         } catch AppError.error(let err) {
             self.error(command, err);
         } catch let error {
@@ -603,7 +603,7 @@
         // Don't return any result now
         let result = CDVPluginResult(status: CDVCommandStatus_NO_RESULT);
         result?.setKeepCallbackAs(true);
-        self.commandDelegate.send(result, callbackId: command.callbackId)
+        self.commandDelegate?.send(result, callbackId: command.callbackId)
         try? IntentManager.getShareInstance().setIntentReady(getModeId());
     }
 
@@ -652,7 +652,7 @@
 
             let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: ret as [String : Any]);
             result?.setKeepCallbackAs(false);
-            self.commandDelegate.send(result, callbackId: info.callbackId)
+            self.commandDelegate?.send(result, callbackId: info.callbackId)
         }
         else if (info.callback != nil) {
             info.callback!(info.action, info.params, info.fromId);
