@@ -54,6 +54,8 @@
         "didtransaction": "https://wallet.elastos.net/didtransaction",
         "esctransaction": "https://wallet.elastos.net/esctransaction",
 
+        "scanqrcode": "https://scanner.elastos.net/scanqrcode",
+
         "setupvaultprompt": "https://hive.elastos.net/setupvaultprompt"
     }
 }
