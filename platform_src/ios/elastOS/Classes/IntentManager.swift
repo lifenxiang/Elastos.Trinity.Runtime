@@ -728,15 +728,15 @@
     typealias OnExternalIntentValidCallback = (_ isValid: Bool, _ errorMessage: String?)->Void
 
     private func checkExternalIntentValidity(info: IntentInfo, onExternalIntentValid: @escaping OnExternalIntentValidCallback) throws {
-        // If the intent contains an appDid param and a redirectUrl, then we must check that they match.
-        // This means that the app did document from the ID chain must contain a reference to the expected redirectUrl.
+        // If the intent contains an appDid param and a redirectUrl (or callbackurl), then we must check that they match.
+        // This means that the app did document from the ID chain must contain a reference to the expected redirectUrl/callbackUrl.
         // This way, we make sure that an application is not trying to act on behalf of another one by replacing his DID.
         // Ex: access to hive vault.
-        if info.redirecturl != nil {
+        if info.redirecturl != nil || info.callbackurl != nil {
             do {
                 let params = info.params!.toDict()!
                 if params.keys.contains("appdid") {
-                    // So we need to resolve this DID from chain and make sure that it matches the target redirect url
+                    // So we need to resolve this DID from chain and make sure that it matches the target redirect/callback url
                     try checkExternalIntentValidityForAppDID(info: info, appDid: params["appdid"]! as! String, onExternalIntentValid: onExternalIntentValid)
                 } else {
                     onExternalIntentValid(true, nil)

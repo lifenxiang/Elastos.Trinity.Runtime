@@ -652,15 +652,15 @@ public class IntentManager {
     private void checkExternalIntentValidity(IntentInfo info, OnExternalIntentValidityListener callback) throws Exception {
         Log.d(LOG_TAG, "Checking external intent validity");
 
-        // If the intent contains an appDid param and a redirectUrl, then we must check that they match.
-        // This means that the app did document from the ID chain must contain a reference to the expected redirectUrl.
+        // If the intent contains an appDid param and a redirectUrl (or callbackurl), then we must check that they match.
+        // This means that the app did document from the ID chain must contain a reference to the expected redirectUrl/callbackUrl.
         // This way, we make sure that an application is not trying to act on behalf of another one by replacing his DID.
         // Ex: access to hive vault.
-        if (info.redirecturl != null) {
+        if (info.redirecturl != null || info.callbackurl != null) {
             try {
                 JSONObject params = new JSONObject(info.params);
                 if (params.has("appdid")) {
-                    // So we need to resolve this DID from chain and make sure that it matches the target redirect url
+                    // So we need to resolve this DID from chain and make sure that it matches the target redirect/callback url
                     checkExternalIntentValidityForAppDID(info, params.getString("appdid"), callback);
                 } else {
                     callback.onExternalIntentValid(true, null);
