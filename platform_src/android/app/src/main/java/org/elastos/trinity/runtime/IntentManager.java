@@ -422,11 +422,9 @@ public class IntentManager {
         // TODO: extract the JWT issuer field from the JWT, resolve its DID from the DID sidechain, and
         // verify the JWT using the public key. JWT will have to be signed by the app developer's DID's private key.
         String[] splitToken = jwt.split("\\.");
-        String unsignedToken = splitToken[0] + "." + splitToken[1] + ".";
 
-        /*DefaultJwtParser parser = new DefaultJwtParser();
-        Jwt<?, ?> parsedJwt = parser.parse(unsignedToken);
-        Claims claims = (Claims) parsedJwt.getBody();*/
+        if (splitToken.length == 0)
+            throw new Exception("Invalid JWT Token in parseJWT(): it contains only a header but no payload or signature");
 
         String jwtPayload = splitToken[1];
         byte[] b64PayloadBytes = Base64.decode(jwtPayload, Base64.URL_SAFE);
