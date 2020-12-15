@@ -757,27 +757,49 @@
         try DIDPlugin.initializeDIDBackend()
 
         DispatchQueue.init(label: "CheckExtIntentValidity").async {
-            var didDocument: DIDDocument? = nil
             do {
                 if let didDocument = try DID(appDid).resolve(true) {
-                    // DID document found. Look for the #native -> redirectUrl credential
+                    // DID document found. Look for the #native credential
                     if let nativeCredential = try didDocument.credential(ofId: "#native") {
-                        if let onChainRedirectUrl = nativeCredential.subject.getPropertyAsString(ofName:"redirectUrl") {
-                            // We found a redirect url in the app DID document. Check that it matches the one in the intent
-                            if (info.redirecturl!.hasPrefix(onChainRedirectUrl)) {
-                                // Everything ok.
-                                onExternalIntentValid(true, nil)
+                        // Check redirect url, if any
+                        if (info.redirecturl != nil && info.redirecturl != "") {
+                            if let onChainRedirectUrl = nativeCredential.subject.getPropertyAsString(ofName:"redirectUrl") {
+                                // We found a redirect url in the app DID document. Check that it matches the one in the intent
+                                if (info.redirecturl!.hasPrefix(onChainRedirectUrl)) {
+                                    // Everything ok.
+                                    onExternalIntentValid(true, nil)
+                                }
+                                else {
+                                    onExternalIntentValid(false, "The registered redirect url in the App DID document ("+onChainRedirectUrl+") doesn't match with the received intent redirect url")
+                                }
                             }
                             else {
-                                onExternalIntentValid(false, "The registered redirect url in the App DID document ("+onChainRedirectUrl+") doesn't match with the received intent redirect url")
+                                onExternalIntentValid(false, "No redirectUrl found in the app DID document. Was the 'redirect url' configured and published on chain, using the developer tool dApp?")
+                            }
+                        }
+                        // Check callback url, if any
+                        else if (info.callbackurl != nil && info.callbackurl != "") {
+                            if let onChainCallbackUrl = nativeCredential.subject.getPropertyAsString(ofName:"callbackUrl") {
+                                // We found a callback url in the app DID document. Check that it matches the one in the intent
+                                if (info.callbackurl!.hasPrefix(onChainCallbackUrl)) {
+                                    // Everything ok.
+                                    onExternalIntentValid(true, nil)
+                                }
+                                else {
+                                    onExternalIntentValid(false, "The registered callback url in the App DID document ("+onChainCallbackUrl+") doesn't match with the received intent callback url")
+                                }
+                            }
+                            else {
+                                onExternalIntentValid(false, "No callbackUrl found in the app DID document. Was the 'callback url' configured and published on chain, using the developer tool dApp?")
                             }
                         }
                         else {
-                            onExternalIntentValid(false, "No redirectUrl found in the app DID document. Was the 'intent scheme url' configured and published on chain, using the developer tool dApp?")
+                            // Everything ok. No callback url or redirect url, so we don't need to check anything.
+                            onExternalIntentValid(true, nil)
                         }
                     }
                     else {
-                        onExternalIntentValid(false, "No #native credential found in the app DID document. Was the 'intent scheme url' configured and published on chain, using the developer tool dApp?")
+                        onExternalIntentValid(false, "No #native credential found in the app DID document. Was the 'redirect/callback url' configured and published on chain, using the developer tool dApp?")
                     }
                 }
                 else { // Not found
