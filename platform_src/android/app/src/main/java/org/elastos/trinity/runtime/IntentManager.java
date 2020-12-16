@@ -314,6 +314,27 @@ public class IntentManager {
         actionChooserFragment.show(appManager.activity.getFragmentManager(), "dialog");
     }
 
+    public void sendReceivedIntentMessageToLauncher(String action, String toId, String fromId, String err) {
+        String msg = "{\"action\":\"receivedIntent\"";
+        if (toId != null) {
+            msg += ", \"toId\":\"" + toId + "\"";
+        }
+        if (action != null) {
+            msg += ", \"intentAction\":\"" + action + "\"";
+        }
+        if (err != null) {
+            msg += ", \"error\":\"" + err + "\"";
+        }
+        msg += "}";
+
+        try {
+            appManager.sendLauncherMessage(AppManager.MSG_TYPE_INTERNAL, msg, fromId);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public void doIntent(IntentInfo info) throws Exception {
         // Warn developers about the short intent format deprecation
         if (PreferenceManager.getShareInstance().getDeveloperMode() && !info.action.startsWith("http") &&
@@ -334,9 +355,9 @@ public class IntentManager {
             // Special case for some specific actions that is always handled by the native OS too.
             if (!info.action.equals("share") && !info.action.equals("openurl")) {
                 if (filters.length == 0) {
-                    if (info.actionUrl == null) {
+                    if ((info.actionUrl == null) || info.fromId.equals("system")) {
                         // Not a native build - so 0 filter means no one can handle the action
-                        throw new Exception("Intent action " + info.action + " isn't supported!");
+                        throw new Exception("No one can handle this action.");
                     }
                     else {
                         // We are a trinity native build - launch that action as native intent
@@ -399,6 +420,8 @@ public class IntentManager {
         if (id == null) {
             throw new Exception("sendIntent error: can't get id by intent filter");
         }
+
+        sendReceivedIntentMessageToLauncher(info.action, info.toId, info.fromId, null);
 
         WebViewFragment fragment = appManager.getFragmentById(id);
         if ((fragment != null) && (fragment.basePlugin.isIntentReady())) {
@@ -615,6 +638,7 @@ public class IntentManager {
                         doIntent(info);
                     } catch (Exception e) {
                         e.printStackTrace();
+                        sendReceivedIntentMessageToLauncher(info.action, info.toId, info.fromId, e.getLocalizedMessage());
                     }
                 }
                 else {
@@ -630,8 +654,6 @@ public class IntentManager {
 
     public void doIntentByUri(Uri uri) {
         try {
-            appManager.sendLauncherMessage(AppManager.MSG_TYPE_INTERNAL,
-                    "{\"action\":\"receivedExternalIntent\"}", "system");
             sendIntentByUri(uri, "system");
         } catch (Exception e) {
 //            try {
@@ -642,6 +664,7 @@ public class IntentManager {
 //                ex.printStackTrace();
 //            }
             e.printStackTrace();
+            sendReceivedIntentMessageToLauncher(null, null, "system", e.getLocalizedMessage());
         }
     }
 

@@ -189,7 +189,7 @@
         }
         return IntentManager.intentManager!;
     }
-    
+
     static func getActionMap(_ action: String) -> String? {
         let maps = ConfigManager.getShareInstance().getDictionaryValue("intent.action.map");
         if ((maps != nil) && maps![action] != nil) {
@@ -413,6 +413,27 @@
         self.appManager.mainViewController.presentSafely(popup, animated: true, presented: {}, completion: nil)
     }
 
+    func sendReceivedIntentMessageToLauncher(_ action: String?, _ toId: String?, _ fromId: String, _ err: String?) {
+        var msg = "{\"action\":\"receivedIntent\"";
+        if (toId != nil) {
+            msg += ", \"toId\":\"" + toId! + "\"";
+        }
+        if (action != nil) {
+            msg += ", \"intentAction\":\"" + action! + "\"";
+        }
+        if (err != nil) {
+            msg += ", \"error\":\"" + err! + "\"";
+        }
+        msg += "}";
+
+        do {
+            try appManager.sendLauncherMessage(AppManager.MSG_TYPE_INTERNAL, msg, fromId);
+        }
+        catch let error {
+            print("sendReceivedIntentMessageToLauncher: \(error)");
+        }
+    }
+
     func doIntent(_ info: IntentInfo) throws {
         // Warn developers about the short intent format deprecation
         if PreferenceManager.getShareInstance().getDeveloperMode() && !info.action.hasPrefix("http")
@@ -432,9 +453,9 @@
             // Special case for the "share" action that is always handled by the native OS too.
             if info.action != "share" && info.action != "openurl" {
                 if filters.isEmpty {
-                    if (info.actionUrl == nil) {
+                    if (info.actionUrl == nil || info.fromId == "system") {
                         // Not a native build - so 0 filter means no one can handle the action
-                        throw AppError.error("Intent action '\(info.action)' isn't supported!")
+                        throw AppError.error("No one can handle this action.")
                     }
                     else {
                         // We are a trinity native build - launch that action as native intent
@@ -498,6 +519,8 @@
         if (id == nil) {
             throw AppError.error("sendIntent error: can't get id by intent filter")
         }
+
+        sendReceivedIntentMessageToLauncher(info.action, info.toId, info.fromId, nil);
 
         let viewController = appManager.getViewControllerById(id!)
         if (viewController != nil && viewController!.basePlugin!.isIntentReady()) {
@@ -596,11 +619,11 @@
         var info: IntentInfo? = nil;
         var uri = _uri;
         var url = uri.absoluteString;
-        
+
         if (!url.contains("://")) {
             throw AppError.error("The url: '\(url)' is error!");
         }
-        
+
         if (url.hasPrefix("elastos://") && !url.hasPrefix("elastos:///")) {
             url = "elastos:///" + (url as NSString).substring(from: 10);
             uri = URL(string: url)!;
@@ -697,13 +720,14 @@
         let info = try parseIntentUri(uri, fromId);
         if (info != nil && info!.params != nil) {
             // We are receiving an intent from an external application. Do some sanity check.
-            try checkExternalIntentValidity(info: info!) {
+            try checkExternalIntentValidity(info: info!) { [self]
                 isValid, errorMessage in
                 if isValid {
                     do {
                         try self.doIntent(info!)
                     } catch (let e) {
                         print(e.localizedDescription)
+                        self.sendReceivedIntentMessageToLauncher(info!.action, info!.toId, info!.fromId, e.localizedDescription);
                     }
                 }
                 else {
@@ -716,12 +740,11 @@
 
     func doIntentByUri(_ uri: URL) {
         do {
-            try appManager.sendLauncherMessage(AppManager.MSG_TYPE_INTERNAL,
-                                "{\"action\":\"receivedExternalIntent\"}", "system");
             try sendIntentByUri(uri, "system");
         }
         catch let error {
             print("doIntentByUri: \(error)");
+            sendReceivedIntentMessageToLauncher(nil, nil, "system", error.localizedDescription);
         }
     }
 
