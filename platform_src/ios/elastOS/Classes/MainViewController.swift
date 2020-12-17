@@ -123,8 +123,8 @@ public class MainViewController: UIViewController {
         }
     }
         
-    public override func present(_ viewControllerToPresent: UIViewController, animated flag: Bool, completion: (() -> Void)? = nil) {
-        print("ERROR: Please do not call present() directly. Call presentSafely()")
-    }
+     public override func present(_ viewControllerToPresent: UIViewController, animated flag: Bool, completion: (() -> Void)? = nil) {
+        presentSafely(viewControllerToPresent, animated: flag, presented: nil, completion: completion)
+     }
 }
 
