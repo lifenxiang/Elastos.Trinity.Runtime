@@ -10,7 +10,7 @@ const files_to_download  = [
     ],
     "targetDir": "../Plugins/Wallet/src/ios",
     "md5": "9ccc9a5062fb19c921b54de60d7eb120"
-  },{
+  },/*{
 //     "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/release-v1.3/ElastosDIDSDK-framework-for-trinity.zip",
 //     "filename": "ElastosDIDSDK-framework-for-trinity.zip",
 //     "sourceDirs": [
@@ -26,7 +26,7 @@ const files_to_download  = [
 //     "targetDir": "../Plugins/DID/src/ios/libs",
 //     "md5": "af148bea83413b1935e5c7f63dd7da4e"
 //   },{
-    /*"url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/release-v1.3/Antlr4.framework.zip",
+    "url": "https://github.com/elastos/Elastos.DID.Swift.SDK/releases/download/release-v1.3/Antlr4.framework.zip",
     "filename": "Antlr4.framework.zip",
     "sourceDirs": [
       "Antlr4.framework",
