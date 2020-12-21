@@ -11,7 +11,8 @@
         "org.elastos.trinity.dapp.didsession",
         "org.elastos.trinity.dapp.passwordmanager",
         "org.elastos.trinity.dapp.friends",
-        "org.elastos.trinity.dapp.qrcodescanner"
+        "org.elastos.trinity.dapp.qrcodescanner",
+        "org.elastos.trinity.dapp.hivemanager"
     ],
     "url.authority.whitelist": [
         "org.elastos.trinity.dapp.wallet",
