@@ -361,7 +361,7 @@ class TitleBarView: UIView {
         var color: UIColor
 
         if (mode == .DARK) {
-            color = UIColor.init(hex: "#444444")!
+            color = UIColor.init(hex: "#000000")!
         }
         else {
             color = UIColor.init(hex: "#FFFFFF")!

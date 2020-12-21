@@ -310,7 +310,7 @@ public class TitleBar extends FrameLayout {
         int color;
 
         if (mode == TitleBarForegroundMode.DARK) {
-            color = Color.parseColor("#444444");
+            color = Color.parseColor("#000000");
         }
         else {
             color = Color.parseColor("#FFFFFF");
