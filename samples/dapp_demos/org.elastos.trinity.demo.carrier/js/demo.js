@@ -442,12 +442,14 @@ function send_message(argv) {
     }
 
     var success = function(info) {
-        display_others_msg("Send message success.");
+        display_others_msg("Send message success." + info.messageId);
     };
     var error = function (error) {
         display_others_msg("Send message failed: " + error + ".");
     };
-    carrier.sendFriendMessage(argv[1], argv[2], success, error);
+    carrier.sendFriendMessage(argv[1], argv[2], (info) => {
+        display_others_msg("Message received by peer." + info.messageId + " " + info.state);
+    }, success, error);
 }
 
 function send_large_message(argv) {
